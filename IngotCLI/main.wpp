@@ -1,0 +1,3 @@
+import "lib.wpp";
+//deez
+print "This is the main file.";

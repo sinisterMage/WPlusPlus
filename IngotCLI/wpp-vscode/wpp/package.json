@@ -1,0 +1,54 @@
+{
+  "name": "wpp",
+  "displayName": "W++",
+  "description": "A VS Code extension for the W++ language",
+  "version": "0.0.4",
+  "publisher": "OfekBickel",
+  "icon": "icon.png",
+  "engines": {
+    "vscode": "^1.100.0"
+  },
+  "categories": [
+    "Programming Languages"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "wpp",
+        "aliases": [
+          "W++",
+          "wpp"
+        ],
+        "extensions": [
+          ".wpp"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "wpp",
+        "scopeName": "source.wpp",
+        "path": "./syntaxes/wpp.tmLanguage.json"
+      }
+    ],
+    "commands": [
+      {
+        "command": "wpp.run",
+        "title": "Run W++ File with Ingot"
+      }
+    ],
+    "iconThemes": [
+      {
+        "id": "wpp-theme",
+        "label": "W++ Icon Theme",
+        "path": "./file-icon-theme.json"
+      }
+    ]
+  },
+  "activationEvents": [
+    "onLanguage:wpp",
+    "onCommand:wpp.run"
+  ],
+  "main": "./extension.js"
+}

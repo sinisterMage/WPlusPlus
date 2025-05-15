@@ -1,0 +1,27 @@
+{
+  "Print Statement": {
+    "prefix": "print",
+    "body": ["print \"$1\";"],
+    "description": "Print a message to the console"
+  },
+  "If Statement": {
+    "prefix": "if",
+    "body": [
+      "if ($1) {",
+      "    $2",
+      "} else {",
+      "    $3",
+      "}"
+    ],
+    "description": "Basic if/else block"
+  },
+  "While Loop": {
+    "prefix": "while",
+    "body": [
+      "while ($1) {",
+      "    $2",
+      "}"
+    ],
+    "description": "While loop"
+  }
+}

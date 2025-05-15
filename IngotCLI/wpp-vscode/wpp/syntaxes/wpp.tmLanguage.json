@@ -1,0 +1,16 @@
+{
+  "scopeName": "source.wpp",
+  "name": "W++",
+  "patterns": [
+    { "name": "comment.line.double-slash.wpp", "match": "//.*$" },
+    { "name": "keyword.control.wpp", "match": "\\b(if|else|while|for|return|break|continue|import|switch|case|default|print|await|async|let|const)\\b" },
+    { "name": "constant.language.wpp", "match": "\\b(true|false|null)\\b" },
+    { "name": "string.quoted.double.wpp", "begin": "\"", "end": "\"", "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.wpp" }] },
+    { "name": "constant.numeric.wpp", "match": "\\b\\d+(\\.\\d+)?\\b" },
+    { "name": "keyword.operator.wpp", "match": "==|!=|<=|>=|&&|\\|\\||\\?|\\:|\\+|\\-|\\*|\\/|=|<|>|!" },
+    { "name": "punctuation.brackets.wpp", "match": "[\\{\\}\\(\\)\\[\\];,:]" },
+    { "name": "variable.wpp", "match": "\\b[a-zA-Z_][a-zA-Z0-9_]*\\b" }
+  ],
+  "fileTypes": ["wpp"],
+  "uuid": "b1234567-0000-0000-0000-000000000000"
+}

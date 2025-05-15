@@ -1,0 +1,14 @@
+{
+  "iconDefinitions": {
+    "wpp-icon": {
+      "iconPath": "./icons/wpp-icon.svg"
+    }
+  },
+  "fileExtensions": {
+    "wpp": "wpp-icon"
+  },
+  "fileNames": {},
+  "languageIds": {
+    "wpp": "wpp-icon"
+  }
+}

@@ -31,7 +31,7 @@ We believe that even joke languages can teach serious skills.
 
 ## 🧪 Example
 
-```wpp
+wpp
 let greet = (name) => {
     print "Hello, " + name;
 };

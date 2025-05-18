@@ -18,17 +18,42 @@ namespace WPlusPlus
         }
 
         public bool HasMore()
-        {
-            return position < tokens.Count;
-        }
+{
+    while (position < tokens.Count && tokens[position].Type == TokenType.Comment)
+        position++;
+    return position < tokens.Count;
+}
+
 
         public Node Parse()
-        {
-            return ParseStatement();
-        }
+{
+    var statements = new List<Node>();
 
-        private Node ParseStatement()
+    while (HasMore())
+    {
+        try
         {
+            var stmt = ParseStatement();
+            if (stmt != null)
+                statements.Add(stmt);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[ERROR] While parsing statement at token: {Peek()?.Value ?? "EOF"}");
+            throw;
+        }
+    }
+
+    return new BlockNode(statements);
+}
+
+
+
+        public Node ParseStatement()
+        {
+            if (Peek() == null)
+    throw new Exception("Unexpected end of input");
+
             if (Match(TokenType.Keyword))
             {
                 var keyword = Peek().Value;
@@ -243,6 +268,124 @@ namespace WPlusPlus
 
                             return new BlockNode(nodes); // execute imported code in block scope
                         }
+                    case "entity":
+                        {
+                            Advance(); // 'entity'
+
+                            if (!Match(TokenType.Identifier))
+                                throw new Exception("Expected entity name");
+
+                            var entityName = Advance().Value;
+                            string? parent = null;
+                            bool disowns = false;
+
+                            if (Match(TokenType.Keyword) && Peek().Value == "inherits")
+                            {
+                                Advance();
+                                if (!Match(TokenType.Identifier))
+                                    throw new Exception("Expected parent entity name");
+                                parent = Advance().Value;
+                            }
+
+                            if (Match(TokenType.Keyword) && Peek().Value == "disown")
+                            {
+                                Advance();
+                                disowns = true;
+                            }
+
+                            Expect("{");
+
+                            var definition = new EntityDefinition
+                            {
+                                Name = entityName,
+                                Parent = parent,
+                                Disowns = disowns,
+                                Methods = new Dictionary<string, MethodNode>()
+                            };
+
+                            while (!(Match(TokenType.Symbol) && Peek().Value == "}"))
+                            {
+                                // ✅ Handle `disown` keyword inside entity body
+                                if (Match(TokenType.Keyword) && Peek().Value == "disown")
+                                {
+                                    Advance(); // consume 'disown'
+                                    disowns = true;
+                                    continue;  // move to next token without processing it as a statement
+                                }
+
+                                Node stmt;
+
+                                if (Match(TokenType.Identifier) && LookAhead()?.Value == "=>")
+                                {
+                                    stmt = ParseEntityMethod();
+                                }
+                                else
+                                {
+                                    stmt = ParseStatement();
+                                }
+
+                                if (stmt is MethodNode method)
+                                {
+                                    definition.Methods[method.Name] = method;
+                                }
+                                else
+                                {
+                                    Console.WriteLine($"[WARN] Non-method ignored in entity '{entityName}'");
+                                }
+                            }
+
+                            Expect("}");
+
+                            return new EntityNode(entityName, parent, disowns, new List<Node>(definition.Methods.Values));
+                        }
+
+
+                    case "alters":
+                        {
+                            Advance(); // consume 'alters'
+
+                            if (!Match(TokenType.Identifier))
+                                throw new Exception("Expected child entity name");
+
+                            var child = Advance().Value;
+
+                            if (!Match(TokenType.Keyword) || Peek().Value != "alters")
+                                throw new Exception("Expected 'alters' again in 'Child alters Parent'");
+
+                            Advance(); // consume 2nd 'alters'
+
+                            if (!Match(TokenType.Identifier))
+                                throw new Exception("Expected parent entity name");
+
+                            var parent = Advance().Value;
+
+                            Expect("{");
+                            var methodList = new List<Node>();
+
+                            while (!(Match(TokenType.Symbol) && Peek().Value == "}"))
+                            {
+                                // ✅ Allow method definitions like: whoami => { ... }
+                                if (Match(TokenType.Identifier) && LookAhead()?.Value == "=>")
+                                {
+                                    methodList.Add(ParseEntityMethod());
+                                }
+                                else
+                                {
+                                    methodList.Add(ParseStatement());
+                                }
+                            }
+
+                            Expect("}");
+
+                            return new AltersNode(child, parent, methodList);
+                        }
+
+
+
+
+
+
+
 
 
 
@@ -255,29 +398,78 @@ namespace WPlusPlus
 
 
                 }
+                // Add this right after the keyword switch block and before the `if (Match(TokenType.Identifier))`
+                if (Match(TokenType.Keyword) && Peek().Value == "await")
+                {
+                    var expr = ParseExpression(); // ✅ this will consume `await who()`
+                    Expect(";");                  // ✅ require semicolon like other expressions
+                    return expr;
+                }
+
+
             }
 
-            if (Match(TokenType.Identifier) && LookAhead()?.Type == TokenType.Operator && LookAhead()?.Value == "=")
+            if (Match(TokenType.Identifier))
             {
-                var identifier = new IdentifierNode(Advance().Value);
-                Advance(); // consume '='
-                var value = ParseExpression();
-                Expect(";");
-                return new AssignmentNode(identifier, value);
+                try
+                {
+                    // Always start with a full expression (not just a single identifier)
+                    var expr = ParseExpression(); // this already supports dog.speak()
+
+                    // Make sure a semicolon follows it
+                    if (!Match(TokenType.Symbol) || Peek().Value != ";")
+                    {
+                        Console.WriteLine($"[DEBUG] Expected ';' after expression but found: {Peek()?.Value}");
+                        throw new Exception("Expected ';'");
+                    }
+
+                    Advance(); // consume the semicolon
+                    return expr;
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[DEBUG] Token before error: {Peek()?.Value} (type: {Peek()?.Type})");
+                    throw new Exception("Unrecognized statement starting at identifier: " + Peek()?.Value + "\nInner: " + ex.Message);
+                }
             }
+
+
+
+
+
+
 
             // Fallback: expression statement
             try
             {
                 var expr = ParseExpression();
-                Console.WriteLine($"[DEBUG] Expecting semicolon after: {Peek()?.Value}");
-                Expect(";"); // Require semicolon to disambiguate
+
+                if (!Match(TokenType.Symbol) || Peek().Value != ";")
+                {
+                    Console.WriteLine($"[DEBUG] After expression, expected ';' but found: {Peek()?.Value}");
+                    throw new Exception("Expected ';' after expression");
+                }
+
+
+                Advance(); // Consume the semicolon
+
                 return expr;
+
+
+
             }
-            catch
-            {
-                throw new Exception("Unrecognized statement starting at: " + Peek()?.Value);
-            }
+            catch (Exception ex)
+{
+    var peek = Peek();
+    var message = peek != null
+        ? $"Unrecognized statement starting at identifier: {peek.Value}\nInner: {ex.Message}"
+        : "Unexpected end of input";
+
+    throw new Exception(message);
+}
+
+
+
         }
 
 
@@ -307,26 +499,60 @@ namespace WPlusPlus
         }
 
         private Node ParseAssignment()
-        {
-            var left = ParseBinaryExpression(ParsePrimary(), 0);
+{
+    var left = ParseBinaryExpression(ParseUnary(), 0);
 
-            // Handle assignment: i = i + 1
-            if (Match(TokenType.Operator) && Peek().Value == "=")
+    // Support chaining like: dog.speak().another()
+    while (Match(TokenType.Symbol) && Peek().Value == ".")
+    {
+        Advance(); // consume '.'
+
+        if (!Match(TokenType.Identifier))
+            throw new Exception("Expected property or method name after '.'");
+
+        var memberName = Advance().Value;
+
+        if (Match(TokenType.Symbol) && Peek().Value == "(")
+        {
+            Advance(); // consume '('
+            var args = new List<Node>();
+
+            if (!(Match(TokenType.Symbol) && Peek().Value == ")"))
             {
-                Advance(); // consume '='
-                var right = ParseAssignment(); // recursive to support i = j = 3;
-                if (left is IdentifierNode id)
+                do
                 {
-                    return new AssignmentNode(id, right);
-                }
-                else
-                {
-                    throw new Exception("Invalid assignment target");
-                }
+                    args.Add(ParseExpression());
+                } while (Match(TokenType.Symbol) && Peek().Value == "," && Advance() != null);
             }
 
-            return left;
+            Expect(")");
+
+            left = new CallNode(new MemberAccessNode(left, memberName), args);
         }
+        else
+        {
+            left = new MemberAccessNode(left, memberName);
+        }
+    }
+
+    // Handle assignment: a.b = 3
+    if (Match(TokenType.Operator) && Peek().Value == "=")
+    {
+        Advance(); // consume '='
+        var right = ParseAssignment(); // recursive
+        if (left is IdentifierNode id)
+        {
+            return new AssignmentNode(id, right);
+        }
+        else
+        {
+            throw new Exception("Invalid assignment target");
+        }
+    }
+
+    return left;
+}
+
 
 
         private Node ParseBinaryExpression(Node left, int parentPrecedence)
@@ -337,7 +563,7 @@ namespace WPlusPlus
                 var precedence = GetPrecedence(op);
 
                 // 🔥 FIX: ParseExpression instead of ParsePrimary
-                var right = ParsePrimary();
+                var right = ParseUnary();
 
                 left = new BinaryExpressionNode(left, op, right);
             }
@@ -396,28 +622,95 @@ namespace WPlusPlus
             if (Match(TokenType.Identifier))
             {
                 var idToken = Advance();
-                var expr = new IdentifierNode(idToken.Value);
+                Node expr = new IdentifierNode(idToken.Value);
 
-                // Function call: name(args)
-                if (Match(TokenType.Symbol) && Peek().Value == "(")
+                while (true)
                 {
-                    Advance(); // consume '('
-                    var arguments = new List<Node>();
-
-                    if (!(Match(TokenType.Symbol) && Peek().Value == ")"))
+                    if (Match(TokenType.Symbol) && Peek().Value == "(")
                     {
-                        do
-                        {
-                            arguments.Add(ParseExpression());
-                        } while (Match(TokenType.Symbol) && Peek().Value == "," && Advance() != null);
-                    }
+                        Advance(); // consume '('
+                        var args = new List<Node>();
 
-                    Expect(")");
-                    return new CallNode(expr, arguments);
+                        if (!(Match(TokenType.Symbol) && Peek().Value == ")"))
+                        {
+                            while (true)
+                            {
+                                if (Peek() == null || Peek().Value == ")")
+                                    break;
+
+                                args.Add(ParseExpression());
+
+                                if (Match(TokenType.Symbol) && Peek().Value == ",")
+                                {
+                                    Advance(); // consume comma
+                                    if (Peek() == null || Peek().Value == ")")
+                                        throw new Exception("Trailing comma in argument list is not allowed");
+                                }
+                                else
+                                {
+                                    break;
+                                }
+                            }
+                        }
+
+
+                        Expect(")");
+                        expr = new CallNode(expr, args);
+                    }
+                    else if (Match(TokenType.Symbol) && Peek().Value == ".")
+                    {
+                        Advance(); // consume '.'
+
+                        if (!Match(TokenType.Identifier))
+                            throw new Exception("Expected identifier after '.'");
+
+                        var memberName = Advance().Value;
+
+                        if (Match(TokenType.Symbol) && Peek().Value == "(")
+                        {
+                            Advance(); // consume '('
+                            var args = new List<Node>();
+
+                            if (!(Match(TokenType.Symbol) && Peek().Value == ")"))
+                            {
+                                while (true)
+                                {
+                                    if (Peek() == null || Peek().Value == ")")
+                                        break;
+
+                                    args.Add(ParseExpression());
+
+                                    if (Match(TokenType.Symbol) && Peek().Value == ",")
+                                    {
+                                        Advance(); // consume comma
+                                        if (Peek() == null || Peek().Value == ")")
+                                            throw new Exception("Trailing comma in method call is not allowed");
+                                    }
+                                    else
+                                    {
+                                        break;
+                                    }
+                                }
+                            }
+
+
+                            Expect(")");
+                            expr = new CallNode(new MemberAccessNode(expr, memberName), args);
+                        }
+                        else
+                        {
+                            expr = new MemberAccessNode(expr, memberName);
+                        }
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
 
                 return expr;
             }
+
 
             // Boolean literals
             if (Match(TokenType.Keyword) && (Peek().Value == "true" || Peek().Value == "false"))
@@ -425,21 +718,79 @@ namespace WPlusPlus
                 var value = Advance().Value == "true" ? "1" : "0";
                 return new NumberNode(value);
             }
+            // 🔥 Handle 'me' keyword as MeNode
+            if (Match(TokenType.Keyword) && Peek().Value == "me")
+            {
+                Advance();
+                return new MeNode();
+            }
+
             // Null literal
             if (Match(TokenType.Keyword) && Peek().Value == "null")
             {
                 Advance();
                 return new NullNode();
             }
+            if (Match(TokenType.Keyword) && Peek().Value == "new")
+            {
+                Advance(); // consume 'new'
+
+                Expect("(");
+
+                if (!Match(TokenType.Identifier))
+                    throw new Exception("Expected entity name inside 'new(...)'");
+
+                var entityName = Advance().Value;
+
+                Expect(")"); // Close the 'new(...)'
+
+                return new NewNode(entityName);
+            }
+
+            // 🔥 Add this just above other keyword checks like 'await'
+            if (Match(TokenType.Keyword) && Peek().Value == "ancestor")
+            {
+                Advance(); // consume 'ancestor'
+
+                // ✅ Support optional dot before method name
+                if (Match(TokenType.Symbol) && Peek().Value == ".")
+                {
+                    Advance(); // consume '.'
+                }
+
+                if (!Match(TokenType.Identifier))
+                    throw new Exception("Expected method name after 'ancestor'");
+
+                var methodName = Advance().Value;
+
+                Expect("(");
+                var arguments = new List<Node>();
+                while (!(Match(TokenType.Symbol) && Peek().Value == ")"))
+                {
+                    arguments.Add(ParseExpression());
+
+                    if (Match(TokenType.Symbol) && Peek().Value == ",")
+                        Advance(); // consume comma
+                }
+                Expect(")");
+
+                return new AncestorCallNode(methodName, arguments);
+            }
+
+
+
+
 
 
             // Await expression
             if (Match(TokenType.Keyword) && Peek().Value == "await")
             {
                 Advance();
-                var expr = ParsePrimary();
+                Console.WriteLine($"[DEBUG] Awaiting expression starting at: {Peek()?.Value}");
+                var expr = ParseExpression(); // ✅ supports full call: await who()
                 return new AwaitNode(expr);
             }
+
             // Support: async (...) => ...
             if (Match(TokenType.Keyword) && Peek().Value == "async")
             {
@@ -514,6 +865,22 @@ namespace WPlusPlus
 
             return new VariableDeclarationNode(name, value, isConst);
         }
+        private Node ParseUnary()
+{
+    if (Match(TokenType.Operator) && Peek().Value == "!")
+    {
+        var op = Advance().Value;
+        var right = ParseUnary();
+        return new UnaryExpressionNode(op, right);
+    }
+
+
+
+    return ParsePrimary();
+}
+
+
+
 
 
 
@@ -571,6 +938,41 @@ namespace WPlusPlus
             else
                 return ParseStatement(); // allow one-liners like `continue;`
         }
+        private MethodNode ParseEntityMethod()
+{
+    if (!Match(TokenType.Identifier))
+        throw new Exception("Expected method name");
+
+    var methodName = Advance().Value;
+
+    if (!Match(TokenType.Operator) || Peek().Value != "=>")
+        throw new Exception($"Expected '=>' after method name '{methodName}'");
+
+    Advance(); // consume '=>'
+
+    Node body;
+
+    if (Match(TokenType.Symbol) && Peek().Value == "{")
+    {
+        body = ParseBlock(); // ✅ multi-line body (safe)
+    }
+    else
+    {
+        // ✅ Force single-line statement to end with ;
+        body = ParseStatement();
+
+        if (body == null)
+            throw new Exception($"Method '{methodName}' body is null");
+    }
+
+    if (body == null)
+        throw new Exception($"Parsed method '{methodName}' has null body");
+
+    return new MethodNode(methodName, new List<string>(), body);
+}
+
+
+
 
 
 

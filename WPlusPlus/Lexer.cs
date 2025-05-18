@@ -63,6 +63,16 @@ namespace WPlusPlus
 (TokenType.Keyword, @"\bcase\b"),
 (TokenType.Keyword, @"\bimport\b"),
 (TokenType.Keyword, @"\bdefault\b"),
+(TokenType.Keyword, @"\bentity\b"),
+(TokenType.Keyword, @"\binherits\b"),
+(TokenType.Keyword, @"\bdisown\b"),
+(TokenType.Keyword, @"\bbirth\b"),
+(TokenType.Keyword, @"\bvanish\b"),
+(TokenType.Keyword, @"\bme\b"),
+(TokenType.Keyword, @"\bancestor\b"),
+(TokenType.Keyword, @"\bnew\b"),
+(TokenType.Keyword, @"\balters\b"),
+
 
 
 
@@ -78,7 +88,7 @@ namespace WPlusPlus
         (TokenType.Operator, @"\?\?|=>|==|!=|<=|>=|&&|\|\||[+\-*/=<>!]"),
 
     // Symbols
-    (TokenType.Symbol, @"[(),;:{}]")
+    (TokenType.Symbol, @"[().,;:{}]")
 };
 
 
@@ -91,15 +101,32 @@ namespace WPlusPlus
             var matches = regex.Matches(input);
             foreach (Match match in matches)
             {
-                foreach (var (type, _) in patterns)
+                bool matched = false;
+                foreach (var groupName in regex.GetGroupNames())
+{
+    if (groupName == "0") continue; // skip whole match
+
+    var group = match.Groups[groupName];
+    if (group.Success && Enum.TryParse(groupName, out TokenType type))
+    {
+        tokens.Add(new Token(type, group.Value));
+        matched = true;
+        break;
+    }
+}
+
+
+
+                if (!matched && !string.IsNullOrWhiteSpace(match.Value))
                 {
-                    if (match.Groups[type.ToString()].Success)
-                    {
-                        tokens.Add(new Token(type, match.Value));
-                        break;
-                    }
+                    throw new Exception($"[❌ Lexer Error] Unrecognized token: '{match.Value}' at index {match.Index}");
                 }
+
+
             }
+
+
+
 
             return tokens;
         }

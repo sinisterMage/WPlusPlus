@@ -130,6 +130,81 @@ namespace WPlusPlus.AST
             DefaultBody = defaultBody;
         }
     }
+    public class EntityNode : Node
+{
+    public string Name { get; }
+    public string? Parent { get; }
+    public bool DisownsParent { get; }
+    public List<Node> Body { get; }
+
+    public EntityNode(string name, string? parent, bool disownsParent, List<Node> body)
+    {
+        Name = name;
+        Parent = parent;
+        DisownsParent = disownsParent;
+        Body = body;
+    }
+}
+public class NewNode : Node
+{
+    public string EntityName { get; }
+
+    public NewNode(string entityName)
+    {
+        EntityName = entityName;
+    }
+}
+public class AltersNode : Node
+{
+    public string ChildEntity { get; }
+    public string TargetAncestor { get; }
+    public List<Node> AlteredMethods { get; }
+
+    public AltersNode(string childEntity, string targetAncestor, List<Node> alteredMethods)
+    {
+        ChildEntity = childEntity;
+        TargetAncestor = targetAncestor;
+        AlteredMethods = alteredMethods;
+    }
+}
+
+public class MethodNode : Node
+{
+    public string Name { get; }
+    public List<string> Parameters { get; }
+    public Node Body { get; }
+
+    public MethodNode(string name, List<string> parameters, Node body)
+    {
+        Name = name;
+        Parameters = parameters;
+        Body = body;
+    }
+}
+public class MeNode : Node { }
+    public class AncestorCallNode : Node
+    {
+        public string MethodName { get; }
+        public List<Node> Arguments { get; }
+
+        public AncestorCallNode(string methodName, List<Node> arguments)
+        {
+            MethodName = methodName;
+            Arguments = arguments;
+        }
+    }
+public class MemberAccessNode : Node
+{
+    public Node Target { get; }
+    public string Member { get; }
+
+    public MemberAccessNode(Node target, string member)
+    {
+        Target = target;
+        Member = member;
+    }
+}
+
 
 
 

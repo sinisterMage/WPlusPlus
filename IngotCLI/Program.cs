@@ -7,27 +7,27 @@ class Program
     {
         if (args.Length == 0)
         {
-            Console.WriteLine("Usage: ingot <command>");
+            Console.WriteLine("Usage: ingot <command> [--jit]");
             return;
         }
-        if (args.Length == 1 && (args[0] == "--help" || args[0] == "help"))
+
+        if (args[0] == "--help" || args[0] == "help")
         {
             Console.WriteLine("Ingot CLI v0.1.0");
             Console.WriteLine("Usage:");
-            Console.WriteLine("  ingot init        Create a new W++ project");
-            Console.WriteLine("  ingot run         Run the W++ project");
-            Console.WriteLine("  ingot build       Compile without running");
-            Console.WriteLine("  ingot publish     Package build output");
-            Console.WriteLine("  ingot help        Show this help message");
+            Console.WriteLine("  ingot init           Create a new W++ project");
+            Console.WriteLine("  ingot run [--jit]    Run the W++ project (optionally with JIT)");
+            Console.WriteLine("  ingot build          Compile without running");
+            Console.WriteLine("  ingot publish        Package build output");
+            Console.WriteLine("  ingot help           Show this help message");
             return;
         }
 
-        if (args.Length == 1 && (args[0] == "--version" || args[0] == "version"))
+        if (args[0] == "--version" || args[0] == "version")
         {
             Console.WriteLine("Ingot CLI v0.1.0");
             return;
         }
-
 
         switch (args[0])
         {
@@ -35,7 +35,8 @@ class Program
                 InitProject();
                 break;
             case "run":
-                await RunProject();
+                bool forceJit = args.Contains("--jit");
+                await RunProject(forceJit);
                 break;
             case "build":
                 await BuildProject();
@@ -43,8 +44,6 @@ class Program
             case "publish":
                 PublishProject();
                 break;
-
-
             default:
                 Console.WriteLine("Unknown command.");
                 break;
@@ -59,12 +58,13 @@ class Program
             name = "myproject",
             version = "0.1.0",
             main = "main.wpp",
+            jit = false,
             dependencies = new Dictionary<string, string>()
         }, new JsonSerializerOptions { WriteIndented = true }));
         Console.WriteLine("✅ Project initialized.");
     }
 
-    static async Task RunProject()
+    static async Task RunProject(bool forceJit = false)
     {
         if (!File.Exists("wpp.json"))
         {
@@ -74,6 +74,8 @@ class Program
 
         var json = JsonDocument.Parse(File.ReadAllText("wpp.json"));
         string entry = json.RootElement.GetProperty("main").GetString();
+        bool configJit = json.RootElement.TryGetProperty("jit", out var jitProp) && jitProp.GetBoolean();
+        bool useJit = forceJit || configJit;
 
         if (!File.Exists(entry))
         {
@@ -84,16 +86,32 @@ class Program
         string code = File.ReadAllText(entry);
         var tokens = Lexer.Tokenize(code);
         var parser = new Parser(tokens);
-        var interpreter = new Interpreter();
 
-        while (parser.HasMore())
+        if (useJit)
         {
-            var node = parser.Parse();
-            await interpreter.Evaluate(node);
-        }
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("🚀 Running JIT compiled W++ code (experimental!)...");
+            Console.ResetColor();
 
-        Console.WriteLine("✅ Execution finished.");
+            var jit = new JitCompiler();
+            var ast = parser.Parse();
+            jit.Compile(ast);
+        }
+        else
+        {
+            Console.WriteLine("🌀 Running W++ with interpreter...");
+            var interpreter = new Interpreter();
+
+            while (parser.HasMore())
+            {
+                var node = parser.Parse();
+                await interpreter.Evaluate(node);
+            }
+
+            Console.WriteLine("✅ Execution finished.");
+        }
     }
+
     static async Task BuildProject()
     {
         if (!File.Exists("wpp.json"))
@@ -115,12 +133,11 @@ class Program
         Directory.CreateDirectory(outputDir);
 
         string fullCode = File.ReadAllText(entry);
-
-        // You can enhance this later to inline all imports if needed.
         File.WriteAllText(Path.Combine(outputDir, "bundle.wpp"), fullCode);
 
         Console.WriteLine("📦 Build complete → build/bundle.wpp");
     }
+
     static void PublishProject()
     {
         string source = Path.Combine("build", "bundle.wpp");
@@ -138,6 +155,4 @@ class Program
 
         Console.WriteLine($"🚀 Published to {target}");
     }
-
-
 }

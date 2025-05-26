@@ -3,10 +3,14 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using WPlusPlus.AST;
 
 namespace WPlusPlus.AST
 {
     public abstract class Node { }
+
+
+
 
     public class NumberNode : Node
     {
@@ -18,6 +22,7 @@ namespace WPlusPlus.AST
         }
     }
 
+
     public class IdentifierNode : Node
     {
         public string Name { get; }
@@ -28,19 +33,22 @@ namespace WPlusPlus.AST
         }
     }
 
-    public class BinaryExpressionNode : Node
-    {
-        public Node Left { get; }
-        public string Operator { get; }
-        public Node Right { get; }
 
-        public BinaryExpressionNode(Node left, string op, Node right)
-        {
-            Left = left;
-            Operator = op;
-            Right = right;
-        }
+    public class BinaryExpressionNode : Node
+{
+    public Node Left { get; }
+    public string Operator { get; }
+    public Node Right { get; }
+
+    public BinaryExpressionNode(Node left, string op, Node right)
+    {
+        Left = left;
+        Operator = op;
+        Right = right;
     }
+}
+
+
 
     public class AssignmentNode : Node
     {
@@ -131,57 +139,57 @@ namespace WPlusPlus.AST
         }
     }
     public class EntityNode : Node
-{
-    public string Name { get; }
-    public string? Parent { get; }
-    public bool DisownsParent { get; }
-    public List<Node> Body { get; }
-
-    public EntityNode(string name, string? parent, bool disownsParent, List<Node> body)
     {
-        Name = name;
-        Parent = parent;
-        DisownsParent = disownsParent;
-        Body = body;
-    }
-}
-public class NewNode : Node
-{
-    public string EntityName { get; }
+        public string Name { get; }
+        public string? Parent { get; }
+        public bool DisownsParent { get; }
+        public List<Node> Body { get; }
 
-    public NewNode(string entityName)
+        public EntityNode(string name, string? parent, bool disownsParent, List<Node> body)
+        {
+            Name = name;
+            Parent = parent;
+            DisownsParent = disownsParent;
+            Body = body;
+        }
+    }
+    public class NewNode : Node
     {
-        EntityName = entityName;
-    }
-}
-public class AltersNode : Node
-{
-    public string ChildEntity { get; }
-    public string TargetAncestor { get; }
-    public List<Node> AlteredMethods { get; }
+        public string EntityName { get; }
 
-    public AltersNode(string childEntity, string targetAncestor, List<Node> alteredMethods)
+        public NewNode(string entityName)
+        {
+            EntityName = entityName;
+        }
+    }
+    public class AltersNode : Node
     {
-        ChildEntity = childEntity;
-        TargetAncestor = targetAncestor;
-        AlteredMethods = alteredMethods;
+        public string ChildEntity { get; }
+        public string TargetAncestor { get; }
+        public List<Node> AlteredMethods { get; }
+
+        public AltersNode(string childEntity, string targetAncestor, List<Node> alteredMethods)
+        {
+            ChildEntity = childEntity;
+            TargetAncestor = targetAncestor;
+            AlteredMethods = alteredMethods;
+        }
     }
-}
 
-public class MethodNode : Node
-{
-    public string Name { get; }
-    public List<string> Parameters { get; }
-    public Node Body { get; }
-
-    public MethodNode(string name, List<string> parameters, Node body)
+    public class MethodNode : Node
     {
-        Name = name;
-        Parameters = parameters;
-        Body = body;
+        public string Name { get; }
+        public List<string> Parameters { get; }
+        public Node Body { get; }
+
+        public MethodNode(string name, List<string> parameters, Node body)
+        {
+            Name = name;
+            Parameters = parameters;
+            Body = body;
+        }
     }
-}
-public class MeNode : Node { }
+    public class MeNode : Node { }
     public class AncestorCallNode : Node
     {
         public string MethodName { get; }
@@ -193,22 +201,22 @@ public class MeNode : Node { }
             Arguments = arguments;
         }
     }
-public class MemberAccessNode : Node
-{
-    public Node Target { get; }
-    public string Member { get; }
-
-    public MemberAccessNode(Node target, string member)
+    public class MemberAccessNode : Node
     {
-        Target = target;
-        Member = member;
+        public Node Target { get; }
+        public string Member { get; }
+
+        public MemberAccessNode(Node target, string member)
+        {
+            Target = target;
+            Member = member;
+        }
     }
-}
-
-
-
 
 
 
 }
+
+
+
 

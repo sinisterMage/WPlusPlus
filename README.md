@@ -25,7 +25,8 @@ This repo contains the full source code of W++ after it reached over **33,000 do
 
 This project was created by [Ofek Bickel](https://github.com/sinisterMage) as an educational challenge — to build a real, working language from scratch and share it with the world.
 
-We believe that even joke languages can teach serious skills.
+We believe that even chaotic, meme-fueled languages can teach real-world compiler and runtime skills — and spark joy while doing it.
+
 
 ---
 

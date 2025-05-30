@@ -12,20 +12,26 @@ class Program
         }
 
         if (args[0] == "--help" || args[0] == "help")
-        {
-            Console.WriteLine("Ingot CLI v0.1.0");
-            Console.WriteLine("Usage:");
-            Console.WriteLine("  ingot init           Create a new W++ project");
-            Console.WriteLine("  ingot run [--jit]    Run the W++ project (optionally with JIT)");
-            Console.WriteLine("  ingot build          Compile without running");
-            Console.WriteLine("  ingot publish        Package build output");
-            Console.WriteLine("  ingot help           Show this help message");
-            return;
-        }
+{
+    Console.WriteLine("Ingot CLI v0.2.2");
+    Console.WriteLine("Usage:");
+    Console.WriteLine("  ingot init                  Create a new W++ project");
+    Console.WriteLine("  ingot run [--jit]           Run the W++ project (optionally with JIT)");
+    Console.WriteLine("  ingot build                 Compile without running");
+    Console.WriteLine("  ingot publish               Package build output");
+    Console.WriteLine("  ingot import <package>      Import a NuGet package as a W++ ingot");
+    Console.WriteLine("  ingot install               Install all ingots listed in wpp.json");
+    Console.WriteLine("  ingot list                  List all currently installed ingots");
+    Console.WriteLine("  ingot remove <package>      Remove an ingot and update wpp.json");
+    Console.WriteLine("  ingot help                  Show this help message");
+    Console.WriteLine("  ingot version               Show the current CLI version");
+    return;
+}
+
 
         if (args[0] == "--version" || args[0] == "version")
         {
-            Console.WriteLine("Ingot CLI v0.1.0");
+            Console.WriteLine("Ingot CLI v0.2.2");
             return;
         }
 
@@ -44,6 +50,33 @@ class Program
             case "publish":
                 PublishProject();
                 break;
+                case "import":
+        if (args.Length < 2)
+            {
+            Console.WriteLine("❌ Please specify a NuGet package name.");
+            return;
+            }
+            var package = args[1];
+            await NugetIngotConverter.ImportAsync(package);
+            break;
+            case "install":
+    await NugetIngotConverter.InstallAllAsync();
+    break;
+
+case "list":
+    NugetIngotConverter.ListInstalled();
+    break;
+
+case "remove":
+    if (args.Length < 2)
+    {
+        Console.WriteLine("❌ Please specify an ingot to remove.");
+        return;
+    }
+    NugetIngotConverter.RemoveIngot(args[1]);
+    break;
+
+
             default:
                 Console.WriteLine("Unknown command.");
                 break;

@@ -9,13 +9,16 @@ class Program
     static async Task Main(string[] args)
     {
         var code = @"
-        let x = 5;
+       let add = (a, b) => {
+    return a + b;
+};
 
-if (x > 0) {
-  return ""early exit"";
-}
+add(2, 3);
 
-print(""this should not be printed"");
+
+
+
+
 
 
 
@@ -35,7 +38,7 @@ print(""this should not be printed"");
         {
             Console.WriteLine("🚀 Running JIT compiled W++ code...");
             var jit = new JitCompiler();
-            jit.Compile(ast);
+            await jit.Compile(ast);
         }
         else
         {

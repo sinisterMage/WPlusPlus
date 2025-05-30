@@ -1,2 +1,7 @@
 
-print "This is the main file.";
+ingot Newtonsoft.Json {
+  class JsonConvert {
+    func SerializeObject(Object value): String
+    func DeserializeObject(String value): Object
+  }
+}

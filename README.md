@@ -70,6 +70,9 @@ Nope. W++ borrows Python’s readability and indentation style, but it is **not*
 Think of it as:  
 **“.NET scripting with a Python-inspired flavor”** — not “Python on .NET” (that’s IronPython).
 
+📘 [Click here to view the full W++ Syntax Guide](https://github.com/sinisterMage/WPlusPlus/blob/master/SYNTAX.md)
+
+
 ---
 
 ## 📜 License

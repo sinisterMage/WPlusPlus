@@ -25,7 +25,8 @@ This repo contains the full source code of W++ after it reached over **33,000 do
 
 This project was created by [Ofek Bickel](https://github.com/sinisterMage) as an educational challenge — to build a real, working language from scratch and share it with the world.
 
-We believe that even joke languages can teach serious skills.
+We believe that even chaotic, meme-fueled languages can teach real-world compiler and runtime skills — and spark joy while doing it.
+
 
 ---
 
@@ -53,6 +54,24 @@ Syntax highlighting
 Snippets
 
 Icon & metadata
+
+---
+
+## 🤔 Is W++ a Python dialect?
+
+Nope. W++ borrows Python’s readability and indentation style, but it is **not** Python or a Python runtime.
+
+- It’s not compatible with Python libraries
+- It has a custom syntax, runtime, and execution model
+- It compiles to IL and integrates tightly with the .NET ecosystem
+- It uses semicolons and braces by design
+- It supports NuGet imports — not pip
+
+Think of it as:  
+**“.NET scripting with a Python-inspired flavor”** — not “Python on .NET” (that’s IronPython).
+
+📘 [Click here to view the full W++ Syntax Guide](https://github.com/sinisterMage/WPlusPlus/blob/master/SYNTAX.md)
+
 
 ---
 

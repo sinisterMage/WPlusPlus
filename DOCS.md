@@ -22,6 +22,8 @@ This document outlines which features are currently supported and which still fa
 | Binary operators `+ - * / < > == !=` | ✅ Supported | Proper IL opcodes mapped and boxed to object                         |
 | Boolean values `true`, `false` | ✅ Supported    | Compiled as boxed `1` or `0`                                         |
 | Unary `!`                      | ✅ Supported    | Translates to `Ceq` vs 0 (truth inversion)                           |
+| `try/catch`                    | ✅ Supported    |                                                                      |
+| `lambda` (sync only)           | ✅ Supported    |                                                                      |
 
 ---
 
@@ -31,10 +33,9 @@ This document outlines which features are currently supported and which still fa
 |------------------------|----------------------------------|
 | `entity`, `inherits`, `disown` | Runtime object model not yet mapped to IL |
 | `me`, `ancestor`, `call`       | Dynamic dispatch and method binding        |
-| `async`, `await`, `lambda`     | Delegate + closure handling not implemented |
-| `try`, `catch`, `throw`        | Requires exception block emission          |
+| `async`, `await`,      | Delegate + closure handling not implemented |
 | `import`                       | Runtime file evaluation stays interpreted  |
-| Function definitions & calls   | `CallNode` not compiled to delegate yet    |
+
 
 > 💡 These features will still **run correctly** when using `--jit`, but will be evaluated by the interpreter behind the scenes. No manual changes are needed.
 
@@ -61,9 +62,7 @@ for (let i = 0; i < 5; i = i + 1) {
 ---
 
 ### 🛑 Example: Falls Back to Interpreter
-wpp
-Copy
-Edit
+
 entity Dog {
   speak => {
     print "Bark!";
@@ -78,7 +77,7 @@ mydog.speak();
 ---
 
 ### 💬 Conclusion
-W++ JIT mode in v0.2.1 is stable for:
+W++ JIT mode in v0.2.2 is stable for:
 
 Procedural logic
 
@@ -87,6 +86,10 @@ Arithmetic
 Control flow
 
 Printing and returning
+
+lambdas
+
+error handling
 
 As the JIT evolves, more features will migrate out of the interpreter.
 

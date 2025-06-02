@@ -88,7 +88,7 @@ namespace WPlusPlus
         (TokenType.Operator, @"\?\?|=>|==|!=|<=|>=|&&|\|\||[+\-*/=<>!]"),
 
     // Symbols
-    (TokenType.Symbol, @"[().,;:{}]")
+    (TokenType.Symbol, @"[\[\]()\.,;:{}]") // Fully escaped for clarity
 };
 
 

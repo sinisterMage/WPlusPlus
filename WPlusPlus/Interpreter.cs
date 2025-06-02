@@ -3,6 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using WPlusPlus.AST;
+using IngotCLI;
+using WPlusPlus;
+using WPlusPlus.Shared;
+
 
 namespace WPlusPlus
 {
@@ -16,21 +20,23 @@ public delegate Task<object> AsyncFunctionObject(List<object> args);
         private Dictionary<string, EntityDefinition> entityTable = new();
         private Dictionary<string, object> currentInstance = null;
         private Dictionary<string, Dictionary<string, MethodNode>> originalMethodTable = new();
+        private readonly IRuntimeLinker runtimeLinker;
+
 
 private string currentEntity = null;
 
 
         // Default constructor: creates a fresh scope
-        public Interpreter()
-        {
-            variables = new Dictionary<string, (object, bool)>();
-        }
-
-        // Overloaded constructor: clones parent scope
-        public Interpreter(Dictionary<string, (object Value, bool IsConst)> parentScope)
-        {
-            variables = new Dictionary<string, (object, bool)>(parentScope);
-        }
+        public Interpreter(IRuntimeLinker linker)
+{
+    variables = new Dictionary<string, (object, bool)>();
+    runtimeLinker = linker;
+}
+public Interpreter(Dictionary<string, (object Value, bool IsConst)> parentScope, IRuntimeLinker linker)
+{
+    variables = new Dictionary<string, (object, bool)>(parentScope);
+    runtimeLinker = linker;
+}
 
         public async Task<object> Evaluate(Node node)
         {
@@ -39,8 +45,9 @@ private string currentEntity = null;
             {
                 case NumberNode num:
                     return double.Parse(num.Value);
-                case StringNode str:
-                    return str.Value;
+                case StringNode strNode:
+    return strNode.Value;
+
 
 
                 case IdentifierNode id:
@@ -73,15 +80,21 @@ private string currentEntity = null;
                     return newVal;
 
                 case PrintNode print:
-                    var result = await Evaluate(print.Expression);
-                    Console.WriteLine(result);
-                    return result;
+    var result = await Evaluate(print.Expression);
+
+    if (result is string str)
+        Console.WriteLine(str);
+    else
+        Console.WriteLine(result);
+
+    return result;
+
 
 
                 case LambdaNode lambda:
                     FunctionObject func = async (args) =>
 {
-    var local = new Interpreter();
+    var local = new Interpreter(runtimeLinker);
     for (int i = 0; i < lambda.Parameters.Count; i++)
     {
         local.variables[lambda.Parameters[i]] = (args[i], false);
@@ -104,7 +117,7 @@ private string currentEntity = null;
                 case AsyncLambdaNode asyncLambda:
                     AsyncFunctionObject asyncFunc = async (args) =>
                     {
-                        var local = new Interpreter();
+                        var local = new Interpreter(runtimeLinker);
                         for (int i = 0; i < asyncLambda.Parameters.Count; i++)
                         {
                             local.variables[asyncLambda.Parameters[i]] = (args[i], false);
@@ -156,7 +169,7 @@ private string currentEntity = null;
 
                             case MethodNode method:
                                 {
-                                    var methodScope = new Interpreter(this.variables)
+                                    var methodScope = new Interpreter(this.variables, runtimeLinker)
                                     {
                                         entityTable = this.entityTable,
                                         originalMethodTable = this.originalMethodTable, // ✅ ADD THIS
@@ -219,7 +232,7 @@ private string currentEntity = null;
                     }
                     catch (Exception ex)
                     {
-                        var local = new Interpreter();
+                        var local = new Interpreter(runtimeLinker);
                         local.variables[tryCatch.CatchVariable] = (0.0, false); // you can store the message if needed
                         Console.WriteLine($"[TRY/CATCH] Exception caught: {ex.Message}");
                         return await local.Evaluate(tryCatch.CatchBlock);
@@ -319,7 +332,7 @@ private string currentEntity = null;
                         string code = File.ReadAllText(importNode.Path);
                         var tokens = Lexer.Tokenize(code);
                         var parser = new Parser(tokens);
-                        var importInterpreter = new Interpreter(this.variables); // share scope
+                        var importInterpreter = new Interpreter(this.variables, runtimeLinker); // share scope
 
                         while (parser.HasMore())
                         {
@@ -514,7 +527,7 @@ private string currentEntity = null;
                         }
 
                         Console.WriteLine($"[CALL] Executing ancestor method '{methodName}' from entity '{lookupEntity}'");
-                        var ancestorScope = new Interpreter(this.variables)
+                        var ancestorScope = new Interpreter(this.variables, runtimeLinker)
                         {
                             entityTable = this.entityTable,
                             originalMethodTable = this.originalMethodTable,
@@ -549,6 +562,34 @@ private string currentEntity = null;
 
                         throw new Exception("Cannot access member of non-object");
                     }
+                    case ExternCallNode ext:
+{
+    var argValues = new List<object>();
+    foreach (var arg in ext.Arguments)
+        argValues.Add(await Evaluate(arg));
+
+    Console.WriteLine($"[EXTERNCALL] {ext.TypeName}.{ext.MethodName}({argValues.Count} args)");
+
+    try
+    {
+        // 🔧 Support instance/static auto-detection
+        var externResult = runtimeLinker.Invoke( // ✅ instance field
+    typeName: ext.TypeName,
+    methodName: ext.MethodName,
+    args: argValues.ToArray()
+);
+
+
+        return externResult;
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"[ERROR] externcall failed: {ex}");
+        return null;
+    }
+}
+
+
 
 
 

@@ -408,6 +408,38 @@ namespace WPlusPlus
 
 
             }
+            if (Match(TokenType.Identifier) && Peek().Value == "externcall")
+{
+    Advance(); // consume externcall
+    Expect("(");
+
+    var typeExpr = ParseExpression();
+    Expect(",");
+
+    var methodExpr = ParseExpression();
+    Expect(",");
+
+    Expect("[");
+    var args = new List<Node>();
+    while (!Match(TokenType.Symbol) || Peek().Value != "]")
+    {
+        args.Add(ParseExpression());
+        if (Match(TokenType.Symbol) && Peek().Value == ",")
+            Advance();
+        else
+            break;
+    }
+    Expect("]");
+    Expect(")");
+
+    Expect(";");
+
+    if (typeExpr is not StringNode typeStr || methodExpr is not StringNode methodStr)
+        throw new Exception("externcall must use string literals for type and method");
+
+    return new ExternCallNode(typeStr.Value, methodStr.Value, args);
+}
+
 
             if (Match(TokenType.Identifier))
             {
@@ -617,6 +649,39 @@ namespace WPlusPlus
             // String literal
             if (Match(TokenType.String))
                 return new StringNode(Advance().Value);
+                // 🔥 Must go before general identifier parsing
+if (Match(TokenType.Identifier) && Peek().Value == "externcall")
+{
+    Advance(); // consume externcall
+    Expect("(");
+
+    var typeExpr = ParseExpression();
+    Expect(",");
+
+    var methodExpr = ParseExpression();
+    Expect(",");
+
+    Expect("[");
+
+    var args = new List<Node>();
+    while (!Match(TokenType.Symbol) || Peek().Value != "]")
+    {
+        args.Add(ParseExpression());
+        if (Match(TokenType.Symbol) && Peek().Value == ",")
+            Advance();
+        else
+            break;
+    }
+
+    Expect("]");
+    Expect(")");
+
+    if (typeExpr is not StringNode typeStr || methodExpr is not StringNode methodStr)
+        throw new Exception("externcall expects string literals");
+
+    return new ExternCallNode(typeStr.Value, methodStr.Value, args);
+}
+
 
             // Identifier or function call
             if (Match(TokenType.Identifier))
@@ -718,6 +783,8 @@ namespace WPlusPlus
                 var value = Advance().Value == "true" ? "1" : "0";
                 return new NumberNode(value);
             }
+            
+
             // 🔥 Handle 'me' keyword as MeNode
             if (Match(TokenType.Keyword) && Peek().Value == "me")
             {

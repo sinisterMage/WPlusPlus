@@ -3,132 +3,211 @@ using System.Reflection;
 using System.Text;
 using System.Xml.Linq;
 using System.Text.Json;
+using IngotCLI;
 
 public static class NugetIngotConverter
 {
-    public static async Task ImportAsync(string packageName)
+    private static List<string> ParseDependencies(string tempDir)
+{
+    var nuspecPath = Directory.GetFiles(tempDir, "*.nuspec").FirstOrDefault();
+    if (nuspecPath == null) return new();
+
+    var xdoc = XDocument.Load(nuspecPath);
+    var ns = xdoc.Root.GetDefaultNamespace();
+
+    var deps = new List<string>();
+
+    foreach (var dep in xdoc.Descendants(ns + "dependency"))
     {
-        Console.WriteLine($"📦 Downloading NuGet package '{packageName}'...");
+        var id = dep.Attribute("id")?.Value;
+        if (!string.IsNullOrEmpty(id)) deps.Add(id);
+    }
 
-        var tempDir = Path.Combine(Path.GetTempPath(), "ingot_nuget_" + Guid.NewGuid());
-        Directory.CreateDirectory(tempDir);
+    return deps;
+}
 
-        var nupkgPath = Path.Combine(tempDir, $"{packageName}.nupkg");
-        using var client = new HttpClient();
-        var url = $"https://www.nuget.org/api/v2/package/{packageName}";
+    public static async Task ImportAsync(string packageName)
+{
+    Console.WriteLine($"📦 Preparing NuGet package '{packageName}'...");
 
+    // Setup temp + cache dirs
+    var tempDir = Path.Combine(Path.GetTempPath(), "ingot_nuget_" + Guid.NewGuid());
+    Directory.CreateDirectory(tempDir);
+
+    var cacheDir = Path.Combine("PackagesCache");
+    Directory.CreateDirectory(cacheDir);
+
+    var nupkgPath = Path.Combine(cacheDir, $"{packageName}.nupkg");
+    var url = $"https://www.nuget.org/api/v2/package/{packageName}";
+    using var client = new HttpClient();
+
+    if (!File.Exists(nupkgPath))
+    {
+        Console.WriteLine("🌐 Downloading from NuGet...");
         var bytes = await client.GetByteArrayAsync(url);
         await File.WriteAllBytesAsync(nupkgPath, bytes);
-
-        Console.WriteLine("📂 Extracting...");
-        System.IO.Compression.ZipFile.ExtractToDirectory(nupkgPath, tempDir);
-
-        var libDirs = Directory.GetDirectories(Path.Combine(tempDir, "lib"));
-        var libDir = libDirs.FirstOrDefault(d => d.Contains("net")) ?? libDirs.FirstOrDefault();
-
-        if (libDir is null)
-        {
-            Console.WriteLine("❌ No library folder found in NuGet package.");
-            return;
-        }
-
-        var dll = Directory.GetFiles(libDir, "*.dll").FirstOrDefault();
-        if (dll is null)
-        {
-            Console.WriteLine("❌ No usable DLL found.");
-            return;
-        }
-
-        var xmlPath = Path.ChangeExtension(dll, ".xml");
-        var docComments = new Dictionary<string, string>();
-
-        if (File.Exists(xmlPath))
-        {
-            Console.WriteLine("📖 Parsing XML doc comments...");
-
-            var xml = XDocument.Load(xmlPath);
-            foreach (var member in xml.Descendants("member"))
-            {
-                var nameAttr = member.Attribute("name")?.Value;
-                var summary = member.Element("summary")?.Value?.Trim();
-
-                if (!string.IsNullOrWhiteSpace(nameAttr) && !string.IsNullOrWhiteSpace(summary))
-                {
-                    docComments[nameAttr] = summary;
-                }
-            }
-        }
-
-        Console.WriteLine("🔬 Reflecting DLL...");
-        var sb = new StringBuilder();
-        sb.AppendLine($"ingot {packageName} {{");
-
-        var asm = Assembly.LoadFile(dll);
-        foreach (var type in asm.GetExportedTypes())
-        {
-            if (!type.IsClass && !type.IsInterface) continue;
-
-            sb.AppendLine($"  class {type.Name} {{");
-
-            foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
-            {
-                if (method.IsSpecialName) continue;
-
-                var returnType = method.ReturnType.Name;
-                var name = method.Name;
-                var parameters = string.Join(", ", method.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
-
-                string memberId = $"M:{type.FullName}.{method.Name}";
-                if (method.GetParameters().Any())
-                {
-                    var paramTypes = string.Join(",", method.GetParameters().Select(p => p.ParameterType.FullName));
-                    memberId += $"({paramTypes})";
-                }
-
-                if (docComments.TryGetValue(memberId, out var doc))
-                {
-                    sb.AppendLine($"    /// {doc}");
-                }
-
-                sb.AppendLine($"    func {name}({parameters}): {returnType}");
-            }
-
-            sb.AppendLine("  }");
-        }
-
-        sb.AppendLine("}");
-
-        Directory.CreateDirectory("ingots");
-        var targetPath = Path.Combine("ingots", packageName.ToLower() + ".ingot");
-        await File.WriteAllTextAsync(targetPath, sb.ToString());
-
-        Console.WriteLine($"✅ Ingot created: {targetPath}");
-
-        // ✅ Update wpp.json if exists
-        if (File.Exists("wpp.json"))
-        {
-            var json = File.ReadAllText("wpp.json");
-            using var doc = JsonDocument.Parse(json);
-            var root = doc.RootElement;
-
-            var dependencies = root.GetProperty("dependencies").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString());
-            dependencies[packageName] = "latest";
-
-            var updated = new
-            {
-                name = root.GetProperty("name").GetString(),
-                version = root.GetProperty("version").GetString(),
-                main = root.GetProperty("main").GetString(),
-                jit = root.TryGetProperty("jit", out var j) && j.GetBoolean(),
-                dependencies = dependencies
-            };
-
-            File.WriteAllText("wpp.json", JsonSerializer.Serialize(updated, new JsonSerializerOptions { WriteIndented = true }));
-            Console.WriteLine("🧩 Updated wpp.json with ingot dependency.");
-        }
-
-
     }
+    else
+    {
+        Console.WriteLine("📁 Using cached package.");
+    }
+
+    Console.WriteLine("📂 Extracting...");
+    System.IO.Compression.ZipFile.ExtractToDirectory(nupkgPath, tempDir);
+
+    // 📦 Parse and import dependencies
+    Console.WriteLine("📦 Resolving dependencies...");
+    var dependencies = ParseDependencies(tempDir);
+    foreach (var dep in dependencies)
+    {
+        try
+        {
+            await ImportAsync(dep);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Failed to import dependency '{dep}': {ex.Message}");
+        }
+    }
+
+    // 🔧 Assembly resolver to fix DLL load errors
+    AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
+    {
+        var name = new AssemblyName(args.Name).Name + ".dll";
+        var probeDirs = Directory.GetDirectories(tempDir, "*", SearchOption.AllDirectories);
+        foreach (var dir in probeDirs)
+        {
+            var probePath = Path.Combine(dir, name);
+            if (File.Exists(probePath))
+                return Assembly.LoadFrom(probePath);
+        }
+        return null;
+    };
+
+    // 📍 Locate DLLs
+    var libDirs = Directory.GetDirectories(Path.Combine(tempDir, "lib"));
+    var libDir = libDirs.FirstOrDefault(d => d.Contains("net")) ?? libDirs.FirstOrDefault();
+    if (libDir is null)
+    {
+        Console.WriteLine("❌ No usable 'lib' directory found.");
+        return;
+    }
+
+    var dlls = Directory.GetFiles(libDir, "*.dll");
+    if (dlls.Length == 0)
+    {
+        Console.WriteLine("❌ No DLLs found in library folder.");
+        return;
+    }
+
+    // 📖 Optional XML documentation
+    var docComments = new Dictionary<string, string>();
+    var xmlPath = Path.ChangeExtension(dlls[0], ".xml");
+    if (File.Exists(xmlPath))
+    {
+        Console.WriteLine("📖 Parsing XML doc comments...");
+        var xml = XDocument.Load(xmlPath);
+        foreach (var member in xml.Descendants("member"))
+        {
+            var nameAttr = member.Attribute("name")?.Value;
+            var summary = member.Element("summary")?.Value?.Trim();
+            if (!string.IsNullOrWhiteSpace(nameAttr) && !string.IsNullOrWhiteSpace(summary))
+            {
+                docComments[nameAttr] = summary;
+            }
+        }
+    }
+
+    // 🧠 Reflect types & methods
+    Console.WriteLine("🔬 Reflecting DLLs...");
+    var sb = new StringBuilder();
+    var namespaces = new HashSet<string>();
+    sb.AppendLine($"ingot {packageName} {{");
+
+    foreach (var dll in dlls)
+    {
+        try
+        {
+            var asm = Assembly.LoadFrom(dll);
+            RuntimeLinker.RegisterAssembly(asm); // ✅ For runtime linking!
+
+            foreach (var type in asm.GetExportedTypes())
+            {
+                if (!type.IsClass && !type.IsInterface) continue;
+                if (!string.IsNullOrWhiteSpace(type.Namespace))
+                    namespaces.Add(type.Namespace);
+
+                sb.AppendLine($"  class {type.Name} {{");
+
+                foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.Instance | BindingFlags.Static))
+                {
+                    if (method.IsSpecialName) continue;
+
+                    var returnType = method.ReturnType.Name;
+                    var name = method.Name;
+                    var parameters = string.Join(", ", method.GetParameters().Select(p => $"{p.ParameterType.Name} {p.Name}"));
+
+                    string memberId = $"M:{type.FullName}.{method.Name}";
+                    if (method.GetParameters().Any())
+                    {
+                        var paramTypes = string.Join(",", method.GetParameters().Select(p => p.ParameterType.FullName));
+                        memberId += $"({paramTypes})";
+                    }
+
+                    if (docComments.TryGetValue(memberId, out var doc))
+                    {
+                        sb.AppendLine($"    /// {doc}");
+                    }
+
+                    sb.AppendLine($"    func {name}({parameters}): {returnType}");
+                }
+
+                sb.AppendLine("  }");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠️ Skipped {Path.GetFileName(dll)}: {ex.Message}");
+        }
+    }
+
+    sb.AppendLine("}");
+
+    // 🧠 Prepend `using` statements
+    var usingLines = string.Join("\n", namespaces.OrderBy(n => n).Select(n => $"using {n};"));
+    sb.Insert(0, usingLines + "\n\n");
+
+    // 💾 Write ingot file
+    Directory.CreateDirectory("ingots");
+    var targetPath = Path.Combine("ingots", packageName.ToLower() + ".ingot");
+    await File.WriteAllTextAsync(targetPath, sb.ToString());
+
+    Console.WriteLine($"✅ Ingot created: {targetPath}");
+
+    // 🧩 Update wpp.json
+    if (File.Exists("wpp.json"))
+    {
+        var json = File.ReadAllText("wpp.json");
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+
+        var dependenciesJson = root.GetProperty("dependencies").EnumerateObject().ToDictionary(p => p.Name, p => p.Value.GetString());
+        dependenciesJson[packageName] = "latest";
+
+        var updated = new
+        {
+            name = root.GetProperty("name").GetString(),
+            version = root.GetProperty("version").GetString(),
+            main = root.GetProperty("main").GetString(),
+            jit = root.TryGetProperty("jit", out var j) && j.GetBoolean(),
+            dependencies = dependenciesJson
+        };
+
+        File.WriteAllText("wpp.json", JsonSerializer.Serialize(updated, new JsonSerializerOptions { WriteIndented = true }));
+        Console.WriteLine("🧩 Updated wpp.json with ingot dependency.");
+    }
+}
+
     public static async Task InstallAllAsync()
 {
     if (!File.Exists("wpp.json"))

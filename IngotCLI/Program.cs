@@ -1,5 +1,8 @@
 ﻿using System.Text.Json;
 using WPlusPlus;
+using WPlusPlus.Shared; // Or whatever namespace `IRuntimeLinker` is under
+using IngotCLI;
+
 
 class Program
 {
@@ -133,7 +136,9 @@ case "remove":
         else
         {
             Console.WriteLine("🌀 Running W++ with interpreter...");
-            var interpreter = new Interpreter();
+            var runtimeLinker = new RuntimeLinker(); // assuming your class is named this
+            RuntimeLinker.RegisterAssembly(typeof(string).Assembly);
+            var interpreter = new Interpreter(runtimeLinker);
 
             while (parser.HasMore())
             {

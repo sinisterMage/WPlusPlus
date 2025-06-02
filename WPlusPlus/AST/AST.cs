@@ -35,18 +35,18 @@ namespace WPlusPlus.AST
 
 
     public class BinaryExpressionNode : Node
-{
-    public Node Left { get; }
-    public string Operator { get; }
-    public Node Right { get; }
-
-    public BinaryExpressionNode(Node left, string op, Node right)
     {
-        Left = left;
-        Operator = op;
-        Right = right;
+        public Node Left { get; }
+        public string Operator { get; }
+        public Node Right { get; }
+
+        public BinaryExpressionNode(Node left, string op, Node right)
+        {
+            Left = left;
+            Operator = op;
+            Right = right;
+        }
     }
-}
 
 
 
@@ -212,6 +212,20 @@ namespace WPlusPlus.AST
             Member = member;
         }
     }
+    public class ExternCallNode : Node
+{
+    public string TypeName { get; }
+    public string MethodName { get; }
+    public List<Node> Arguments { get; }
+
+    public ExternCallNode(string typeName, string methodName, List<Node> arguments)
+    {
+        TypeName = typeName;
+        MethodName = methodName;
+        Arguments = arguments;
+    }
+}
+
 
 
 

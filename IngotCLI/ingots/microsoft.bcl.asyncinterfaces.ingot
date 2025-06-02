@@ -1,0 +1,41 @@
+ingot Microsoft.Bcl.AsyncInterfaces {
+  class IAsyncDisposable {
+    /// Performs application-defined tasks associated with freeing, releasing, or
+            resetting unmanaged resources asynchronously.
+    func DisposeAsync(): ValueTask
+  }
+  class IAsyncEnumerable`1 {
+    /// Returns an enumerator that iterates asynchronously through the collection.
+    func GetAsyncEnumerator(CancellationToken cancellationToken): IAsyncEnumerator`1
+  }
+  class IAsyncEnumerator`1 {
+    /// Advances the enumerator asynchronously to the next element of the collection.
+    func MoveNextAsync(): ValueTask`1
+  }
+  class AsyncIteratorStateMachineAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class EnumeratorCancellationAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TaskAsyncEnumerableExtensions {
+    /// Configures how awaits on the tasks returned from an async disposable will be performed.
+    func ConfigureAwait(IAsyncDisposable source, Boolean continueOnCapturedContext): ConfiguredAsyncDisposable
+    func ConfigureAwait(IAsyncEnumerable`1 source, Boolean continueOnCapturedContext): ConfiguredCancelableAsyncEnumerable`1
+    func WithCancellation(IAsyncEnumerable`1 source, CancellationToken cancellationToken): ConfiguredCancelableAsyncEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

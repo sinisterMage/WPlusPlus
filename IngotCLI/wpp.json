@@ -3,5 +3,11 @@
   "version": "0.1.0",
   "main": "main.wpp",
   "jit": false,
-  "dependencies": {}
+  "dependencies": {
+    "System.Runtime.CompilerServices.Unsafe": "latest",
+    "System.Threading.Tasks.Extensions": "latest",
+    "Microsoft.Bcl.AsyncInterfaces": "latest",
+    "Microsoft.Extensions.DependencyInjection.Abstractions": "latest",
+    "Microsoft.Extensions.DependencyInjection": "latest"
+  }
 }

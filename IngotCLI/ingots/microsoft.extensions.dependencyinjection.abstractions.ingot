@@ -1,0 +1,415 @@
+ingot Microsoft.Extensions.DependencyInjection.Abstractions {
+  class ActivatorUtilities {
+    /// Instantiates a type with constructor arguments provided directly and/or from an .
+    func CreateInstance(IServiceProvider provider, Type instanceType, Object[] parameters): Object
+    /// Creates a delegate that will instantiate a type with constructor arguments provided directly
+            and/or from an .
+    func CreateFactory(Type instanceType, Type[] argumentTypes): ObjectFactory
+    func CreateFactory(Type[] argumentTypes): ObjectFactory`1
+    func CreateInstance(IServiceProvider provider, Object[] parameters): T
+    func GetServiceOrCreateInstance(IServiceProvider provider): T
+    /// Retrieve an instance of the given type from the service provider. If one is not found then instantiate it directly.
+    func GetServiceOrCreateInstance(IServiceProvider provider, Type type): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ActivatorUtilitiesConstructorAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class FromKeyedServicesAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IKeyedServiceProvider {
+    /// Gets the service object of the specified type.
+    func GetKeyedService(Type serviceType, Object serviceKey): Object
+    /// Gets service of type  from the  implementing
+            this interface.
+    func GetRequiredKeyedService(Type serviceType, Object serviceKey): Object
+  }
+  class KeyedService {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IServiceCollection {
+  }
+  class IServiceProviderFactory`1 {
+    /// Creates a container builder from an .
+    func CreateBuilder(IServiceCollection services): TContainerBuilder
+    func CreateServiceProvider(TContainerBuilder containerBuilder): IServiceProvider
+  }
+  class IServiceProviderIsKeyedService {
+    /// Determines if the specified service type with the specified service key is available from the
+            .
+    func IsKeyedService(Type serviceType, Object serviceKey): Boolean
+  }
+  class IServiceProviderIsService {
+    /// Determines if the specified service type is available from the .
+    func IsService(Type serviceType): Boolean
+  }
+  class IServiceScope {
+  }
+  class IServiceScopeFactory {
+    /// Create an  that
+            contains an  used to resolve dependencies from a
+            newly created scope.
+    func CreateScope(): IServiceScope
+  }
+  class ISupportRequiredService {
+    /// Gets service of type  from the  implementing
+            this interface.
+    func GetRequiredService(Type serviceType): Object
+  }
+  class ObjectFactory {
+    func Invoke(IServiceProvider serviceProvider, Object[] arguments): Object
+    func BeginInvoke(IServiceProvider serviceProvider, Object[] arguments, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Object
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ObjectFactory`1 {
+    func Invoke(IServiceProvider serviceProvider, Object[] arguments): T
+    func BeginInvoke(IServiceProvider serviceProvider, Object[] arguments, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): T
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ServiceCollection {
+    func Clear(): Void
+    func Contains(ServiceDescriptor item): Boolean
+    func CopyTo(ServiceDescriptor[] array, Int32 arrayIndex): Void
+    func Remove(ServiceDescriptor item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func IndexOf(ServiceDescriptor item): Int32
+    func Insert(Int32 index, ServiceDescriptor item): Void
+    func RemoveAt(Int32 index): Void
+    /// Makes this collection read-only.
+    func MakeReadOnly(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ServiceCollectionServiceExtensions {
+    /// Adds a transient service of the type specified in  with an
+            implementation of the type specified in  to the
+            specified .
+    func AddTransient(IServiceCollection services, Type serviceType, Type implementationType): IServiceCollection
+    func AddTransient(IServiceCollection services, Type serviceType, Func`2 implementationFactory): IServiceCollection
+    func AddTransient(IServiceCollection services): IServiceCollection
+    /// Adds a transient service of the type specified in  to the
+            specified .
+    func AddTransient(IServiceCollection services, Type serviceType): IServiceCollection
+    func AddTransient(IServiceCollection services): IServiceCollection
+    func AddTransient(IServiceCollection services, Func`2 implementationFactory): IServiceCollection
+    func AddTransient(IServiceCollection services, Func`2 implementationFactory): IServiceCollection
+    /// Adds a scoped service of the type specified in  with an
+            implementation of the type specified in  to the
+            specified .
+    func AddScoped(IServiceCollection services, Type serviceType, Type implementationType): IServiceCollection
+    func AddScoped(IServiceCollection services, Type serviceType, Func`2 implementationFactory): IServiceCollection
+    func AddScoped(IServiceCollection services): IServiceCollection
+    /// Adds a scoped service of the type specified in  to the
+            specified .
+    func AddScoped(IServiceCollection services, Type serviceType): IServiceCollection
+    func AddScoped(IServiceCollection services): IServiceCollection
+    func AddScoped(IServiceCollection services, Func`2 implementationFactory): IServiceCollection
+    func AddScoped(IServiceCollection services, Func`2 implementationFactory): IServiceCollection
+    /// Adds a singleton service of the type specified in  with an
+            implementation of the type specified in  to the
+            specified .
+    func AddSingleton(IServiceCollection services, Type serviceType, Type implementationType): IServiceCollection
+    func AddSingleton(IServiceCollection services, Type serviceType, Func`2 implementationFactory): IServiceCollection
+    func AddSingleton(IServiceCollection services): IServiceCollection
+    /// Adds a singleton service of the type specified in  to the
+            specified .
+    func AddSingleton(IServiceCollection services, Type serviceType): IServiceCollection
+    func AddSingleton(IServiceCollection services): IServiceCollection
+    func AddSingleton(IServiceCollection services, Func`2 implementationFactory): IServiceCollection
+    func AddSingleton(IServiceCollection services, Func`2 implementationFactory): IServiceCollection
+    /// Adds a singleton service of the type specified in  with an
+            instance specified in  to the
+            specified .
+    func AddSingleton(IServiceCollection services, Type serviceType, Object implementationInstance): IServiceCollection
+    func AddSingleton(IServiceCollection services, TService implementationInstance): IServiceCollection
+    /// Adds a transient service of the type specified in  with an
+            implementation of the type specified in  to the
+            specified .
+    func AddKeyedTransient(IServiceCollection services, Type serviceType, Object serviceKey, Type implementationType): IServiceCollection
+    func AddKeyedTransient(IServiceCollection services, Type serviceType, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    func AddKeyedTransient(IServiceCollection services, Object serviceKey): IServiceCollection
+    /// Adds a transient service of the type specified in  to the
+            specified .
+    func AddKeyedTransient(IServiceCollection services, Type serviceType, Object serviceKey): IServiceCollection
+    func AddKeyedTransient(IServiceCollection services, Object serviceKey): IServiceCollection
+    func AddKeyedTransient(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    func AddKeyedTransient(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    /// Adds a scoped service of the type specified in  with an
+            implementation of the type specified in  to the
+            specified .
+    func AddKeyedScoped(IServiceCollection services, Type serviceType, Object serviceKey, Type implementationType): IServiceCollection
+    func AddKeyedScoped(IServiceCollection services, Type serviceType, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    func AddKeyedScoped(IServiceCollection services, Object serviceKey): IServiceCollection
+    /// Adds a scoped service of the type specified in  to the
+            specified .
+    func AddKeyedScoped(IServiceCollection services, Type serviceType, Object serviceKey): IServiceCollection
+    func AddKeyedScoped(IServiceCollection services, Object serviceKey): IServiceCollection
+    func AddKeyedScoped(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    func AddKeyedScoped(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    /// Adds a singleton service of the type specified in  with an
+            implementation of the type specified in  to the
+            specified .
+    func AddKeyedSingleton(IServiceCollection services, Type serviceType, Object serviceKey, Type implementationType): IServiceCollection
+    func AddKeyedSingleton(IServiceCollection services, Type serviceType, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    func AddKeyedSingleton(IServiceCollection services, Object serviceKey): IServiceCollection
+    /// Adds a singleton service of the type specified in  to the
+            specified .
+    func AddKeyedSingleton(IServiceCollection services, Type serviceType, Object serviceKey): IServiceCollection
+    func AddKeyedSingleton(IServiceCollection services, Object serviceKey): IServiceCollection
+    func AddKeyedSingleton(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    func AddKeyedSingleton(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): IServiceCollection
+    /// Adds a singleton service of the type specified in  with an
+            instance specified in  to the
+            specified .
+    func AddKeyedSingleton(IServiceCollection services, Type serviceType, Object serviceKey, Object implementationInstance): IServiceCollection
+    func AddKeyedSingleton(IServiceCollection services, Object serviceKey, TService implementationInstance): IServiceCollection
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ServiceDescriptor {
+    func ToString(): String
+    func Transient(): ServiceDescriptor
+    func KeyedTransient(Object serviceKey): ServiceDescriptor
+    /// Creates an instance of  with the specified
+             and 
+            and the  lifetime.
+    func Transient(Type service, Type implementationType): ServiceDescriptor
+    /// Creates an instance of  with the specified
+             and 
+            and the  lifetime.
+    func KeyedTransient(Type service, Object serviceKey, Type implementationType): ServiceDescriptor
+    func Transient(Func`2 implementationFactory): ServiceDescriptor
+    func KeyedTransient(Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Transient(Func`2 implementationFactory): ServiceDescriptor
+    func KeyedTransient(Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Transient(Type service, Func`2 implementationFactory): ServiceDescriptor
+    func KeyedTransient(Type service, Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Scoped(): ServiceDescriptor
+    func KeyedScoped(Object serviceKey): ServiceDescriptor
+    /// Creates an instance of  with the specified
+             and 
+            and the  lifetime.
+    func Scoped(Type service, Type implementationType): ServiceDescriptor
+    /// Creates an instance of  with the specified
+             and 
+            and the  lifetime.
+    func KeyedScoped(Type service, Object serviceKey, Type implementationType): ServiceDescriptor
+    func Scoped(Func`2 implementationFactory): ServiceDescriptor
+    func KeyedScoped(Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Scoped(Func`2 implementationFactory): ServiceDescriptor
+    func KeyedScoped(Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Scoped(Type service, Func`2 implementationFactory): ServiceDescriptor
+    func KeyedScoped(Type service, Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Singleton(): ServiceDescriptor
+    func KeyedSingleton(Object serviceKey): ServiceDescriptor
+    /// Creates an instance of  with the specified
+             and 
+            and the  lifetime.
+    func Singleton(Type service, Type implementationType): ServiceDescriptor
+    /// Creates an instance of  with the specified
+             and 
+            and the  lifetime.
+    func KeyedSingleton(Type service, Object serviceKey, Type implementationType): ServiceDescriptor
+    func Singleton(Func`2 implementationFactory): ServiceDescriptor
+    func KeyedSingleton(Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Singleton(Func`2 implementationFactory): ServiceDescriptor
+    func KeyedSingleton(Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Singleton(Type serviceType, Func`2 implementationFactory): ServiceDescriptor
+    func KeyedSingleton(Type serviceType, Object serviceKey, Func`3 implementationFactory): ServiceDescriptor
+    func Singleton(TService implementationInstance): ServiceDescriptor
+    func KeyedSingleton(Object serviceKey, TService implementationInstance): ServiceDescriptor
+    /// Creates an instance of  with the specified
+            , ,
+            and the  lifetime.
+    func Singleton(Type serviceType, Object implementationInstance): ServiceDescriptor
+    /// Creates an instance of  with the specified
+            , ,
+            and the  lifetime.
+    func KeyedSingleton(Type serviceType, Object serviceKey, Object implementationInstance): ServiceDescriptor
+    /// Creates an instance of  with the specified
+            , ,
+            and .
+    func Describe(Type serviceType, Type implementationType, ServiceLifetime lifetime): ServiceDescriptor
+    /// Creates an instance of  with the specified
+            , ,
+            and .
+    func DescribeKeyed(Type serviceType, Object serviceKey, Type implementationType, ServiceLifetime lifetime): ServiceDescriptor
+    func Describe(Type serviceType, Func`2 implementationFactory, ServiceLifetime lifetime): ServiceDescriptor
+    func DescribeKeyed(Type serviceType, Object serviceKey, Func`3 implementationFactory, ServiceLifetime lifetime): ServiceDescriptor
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ServiceKeyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ServiceProviderKeyedServiceExtensions {
+    func GetKeyedService(IServiceProvider provider, Object serviceKey): T
+    /// Get service of type  from the .
+    func GetRequiredKeyedService(IServiceProvider provider, Type serviceType, Object serviceKey): Object
+    func GetRequiredKeyedService(IServiceProvider provider, Object serviceKey): T
+    func GetKeyedServices(IServiceProvider provider, Object serviceKey): IEnumerable`1
+    /// Get an enumeration of services of type  from the .
+    func GetKeyedServices(IServiceProvider provider, Type serviceType, Object serviceKey): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ServiceProviderServiceExtensions {
+    func GetService(IServiceProvider provider): T
+    /// Get service of type  from the .
+    func GetRequiredService(IServiceProvider provider, Type serviceType): Object
+    func GetRequiredService(IServiceProvider provider): T
+    func GetServices(IServiceProvider provider): IEnumerable`1
+    /// Get an enumeration of services of type  from the .
+    func GetServices(IServiceProvider provider, Type serviceType): IEnumerable`1
+    /// Creates a new  that can be used to resolve scoped services.
+    func CreateScope(IServiceProvider provider): IServiceScope
+    /// Creates a new  that can be used to resolve scoped services.
+    func CreateAsyncScope(IServiceProvider provider): AsyncServiceScope
+    /// Creates a new  that can be used to resolve scoped services.
+    func CreateAsyncScope(IServiceScopeFactory serviceScopeFactory): AsyncServiceScope
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ServiceCollectionDescriptorExtensions {
+    /// Adds the specified  to the .
+    func Add(IServiceCollection collection, ServiceDescriptor descriptor): IServiceCollection
+    func Add(IServiceCollection collection, IEnumerable`1 descriptors): IServiceCollection
+    /// Adds the specified  to the  if the
+            service type hasn't already been registered.
+    func TryAdd(IServiceCollection collection, ServiceDescriptor descriptor): Void
+    func TryAdd(IServiceCollection collection, IEnumerable`1 descriptors): Void
+    /// Adds the specified  as a  service
+            to the  if the service type hasn't already been registered.
+    func TryAddTransient(IServiceCollection collection, Type service): Void
+    /// Adds the specified  as a  service
+            with the  implementation
+            to the  if the service type hasn't already been registered.
+    func TryAddTransient(IServiceCollection collection, Type service, Type implementationType): Void
+    func TryAddTransient(IServiceCollection collection, Type service, Func`2 implementationFactory): Void
+    func TryAddTransient(IServiceCollection collection): Void
+    func TryAddTransient(IServiceCollection collection): Void
+    func TryAddTransient(IServiceCollection services, Func`2 implementationFactory): Void
+    /// Adds the specified  as a  service
+            to the  if the service type hasn't already been registered.
+    func TryAddScoped(IServiceCollection collection, Type service): Void
+    /// Adds the specified  as a  service
+            with the  implementation
+            to the  if the service type hasn't already been registered.
+    func TryAddScoped(IServiceCollection collection, Type service, Type implementationType): Void
+    func TryAddScoped(IServiceCollection collection, Type service, Func`2 implementationFactory): Void
+    func TryAddScoped(IServiceCollection collection): Void
+    func TryAddScoped(IServiceCollection collection): Void
+    func TryAddScoped(IServiceCollection services, Func`2 implementationFactory): Void
+    /// Adds the specified  as a  service
+            to the  if the service type hasn't already been registered.
+    func TryAddSingleton(IServiceCollection collection, Type service): Void
+    /// Adds the specified  as a  service
+            with the  implementation
+            to the  if the service type hasn't already been registered.
+    func TryAddSingleton(IServiceCollection collection, Type service, Type implementationType): Void
+    func TryAddSingleton(IServiceCollection collection, Type service, Func`2 implementationFactory): Void
+    func TryAddSingleton(IServiceCollection collection): Void
+    func TryAddSingleton(IServiceCollection collection): Void
+    func TryAddSingleton(IServiceCollection collection, TService instance): Void
+    func TryAddSingleton(IServiceCollection services, Func`2 implementationFactory): Void
+    /// Adds a  if an existing descriptor with the same
+             and an implementation that does not already exist
+            in .
+    func TryAddEnumerable(IServiceCollection services, ServiceDescriptor descriptor): Void
+    func TryAddEnumerable(IServiceCollection services, IEnumerable`1 descriptors): Void
+    /// Removes the first service in  with the same service type
+            as  and adds  to the collection.
+    func Replace(IServiceCollection collection, ServiceDescriptor descriptor): IServiceCollection
+    func RemoveAll(IServiceCollection collection): IServiceCollection
+    /// Removes all services of type  in .
+    func RemoveAll(IServiceCollection collection, Type serviceType): IServiceCollection
+    /// Adds the specified  as a  service
+            to the  if the service type hasn't already been registered.
+    func TryAddKeyedTransient(IServiceCollection collection, Type service, Object serviceKey): Void
+    /// Adds the specified  as a  service
+            with the  implementation
+            to the  if the service type hasn't already been registered.
+    func TryAddKeyedTransient(IServiceCollection collection, Type service, Object serviceKey, Type implementationType): Void
+    func TryAddKeyedTransient(IServiceCollection collection, Type service, Object serviceKey, Func`3 implementationFactory): Void
+    func TryAddKeyedTransient(IServiceCollection collection, Object serviceKey): Void
+    func TryAddKeyedTransient(IServiceCollection collection, Object serviceKey): Void
+    func TryAddKeyedTransient(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): Void
+    /// Adds the specified  as a  service
+            to the  if the service type hasn't already been registered.
+    func TryAddKeyedScoped(IServiceCollection collection, Type service, Object serviceKey): Void
+    /// Adds the specified  as a  service
+            with the  implementation
+            to the  if the service type hasn't already been registered.
+    func TryAddKeyedScoped(IServiceCollection collection, Type service, Object serviceKey, Type implementationType): Void
+    func TryAddKeyedScoped(IServiceCollection collection, Type service, Object serviceKey, Func`3 implementationFactory): Void
+    func TryAddKeyedScoped(IServiceCollection collection, Object serviceKey): Void
+    func TryAddKeyedScoped(IServiceCollection collection, Object serviceKey): Void
+    func TryAddKeyedScoped(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): Void
+    /// Adds the specified  as a  service
+            to the  if the service type hasn't already been registered.
+    func TryAddKeyedSingleton(IServiceCollection collection, Type service, Object serviceKey): Void
+    /// Adds the specified  as a  service
+            with the  implementation
+            to the  if the service type hasn't already been registered.
+    func TryAddKeyedSingleton(IServiceCollection collection, Type service, Object serviceKey, Type implementationType): Void
+    func TryAddKeyedSingleton(IServiceCollection collection, Type service, Object serviceKey, Func`3 implementationFactory): Void
+    func TryAddKeyedSingleton(IServiceCollection collection, Object serviceKey): Void
+    func TryAddKeyedSingleton(IServiceCollection collection, Object serviceKey): Void
+    func TryAddKeyedSingleton(IServiceCollection collection, Object serviceKey, TService instance): Void
+    func TryAddKeyedSingleton(IServiceCollection services, Object serviceKey, Func`3 implementationFactory): Void
+    func RemoveAllKeyed(IServiceCollection collection, Object serviceKey): IServiceCollection
+    /// Removes all services of type  in .
+    func RemoveAllKeyed(IServiceCollection collection, Type serviceType, Object serviceKey): IServiceCollection
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

@@ -1,7 +1,3 @@
 
-ingot Newtonsoft.Json {
-  class JsonConvert {
-    func SerializeObject(Object value): String
-    func DeserializeObject(String value): Object
-  }
-}
+let s = externcall("System.String", "Concat", ["W", "++"]);
+print(s);

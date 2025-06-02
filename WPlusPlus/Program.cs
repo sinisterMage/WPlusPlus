@@ -1,8 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Threading.Tasks;
+using IngotCLI;
 using WPlusPlus;
 using WPlusPlus.AST;
+using WPlusPlus.Shared;
 
 class Program
 {
@@ -43,7 +45,8 @@ add(2, 3);
         else
         {
             Console.WriteLine("🌀 Running W++ with interpreter...");
-            var interpreter = new Interpreter();
+            var runtimeLinker = new RuntimeLinker();
+            var interpreter = new Interpreter(runtimeLinker);
             await interpreter.Evaluate(ast);
         }
     }

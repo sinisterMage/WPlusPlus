@@ -1,0 +1,742 @@
+using System.Linq;
+
+ingot System.Linq {
+  class Enumerable {
+    func Empty(): IEnumerable`1
+    func Aggregate(IEnumerable`1 source, Func`3 func): TSource
+    func Aggregate(IEnumerable`1 source, TAccumulate seed, Func`3 func): TAccumulate
+    func Aggregate(IEnumerable`1 source, TAccumulate seed, Func`3 func, Func`2 resultSelector): TResult
+    func Any(IEnumerable`1 source): Boolean
+    func Any(IEnumerable`1 source, Func`2 predicate): Boolean
+    func All(IEnumerable`1 source, Func`2 predicate): Boolean
+    func Append(IEnumerable`1 source, TSource element): IEnumerable`1
+    func Prepend(IEnumerable`1 source, TSource element): IEnumerable`1
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Single
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Decimal
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Single
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Decimal
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func OfType(IEnumerable source): IEnumerable`1
+    func Cast(IEnumerable source): IEnumerable`1
+    func Chunk(IEnumerable`1 source, Int32 size): IEnumerable`1
+    func Concat(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Contains(IEnumerable`1 source, TSource value): Boolean
+    func Contains(IEnumerable`1 source, TSource value, IEqualityComparer`1 comparer): Boolean
+    func Count(IEnumerable`1 source): Int32
+    func Count(IEnumerable`1 source, Func`2 predicate): Int32
+    func TryGetNonEnumeratedCount(IEnumerable`1 source, Int32& count): Boolean
+    func LongCount(IEnumerable`1 source): Int64
+    func LongCount(IEnumerable`1 source, Func`2 predicate): Int64
+    func DefaultIfEmpty(IEnumerable`1 source): IEnumerable`1
+    func DefaultIfEmpty(IEnumerable`1 source, TSource defaultValue): IEnumerable`1
+    func Distinct(IEnumerable`1 source): IEnumerable`1
+    func Distinct(IEnumerable`1 source, IEqualityComparer`1 comparer): IEnumerable`1
+    func DistinctBy(IEnumerable`1 source, Func`2 keySelector): IEnumerable`1
+    func DistinctBy(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func ElementAt(IEnumerable`1 source, Int32 index): TSource
+    func ElementAt(IEnumerable`1 source, Index index): TSource
+    func ElementAtOrDefault(IEnumerable`1 source, Int32 index): TSource
+    func ElementAtOrDefault(IEnumerable`1 source, Index index): TSource
+    func AsEnumerable(IEnumerable`1 source): IEnumerable`1
+    func Except(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Except(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func ExceptBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func ExceptBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func First(IEnumerable`1 source): TSource
+    func First(IEnumerable`1 source, Func`2 predicate): TSource
+    func FirstOrDefault(IEnumerable`1 source): TSource
+    func FirstOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func FirstOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func FirstOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`3 resultSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, Func`3 resultSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupJoin(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector): IEnumerable`1
+    func GroupJoin(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Intersect(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Intersect(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func IntersectBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func IntersectBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Join(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector): IEnumerable`1
+    func Join(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Last(IEnumerable`1 source): TSource
+    func Last(IEnumerable`1 source, Func`2 predicate): TSource
+    func LastOrDefault(IEnumerable`1 source): TSource
+    func LastOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func LastOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func LastOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): ILookup`2
+    func Max(IEnumerable`1 source): Int32
+    func Max(IEnumerable`1 source): Int64
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Double
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Single
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Decimal
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): TSource
+    func Max(IEnumerable`1 source, IComparer`1 comparer): TSource
+    func MaxBy(IEnumerable`1 source, Func`2 keySelector): TSource
+    func MaxBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): TSource
+    func Max(IEnumerable`1 source, Func`2 selector): Int32
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Int64
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Single
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Double
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Decimal
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): TResult
+    func Min(IEnumerable`1 source): Int32
+    func Min(IEnumerable`1 source): Int64
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Single
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Double
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Decimal
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): TSource
+    func Min(IEnumerable`1 source, IComparer`1 comparer): TSource
+    func MinBy(IEnumerable`1 source, Func`2 keySelector): TSource
+    func MinBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): TSource
+    func Min(IEnumerable`1 source, Func`2 selector): Int32
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Int64
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Single
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Double
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Decimal
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): TResult
+    func Order(IEnumerable`1 source): IOrderedEnumerable`1
+    func Order(IEnumerable`1 source, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderBy(IEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func OrderBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderDescending(IEnumerable`1 source): IOrderedEnumerable`1
+    func OrderDescending(IEnumerable`1 source, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderByDescending(IEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func OrderByDescending(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func ThenBy(IOrderedEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func ThenBy(IOrderedEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func ThenByDescending(IOrderedEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func ThenByDescending(IOrderedEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func Range(Int32 start, Int32 count): IEnumerable`1
+    func Repeat(TResult element, Int32 count): IEnumerable`1
+    func Reverse(IEnumerable`1 source): IEnumerable`1
+    func Select(IEnumerable`1 source, Func`2 selector): IEnumerable`1
+    func Select(IEnumerable`1 source, Func`3 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`2 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`3 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`3 collectionSelector, Func`3 resultSelector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`2 collectionSelector, Func`3 resultSelector): IEnumerable`1
+    func SequenceEqual(IEnumerable`1 first, IEnumerable`1 second): Boolean
+    func SequenceEqual(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): Boolean
+    func Single(IEnumerable`1 source): TSource
+    func Single(IEnumerable`1 source, Func`2 predicate): TSource
+    func SingleOrDefault(IEnumerable`1 source): TSource
+    func SingleOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func SingleOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func SingleOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func Skip(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func SkipWhile(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func SkipWhile(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func SkipLast(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func Sum(IEnumerable`1 source): Int32
+    func Sum(IEnumerable`1 source): Int64
+    func Sum(IEnumerable`1 source): Single
+    func Sum(IEnumerable`1 source): Double
+    func Sum(IEnumerable`1 source): Decimal
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Int32
+    func Sum(IEnumerable`1 source, Func`2 selector): Int64
+    func Sum(IEnumerable`1 source, Func`2 selector): Single
+    func Sum(IEnumerable`1 source, Func`2 selector): Double
+    func Sum(IEnumerable`1 source, Func`2 selector): Decimal
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Take(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func Take(IEnumerable`1 source, Range range): IEnumerable`1
+    func TakeWhile(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func TakeWhile(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func TakeLast(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func ToArray(IEnumerable`1 source): TSource[]
+    func ToList(IEnumerable`1 source): List`1
+    func ToDictionary(IEnumerable`1 source): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): Dictionary`2
+    func ToHashSet(IEnumerable`1 source): HashSet`1
+    func ToHashSet(IEnumerable`1 source, IEqualityComparer`1 comparer): HashSet`1
+    func Union(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Union(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func UnionBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func UnionBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Where(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func Where(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second, Func`3 resultSelector): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second, IEnumerable`1 third): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Lookup`2 {
+    func Contains(TKey key): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func ApplyResultSelector(Func`3 resultSelector): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IGrouping`2 {
+  }
+  class Grouping`2 {
+    func GetEnumerator(): IEnumerator`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ILookup`2 {
+    func Contains(TKey key): Boolean
+  }
+  class IOrderedEnumerable`1 {
+    func CreateOrderedEnumerable(Func`2 keySelector, IComparer`1 comparer, Boolean descending): IOrderedEnumerable`1
+  }
+  class Enumerable {
+    func Empty(): IEnumerable`1
+    func Aggregate(IEnumerable`1 source, Func`3 func): TSource
+    func Aggregate(IEnumerable`1 source, TAccumulate seed, Func`3 func): TAccumulate
+    func Aggregate(IEnumerable`1 source, TAccumulate seed, Func`3 func, Func`2 resultSelector): TResult
+    func Any(IEnumerable`1 source): Boolean
+    func Any(IEnumerable`1 source, Func`2 predicate): Boolean
+    func All(IEnumerable`1 source, Func`2 predicate): Boolean
+    func Append(IEnumerable`1 source, TSource element): IEnumerable`1
+    func Prepend(IEnumerable`1 source, TSource element): IEnumerable`1
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Single
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Decimal
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Single
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Decimal
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func OfType(IEnumerable source): IEnumerable`1
+    func Cast(IEnumerable source): IEnumerable`1
+    func Chunk(IEnumerable`1 source, Int32 size): IEnumerable`1
+    func Concat(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Contains(IEnumerable`1 source, TSource value): Boolean
+    func Contains(IEnumerable`1 source, TSource value, IEqualityComparer`1 comparer): Boolean
+    func Count(IEnumerable`1 source): Int32
+    func Count(IEnumerable`1 source, Func`2 predicate): Int32
+    func TryGetNonEnumeratedCount(IEnumerable`1 source, Int32& count): Boolean
+    func LongCount(IEnumerable`1 source): Int64
+    func LongCount(IEnumerable`1 source, Func`2 predicate): Int64
+    func DefaultIfEmpty(IEnumerable`1 source): IEnumerable`1
+    func DefaultIfEmpty(IEnumerable`1 source, TSource defaultValue): IEnumerable`1
+    func Distinct(IEnumerable`1 source): IEnumerable`1
+    func Distinct(IEnumerable`1 source, IEqualityComparer`1 comparer): IEnumerable`1
+    func DistinctBy(IEnumerable`1 source, Func`2 keySelector): IEnumerable`1
+    func DistinctBy(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func ElementAt(IEnumerable`1 source, Int32 index): TSource
+    func ElementAt(IEnumerable`1 source, Index index): TSource
+    func ElementAtOrDefault(IEnumerable`1 source, Int32 index): TSource
+    func ElementAtOrDefault(IEnumerable`1 source, Index index): TSource
+    func AsEnumerable(IEnumerable`1 source): IEnumerable`1
+    func Except(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Except(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func ExceptBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func ExceptBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func First(IEnumerable`1 source): TSource
+    func First(IEnumerable`1 source, Func`2 predicate): TSource
+    func FirstOrDefault(IEnumerable`1 source): TSource
+    func FirstOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func FirstOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func FirstOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`3 resultSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, Func`3 resultSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupJoin(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector): IEnumerable`1
+    func GroupJoin(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Intersect(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Intersect(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func IntersectBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func IntersectBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Join(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector): IEnumerable`1
+    func Join(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Last(IEnumerable`1 source): TSource
+    func Last(IEnumerable`1 source, Func`2 predicate): TSource
+    func LastOrDefault(IEnumerable`1 source): TSource
+    func LastOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func LastOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func LastOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): ILookup`2
+    func Max(IEnumerable`1 source): Int32
+    func Max(IEnumerable`1 source): Int64
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Double
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Single
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Decimal
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): TSource
+    func Max(IEnumerable`1 source, IComparer`1 comparer): TSource
+    func MaxBy(IEnumerable`1 source, Func`2 keySelector): TSource
+    func MaxBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): TSource
+    func Max(IEnumerable`1 source, Func`2 selector): Int32
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Int64
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Single
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Double
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Decimal
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): TResult
+    func Min(IEnumerable`1 source): Int32
+    func Min(IEnumerable`1 source): Int64
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Single
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Double
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Decimal
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): TSource
+    func Min(IEnumerable`1 source, IComparer`1 comparer): TSource
+    func MinBy(IEnumerable`1 source, Func`2 keySelector): TSource
+    func MinBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): TSource
+    func Min(IEnumerable`1 source, Func`2 selector): Int32
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Int64
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Single
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Double
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Decimal
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): TResult
+    func Order(IEnumerable`1 source): IOrderedEnumerable`1
+    func Order(IEnumerable`1 source, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderBy(IEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func OrderBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderDescending(IEnumerable`1 source): IOrderedEnumerable`1
+    func OrderDescending(IEnumerable`1 source, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderByDescending(IEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func OrderByDescending(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func ThenBy(IOrderedEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func ThenBy(IOrderedEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func ThenByDescending(IOrderedEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func ThenByDescending(IOrderedEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func Range(Int32 start, Int32 count): IEnumerable`1
+    func Repeat(TResult element, Int32 count): IEnumerable`1
+    func Reverse(IEnumerable`1 source): IEnumerable`1
+    func Select(IEnumerable`1 source, Func`2 selector): IEnumerable`1
+    func Select(IEnumerable`1 source, Func`3 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`2 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`3 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`3 collectionSelector, Func`3 resultSelector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`2 collectionSelector, Func`3 resultSelector): IEnumerable`1
+    func SequenceEqual(IEnumerable`1 first, IEnumerable`1 second): Boolean
+    func SequenceEqual(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): Boolean
+    func Single(IEnumerable`1 source): TSource
+    func Single(IEnumerable`1 source, Func`2 predicate): TSource
+    func SingleOrDefault(IEnumerable`1 source): TSource
+    func SingleOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func SingleOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func SingleOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func Skip(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func SkipWhile(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func SkipWhile(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func SkipLast(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func Sum(IEnumerable`1 source): Int32
+    func Sum(IEnumerable`1 source): Int64
+    func Sum(IEnumerable`1 source): Single
+    func Sum(IEnumerable`1 source): Double
+    func Sum(IEnumerable`1 source): Decimal
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Int32
+    func Sum(IEnumerable`1 source, Func`2 selector): Int64
+    func Sum(IEnumerable`1 source, Func`2 selector): Single
+    func Sum(IEnumerable`1 source, Func`2 selector): Double
+    func Sum(IEnumerable`1 source, Func`2 selector): Decimal
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Take(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func Take(IEnumerable`1 source, Range range): IEnumerable`1
+    func TakeWhile(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func TakeWhile(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func TakeLast(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func ToArray(IEnumerable`1 source): TSource[]
+    func ToList(IEnumerable`1 source): List`1
+    func ToDictionary(IEnumerable`1 source): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): Dictionary`2
+    func ToHashSet(IEnumerable`1 source): HashSet`1
+    func ToHashSet(IEnumerable`1 source, IEqualityComparer`1 comparer): HashSet`1
+    func Union(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Union(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func UnionBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func UnionBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Where(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func Where(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second, Func`3 resultSelector): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second, IEnumerable`1 third): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Lookup`2 {
+    func Contains(TKey key): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func ApplyResultSelector(Func`3 resultSelector): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IGrouping`2 {
+  }
+  class Grouping`2 {
+    func GetEnumerator(): IEnumerator`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ILookup`2 {
+    func Contains(TKey key): Boolean
+  }
+  class IOrderedEnumerable`1 {
+    func CreateOrderedEnumerable(Func`2 keySelector, IComparer`1 comparer, Boolean descending): IOrderedEnumerable`1
+  }
+  class Enumerable {
+    func Empty(): IEnumerable`1
+    func Aggregate(IEnumerable`1 source, Func`3 func): TSource
+    func Aggregate(IEnumerable`1 source, TAccumulate seed, Func`3 func): TAccumulate
+    func Aggregate(IEnumerable`1 source, TAccumulate seed, Func`3 func, Func`2 resultSelector): TResult
+    func Any(IEnumerable`1 source): Boolean
+    func Any(IEnumerable`1 source, Func`2 predicate): Boolean
+    func All(IEnumerable`1 source, Func`2 predicate): Boolean
+    func Append(IEnumerable`1 source, TSource element): IEnumerable`1
+    func Prepend(IEnumerable`1 source, TSource element): IEnumerable`1
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Single
+    func Average(IEnumerable`1 source): Double
+    func Average(IEnumerable`1 source): Decimal
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Single
+    func Average(IEnumerable`1 source, Func`2 selector): Double
+    func Average(IEnumerable`1 source, Func`2 selector): Decimal
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Average(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func OfType(IEnumerable source): IEnumerable`1
+    func Cast(IEnumerable source): IEnumerable`1
+    func Chunk(IEnumerable`1 source, Int32 size): IEnumerable`1
+    func Concat(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Contains(IEnumerable`1 source, TSource value): Boolean
+    func Contains(IEnumerable`1 source, TSource value, IEqualityComparer`1 comparer): Boolean
+    func Count(IEnumerable`1 source): Int32
+    func Count(IEnumerable`1 source, Func`2 predicate): Int32
+    func TryGetNonEnumeratedCount(IEnumerable`1 source, Int32& count): Boolean
+    func LongCount(IEnumerable`1 source): Int64
+    func LongCount(IEnumerable`1 source, Func`2 predicate): Int64
+    func DefaultIfEmpty(IEnumerable`1 source): IEnumerable`1
+    func DefaultIfEmpty(IEnumerable`1 source, TSource defaultValue): IEnumerable`1
+    func Distinct(IEnumerable`1 source): IEnumerable`1
+    func Distinct(IEnumerable`1 source, IEqualityComparer`1 comparer): IEnumerable`1
+    func DistinctBy(IEnumerable`1 source, Func`2 keySelector): IEnumerable`1
+    func DistinctBy(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func ElementAt(IEnumerable`1 source, Int32 index): TSource
+    func ElementAt(IEnumerable`1 source, Index index): TSource
+    func ElementAtOrDefault(IEnumerable`1 source, Int32 index): TSource
+    func ElementAtOrDefault(IEnumerable`1 source, Index index): TSource
+    func AsEnumerable(IEnumerable`1 source): IEnumerable`1
+    func Except(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Except(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func ExceptBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func ExceptBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func First(IEnumerable`1 source): TSource
+    func First(IEnumerable`1 source, Func`2 predicate): TSource
+    func FirstOrDefault(IEnumerable`1 source): TSource
+    func FirstOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func FirstOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func FirstOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`3 resultSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, Func`3 resultSelector): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupBy(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func GroupJoin(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector): IEnumerable`1
+    func GroupJoin(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Intersect(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Intersect(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func IntersectBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func IntersectBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Join(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector): IEnumerable`1
+    func Join(IEnumerable`1 outer, IEnumerable`1 inner, Func`2 outerKeySelector, Func`2 innerKeySelector, Func`3 resultSelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Last(IEnumerable`1 source): TSource
+    func Last(IEnumerable`1 source, Func`2 predicate): TSource
+    func LastOrDefault(IEnumerable`1 source): TSource
+    func LastOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func LastOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func LastOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): ILookup`2
+    func ToLookup(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): ILookup`2
+    func Max(IEnumerable`1 source): Int32
+    func Max(IEnumerable`1 source): Int64
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Double
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Single
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): Decimal
+    func Max(IEnumerable`1 source): Nullable`1
+    func Max(IEnumerable`1 source): TSource
+    func Max(IEnumerable`1 source, IComparer`1 comparer): TSource
+    func MaxBy(IEnumerable`1 source, Func`2 keySelector): TSource
+    func MaxBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): TSource
+    func Max(IEnumerable`1 source, Func`2 selector): Int32
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Int64
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Single
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Double
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): Decimal
+    func Max(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Max(IEnumerable`1 source, Func`2 selector): TResult
+    func Min(IEnumerable`1 source): Int32
+    func Min(IEnumerable`1 source): Int64
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Single
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Double
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): Decimal
+    func Min(IEnumerable`1 source): Nullable`1
+    func Min(IEnumerable`1 source): TSource
+    func Min(IEnumerable`1 source, IComparer`1 comparer): TSource
+    func MinBy(IEnumerable`1 source, Func`2 keySelector): TSource
+    func MinBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): TSource
+    func Min(IEnumerable`1 source, Func`2 selector): Int32
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Int64
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Single
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Double
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): Decimal
+    func Min(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Min(IEnumerable`1 source, Func`2 selector): TResult
+    func Order(IEnumerable`1 source): IOrderedEnumerable`1
+    func Order(IEnumerable`1 source, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderBy(IEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func OrderBy(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderDescending(IEnumerable`1 source): IOrderedEnumerable`1
+    func OrderDescending(IEnumerable`1 source, IComparer`1 comparer): IOrderedEnumerable`1
+    func OrderByDescending(IEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func OrderByDescending(IEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func ThenBy(IOrderedEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func ThenBy(IOrderedEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func ThenByDescending(IOrderedEnumerable`1 source, Func`2 keySelector): IOrderedEnumerable`1
+    func ThenByDescending(IOrderedEnumerable`1 source, Func`2 keySelector, IComparer`1 comparer): IOrderedEnumerable`1
+    func Range(Int32 start, Int32 count): IEnumerable`1
+    func Repeat(TResult element, Int32 count): IEnumerable`1
+    func Reverse(IEnumerable`1 source): IEnumerable`1
+    func Select(IEnumerable`1 source, Func`2 selector): IEnumerable`1
+    func Select(IEnumerable`1 source, Func`3 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`2 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`3 selector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`3 collectionSelector, Func`3 resultSelector): IEnumerable`1
+    func SelectMany(IEnumerable`1 source, Func`2 collectionSelector, Func`3 resultSelector): IEnumerable`1
+    func SequenceEqual(IEnumerable`1 first, IEnumerable`1 second): Boolean
+    func SequenceEqual(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): Boolean
+    func Single(IEnumerable`1 source): TSource
+    func Single(IEnumerable`1 source, Func`2 predicate): TSource
+    func SingleOrDefault(IEnumerable`1 source): TSource
+    func SingleOrDefault(IEnumerable`1 source, TSource defaultValue): TSource
+    func SingleOrDefault(IEnumerable`1 source, Func`2 predicate): TSource
+    func SingleOrDefault(IEnumerable`1 source, Func`2 predicate, TSource defaultValue): TSource
+    func Skip(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func SkipWhile(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func SkipWhile(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func SkipLast(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func Sum(IEnumerable`1 source): Int32
+    func Sum(IEnumerable`1 source): Int64
+    func Sum(IEnumerable`1 source): Single
+    func Sum(IEnumerable`1 source): Double
+    func Sum(IEnumerable`1 source): Decimal
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Int32
+    func Sum(IEnumerable`1 source, Func`2 selector): Int64
+    func Sum(IEnumerable`1 source, Func`2 selector): Single
+    func Sum(IEnumerable`1 source, Func`2 selector): Double
+    func Sum(IEnumerable`1 source, Func`2 selector): Decimal
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Sum(IEnumerable`1 source, Func`2 selector): Nullable`1
+    func Take(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func Take(IEnumerable`1 source, Range range): IEnumerable`1
+    func TakeWhile(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func TakeWhile(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func TakeLast(IEnumerable`1 source, Int32 count): IEnumerable`1
+    func ToArray(IEnumerable`1 source): TSource[]
+    func ToList(IEnumerable`1 source): List`1
+    func ToDictionary(IEnumerable`1 source): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, IEqualityComparer`1 comparer): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector): Dictionary`2
+    func ToDictionary(IEnumerable`1 source, Func`2 keySelector, Func`2 elementSelector, IEqualityComparer`1 comparer): Dictionary`2
+    func ToHashSet(IEnumerable`1 source): HashSet`1
+    func ToHashSet(IEnumerable`1 source, IEqualityComparer`1 comparer): HashSet`1
+    func Union(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Union(IEnumerable`1 first, IEnumerable`1 second, IEqualityComparer`1 comparer): IEnumerable`1
+    func UnionBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector): IEnumerable`1
+    func UnionBy(IEnumerable`1 first, IEnumerable`1 second, Func`2 keySelector, IEqualityComparer`1 comparer): IEnumerable`1
+    func Where(IEnumerable`1 source, Func`2 predicate): IEnumerable`1
+    func Where(IEnumerable`1 source, Func`3 predicate): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second, Func`3 resultSelector): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second): IEnumerable`1
+    func Zip(IEnumerable`1 first, IEnumerable`1 second, IEnumerable`1 third): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Lookup`2 {
+    func Contains(TKey key): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func ApplyResultSelector(Func`3 resultSelector): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IGrouping`2 {
+  }
+  class Grouping`2 {
+    func GetEnumerator(): IEnumerator`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ILookup`2 {
+    func Contains(TKey key): Boolean
+  }
+  class IOrderedEnumerable`1 {
+    func CreateOrderedEnumerable(Func`2 keySelector, IComparer`1 comparer, Boolean descending): IOrderedEnumerable`1
+  }
+}

@@ -7,30 +7,54 @@ using IngotCLI;
 
 public static class NugetIngotConverter
 {
+    private static readonly HashSet<string> visited = new();
+
     private static List<string> ParseDependencies(string tempDir)
-{
-    var nuspecPath = Directory.GetFiles(tempDir, "*.nuspec").FirstOrDefault();
-    if (nuspecPath == null) return new();
-
-    var xdoc = XDocument.Load(nuspecPath);
-    var ns = xdoc.Root.GetDefaultNamespace();
-
-    var deps = new List<string>();
-
-    foreach (var dep in xdoc.Descendants(ns + "dependency"))
     {
-        var id = dep.Attribute("id")?.Value;
-        if (!string.IsNullOrEmpty(id)) deps.Add(id);
+        var nuspecPath = Directory.GetFiles(tempDir, "*.nuspec").FirstOrDefault();
+        if (nuspecPath == null) return new();
+
+        var xdoc = XDocument.Load(nuspecPath);
+        var ns = xdoc.Root.GetDefaultNamespace();
+
+        var deps = new List<string>();
+
+        foreach (var dep in xdoc.Descendants(ns + "dependency"))
+        {
+            var id = dep.Attribute("id")?.Value;
+            if (!string.IsNullOrEmpty(id)) deps.Add(id);
+        }
+
+        return deps;
     }
-
-    return deps;
-}
-
-    public static async Task ImportAsync(string packageName)
+public static async Task ImportAsync(string packageName, HashSet<string> visited = null)
 {
+    visited ??= new();
     Console.WriteLine($"📦 Preparing NuGet package '{packageName}'...");
 
-    // Setup temp + cache dirs
+    if (visited.Contains(packageName))
+    {
+        Console.WriteLine($"🔁 Skipping already-imported: {packageName}");
+        return;
+    }
+    visited.Add(packageName);
+
+    string[] metaPackages =
+    {
+        "Microsoft.NETCore.Platforms",
+        "Microsoft.NETCore.Targets",
+        "System.Private.CoreLib",
+        "System.Runtime",
+        "System.Threading.Tasks",
+        "System.Text.Encoding"
+    };
+
+    if (metaPackages.Contains(packageName))
+    {
+        Console.WriteLine($"🚫 Skipping meta-package: {packageName}");
+        return;
+    }
+
     var tempDir = Path.Combine(Path.GetTempPath(), "ingot_nuget_" + Guid.NewGuid());
     Directory.CreateDirectory(tempDir);
 
@@ -62,7 +86,7 @@ public static class NugetIngotConverter
     {
         try
         {
-            await ImportAsync(dep);
+            await ImportAsync(dep, visited); // ✅ Recursive
         }
         catch (Exception ex)
         {
@@ -70,7 +94,6 @@ public static class NugetIngotConverter
         }
     }
 
-    // 🔧 Assembly resolver to fix DLL load errors
     AppDomain.CurrentDomain.AssemblyResolve += (sender, args) =>
     {
         var name = new AssemblyName(args.Name).Name + ".dll";
@@ -84,19 +107,11 @@ public static class NugetIngotConverter
         return null;
     };
 
-    // 📍 Locate DLLs
-    var libDirs = Directory.GetDirectories(Path.Combine(tempDir, "lib"));
-    var libDir = libDirs.FirstOrDefault(d => d.Contains("net")) ?? libDirs.FirstOrDefault();
-    if (libDir is null)
+    // 🔍 Extract useful DLLs (instead of assuming a single lib folder)
+    var dlls = ExtractUsefulDlls(tempDir);
+    if (dlls.Count == 0)
     {
-        Console.WriteLine("❌ No usable 'lib' directory found.");
-        return;
-    }
-
-    var dlls = Directory.GetFiles(libDir, "*.dll");
-    if (dlls.Length == 0)
-    {
-        Console.WriteLine("❌ No DLLs found in library folder.");
+        Console.WriteLine("❌ No usable DLLs found.");
         return;
     }
 
@@ -118,7 +133,6 @@ public static class NugetIngotConverter
         }
     }
 
-    // 🧠 Reflect types & methods
     Console.WriteLine("🔬 Reflecting DLLs...");
     var sb = new StringBuilder();
     var namespaces = new HashSet<string>();
@@ -129,7 +143,7 @@ public static class NugetIngotConverter
         try
         {
             var asm = Assembly.LoadFrom(dll);
-            RuntimeLinker.RegisterAssembly(asm); // ✅ For runtime linking!
+            RuntimeLinker.RegisterAssembly(asm);
 
             foreach (var type in asm.GetExportedTypes())
             {
@@ -173,11 +187,9 @@ public static class NugetIngotConverter
 
     sb.AppendLine("}");
 
-    // 🧠 Prepend `using` statements
     var usingLines = string.Join("\n", namespaces.OrderBy(n => n).Select(n => $"using {n};"));
     sb.Insert(0, usingLines + "\n\n");
 
-    // 💾 Write ingot file
     Directory.CreateDirectory("ingots");
     var targetPath = Path.Combine("ingots", packageName.ToLower() + ".ingot");
     await File.WriteAllTextAsync(targetPath, sb.ToString());
@@ -208,7 +220,7 @@ public static class NugetIngotConverter
     }
 }
 
-    public static async Task InstallAllAsync()
+       public static async Task InstallAllAsync()
 {
     if (!File.Exists("wpp.json"))
     {
@@ -262,43 +274,71 @@ public static void ListInstalled()
     }
 }
 
-public static void RemoveIngot(string name)
-{
-    var path = Path.Combine("ingots", name.ToLower() + ".ingot");
-    if (!File.Exists(path))
+    public static void RemoveIngot(string name)
     {
-        Console.WriteLine($"❌ Ingot '{name}' not found.");
-        return;
-    }
-
-    File.Delete(path);
-    Console.WriteLine($"🗑️ Removed ingot '{name}'.");
-
-    if (File.Exists("wpp.json"))
-    {
-        var json = File.ReadAllText("wpp.json");
-        using var doc = JsonDocument.Parse(json);
-        var root = doc.RootElement;
-
-        var deps = root.GetProperty("dependencies")
-                       .EnumerateObject()
-                       .ToDictionary(p => p.Name, p => p.Value.GetString());
-
-        if (deps.Remove(name))
+        var path = Path.Combine("ingots", name.ToLower() + ".ingot");
+        if (!File.Exists(path))
         {
-            var updated = new
-            {
-                name = root.GetProperty("name").GetString(),
-                version = root.GetProperty("version").GetString(),
-                main = root.GetProperty("main").GetString(),
-                jit = root.TryGetProperty("jit", out var j) && j.GetBoolean(),
-                dependencies = deps
-            };
+            Console.WriteLine($"❌ Ingot '{name}' not found.");
+            return;
+        }
 
-            File.WriteAllText("wpp.json", JsonSerializer.Serialize(updated, new JsonSerializerOptions { WriteIndented = true }));
-            Console.WriteLine($"🧼 Removed '{name}' from wpp.json.");
+        File.Delete(path);
+        Console.WriteLine($"🗑️ Removed ingot '{name}'.");
+
+        if (File.Exists("wpp.json"))
+        {
+            var json = File.ReadAllText("wpp.json");
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            var deps = root.GetProperty("dependencies")
+                           .EnumerateObject()
+                           .ToDictionary(p => p.Name, p => p.Value.GetString());
+
+            if (deps.Remove(name))
+            {
+                var updated = new
+                {
+                    name = root.GetProperty("name").GetString(),
+                    version = root.GetProperty("version").GetString(),
+                    main = root.GetProperty("main").GetString(),
+                    jit = root.TryGetProperty("jit", out var j) && j.GetBoolean(),
+                    dependencies = deps
+                };
+
+                File.WriteAllText("wpp.json", JsonSerializer.Serialize(updated, new JsonSerializerOptions { WriteIndented = true }));
+                Console.WriteLine($"🧼 Removed '{name}' from wpp.json.");
+            }
         }
     }
+public static List<string> ExtractUsefulDlls(string extractedPath)
+{
+    var usefulDlls = new List<string>();
+
+    // Only scan inside lib/ and ignore build/, ref/, runtimes/, etc.
+    var libDir = Path.Combine(extractedPath, "lib");
+
+    if (!Directory.Exists(libDir))
+        return usefulDlls;
+
+    // Look for DLLs in target framework subfolders
+    foreach (var tfmDir in Directory.GetDirectories(libDir))
+    {
+        var dirName = Path.GetFileName(tfmDir)?.ToLowerInvariant();
+
+        // Skip reference-only folders
+        if (dirName.StartsWith("ref") || dirName.Contains("portable") || dirName.Contains("mono"))
+            continue;
+
+        foreach (var dll in Directory.GetFiles(tfmDir, "*.dll"))
+        {
+            usefulDlls.Add(dll);
+        }
+    }
+
+    return usefulDlls;
 }
+
 
 }

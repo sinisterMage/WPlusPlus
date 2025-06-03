@@ -61,11 +61,23 @@ namespace WPlusPlus
                 switch (keyword)
                 {
                     case "print":
-                        Advance();
-                        var printExpr = ParseExpression();
-                        Console.WriteLine($"[DEBUG] Expecting semicolon after: {Peek()?.Value}");
-                        Expect(";");
-                        return new PrintNode(printExpr);
+    Advance();
+    Expect("(");
+
+    var args = new List<Node>();
+    while (!Match(TokenType.Symbol) || Peek().Value != ")")
+    {
+        args.Add(ParseExpression());
+        if (Match(TokenType.Symbol) && Peek().Value == ",")
+            Advance();
+        else
+            break;
+    }
+
+    Expect(")");
+    Expect(";");
+    return new PrintNode(args); // overload PrintNode to accept List<Node>
+
 
                     case "if":
                         Advance();
@@ -408,37 +420,7 @@ namespace WPlusPlus
 
 
             }
-            if (Match(TokenType.Identifier) && Peek().Value == "externcall")
-{
-    Advance(); // consume externcall
-    Expect("(");
-
-    var typeExpr = ParseExpression();
-    Expect(",");
-
-    var methodExpr = ParseExpression();
-    Expect(",");
-
-    Expect("[");
-    var args = new List<Node>();
-    while (!Match(TokenType.Symbol) || Peek().Value != "]")
-    {
-        args.Add(ParseExpression());
-        if (Match(TokenType.Symbol) && Peek().Value == ",")
-            Advance();
-        else
-            break;
-    }
-    Expect("]");
-    Expect(")");
-
-    Expect(";");
-
-    if (typeExpr is not StringNode typeStr || methodExpr is not StringNode methodStr)
-        throw new Exception("externcall must use string literals for type and method");
-
-    return new ExternCallNode(typeStr.Value, methodStr.Value, args);
-}
+            
 
 
             if (Match(TokenType.Identifier))
@@ -652,35 +634,93 @@ namespace WPlusPlus
                 // 🔥 Must go before general identifier parsing
 if (Match(TokenType.Identifier) && Peek().Value == "externcall")
 {
-    Advance(); // consume externcall
+    Advance(); // consume 'externcall'
     Expect("(");
 
     var typeExpr = ParseExpression();
     Expect(",");
 
     var methodExpr = ParseExpression();
-    Expect(",");
-
-    Expect("[");
 
     var args = new List<Node>();
-    while (!Match(TokenType.Symbol) || Peek().Value != "]")
+
+    if (Match(TokenType.Symbol) && Peek().Value == ",")
     {
-        args.Add(ParseExpression());
-        if (Match(TokenType.Symbol) && Peek().Value == ",")
-            Advance();
+        Advance(); // consume ','
+
+        if (Match(TokenType.Symbol) && Peek().Value == "[")
+        {
+            Advance(); // consume '['
+            while (true)
+            {
+                if (Match(TokenType.Symbol) && Peek().Value == "]")
+                    break;
+
+                args.Add(ParseExpression());
+
+                if (Match(TokenType.Symbol) && Peek().Value == ",")
+                    Advance();
+                else if (Peek().Value != "]")
+                    throw new Exception("Expected ',' or ']' in externcall arguments");
+            }
+            Expect("]");
+        }
         else
-            break;
+        {
+            // support direct comma-separated args
+            args.Add(ParseExpression());
+
+            while (Match(TokenType.Symbol) && Peek().Value == ",")
+            {
+                Advance();
+                args.Add(ParseExpression());
+            }
+        }
     }
 
-    Expect("]");
     Expect(")");
 
     if (typeExpr is not StringNode typeStr || methodExpr is not StringNode methodStr)
-        throw new Exception("externcall expects string literals");
+        throw new Exception("externcall expects string literals as first two arguments");
 
     return new ExternCallNode(typeStr.Value, methodStr.Value, args);
 }
+
+if (Match(TokenType.Identifier) && Peek().Value == "typeof")
+{
+    Advance(); // consume 'typeof'
+    Expect("(");
+
+    string typeName;
+
+    if (Peek()?.Type == TokenType.String)
+    {
+        typeName = Peek().Value;
+        Advance(); // consume string
+    }
+    else
+    {
+        var parts = new List<string>();
+        parts.Add(Peek().Value);
+        Expect(TokenType.Identifier);
+
+        while (Match(TokenType.Symbol) && Peek().Value == ".")
+        {
+            Advance(); // consume '.'
+            parts.Add(Peek().Value);
+            Expect(TokenType.Identifier);
+        }
+
+        typeName = string.Join(".", parts);
+    }
+
+    Expect(")");
+    return new TypeOfNode(typeName);
+}
+
+
+
+
 
 
             // Identifier or function call
@@ -799,20 +839,33 @@ if (Match(TokenType.Identifier) && Peek().Value == "externcall")
                 return new NullNode();
             }
             if (Match(TokenType.Keyword) && Peek().Value == "new")
-            {
-                Advance(); // consume 'new'
+{
+    Advance(); // consume 'new'
 
-                Expect("(");
+    if (!Match(TokenType.Identifier))
+        throw new Exception("Expected entity name after 'new'");
 
-                if (!Match(TokenType.Identifier))
-                    throw new Exception("Expected entity name inside 'new(...)'");
+    var entityName = Advance().Value;
 
-                var entityName = Advance().Value;
+    Expect("(");
+var args = new List<Node>();
 
-                Expect(")"); // Close the 'new(...)'
+if (!Check(")"))
+{
+    do
+    {
+        args.Add(ParseExpression());
+    }
+    while (Match(TokenType.Symbol) && Peek().Value == "," && Advance() != null);
+}
 
-                return new NewNode(entityName);
-            }
+Expect(")");
+
+return new NewNode(entityName, args);
+
+}
+
+
 
             // 🔥 Add this just above other keyword checks like 'await'
             if (Match(TokenType.Keyword) && Peek().Value == "ancestor")
@@ -1063,13 +1116,16 @@ if (Match(TokenType.Identifier) && Peek().Value == "externcall")
 
 
         private void Expect(string symbol)
-        {
-            Console.WriteLine($"[DEBUG] Before final ')' expect: {Peek()?.Value}");
-            if (!Match(TokenType.Symbol) || Peek().Value != symbol)
+{
+    Console.WriteLine($"[DEBUG] Before expect: {Peek()?.Value}");
 
-                throw new Exception($"Expected '{symbol}'");
-            Advance();
-        }
+    var token = Peek();
+    if (token == null || token.Type != TokenType.Symbol || token.Value != symbol)
+        throw new Exception($"Expected '{symbol}', but found '{token?.Value}'");
+
+    Advance();
+}
+
 
         private bool Match(TokenType type)
         {
@@ -1083,11 +1139,21 @@ if (Match(TokenType.Identifier) && Peek().Value == "externcall")
     return position < tokens.Count ? tokens[position] : null;
 }
 
-public Token Advance()
+        public Token Advance()
+        {
+            var token = Peek();
+            position++;
+            return token;
+        }
+private bool Check(string symbol) => Peek()?.Value == symbol;
+
+public Token Expect(TokenType type)
 {
     var token = Peek();
-    position++;
-    return token;
+    if (token == null || token.Type != type)
+        throw new Exception($"Expected token of type {type}, but got {token?.Type} ({token?.Value})");
+
+    return Advance();
 }
 
 

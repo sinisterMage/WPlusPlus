@@ -1,0 +1,379 @@
+using System.Net.Sockets;
+
+ingot System.Net.Sockets {
+  class SocketTaskExtensions {
+    func AcceptAsync(Socket socket): Task`1
+    func AcceptAsync(Socket socket, Socket acceptSocket): Task`1
+    func ConnectAsync(Socket socket, EndPoint remoteEP): Task
+    func ConnectAsync(Socket socket, EndPoint remoteEP, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(Socket socket, IPAddress address, Int32 port): Task
+    func ConnectAsync(Socket socket, IPAddress address, Int32 port, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(Socket socket, IPAddress[] addresses, Int32 port): Task
+    func ConnectAsync(Socket socket, IPAddress[] addresses, Int32 port, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(Socket socket, String host, Int32 port): Task
+    func ConnectAsync(Socket socket, String host, Int32 port, CancellationToken cancellationToken): ValueTask
+    func ReceiveAsync(Socket socket, ArraySegment`1 buffer, SocketFlags socketFlags): Task`1
+    func ReceiveAsync(Socket socket, Memory`1 buffer, SocketFlags socketFlags, CancellationToken cancellationToken): ValueTask`1
+    func ReceiveAsync(Socket socket, IList`1 buffers, SocketFlags socketFlags): Task`1
+    func ReceiveFromAsync(Socket socket, ArraySegment`1 buffer, SocketFlags socketFlags, EndPoint remoteEndPoint): Task`1
+    func ReceiveMessageFromAsync(Socket socket, ArraySegment`1 buffer, SocketFlags socketFlags, EndPoint remoteEndPoint): Task`1
+    func SendAsync(Socket socket, ArraySegment`1 buffer, SocketFlags socketFlags): Task`1
+    func SendAsync(Socket socket, ReadOnlyMemory`1 buffer, SocketFlags socketFlags, CancellationToken cancellationToken): ValueTask`1
+    func SendAsync(Socket socket, IList`1 buffers, SocketFlags socketFlags): Task`1
+    func SendToAsync(Socket socket, ArraySegment`1 buffer, SocketFlags socketFlags, EndPoint remoteEP): Task`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LingerOption {
+    func Equals(Object comparand): Boolean
+    func GetHashCode(): Int32
+    func GetType(): Type
+    func ToString(): String
+  }
+  class MulticastOption {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IPv6MulticastOption {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NetworkStream {
+    func Seek(Int64 offset, SeekOrigin origin): Int64
+    func Read(Byte[] buffer, Int32 offset, Int32 count): Int32
+    func Read(Span`1 buffer): Int32
+    func ReadByte(): Int32
+    func Write(Byte[] buffer, Int32 offset, Int32 count): Void
+    func Write(ReadOnlySpan`1 buffer): Void
+    func WriteByte(Byte value): Void
+    func Close(Int32 timeout): Void
+    func Close(TimeSpan timeout): Void
+    func BeginRead(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state): IAsyncResult
+    func EndRead(IAsyncResult asyncResult): Int32
+    func BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback callback, Object state): IAsyncResult
+    func EndWrite(IAsyncResult asyncResult): Void
+    func ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): Task`1
+    func ReadAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask`1
+    func WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): Task
+    func WriteAsync(ReadOnlyMemory`1 buffer, CancellationToken cancellationToken): ValueTask
+    func Flush(): Void
+    func FlushAsync(CancellationToken cancellationToken): Task
+    func SetLength(Int64 value): Void
+    func CopyTo(Stream destination): Void
+    func CopyTo(Stream destination, Int32 bufferSize): Void
+    func CopyToAsync(Stream destination): Task
+    func CopyToAsync(Stream destination, Int32 bufferSize): Task
+    func CopyToAsync(Stream destination, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken): Task
+    func Dispose(): Void
+    func Close(): Void
+    func DisposeAsync(): ValueTask
+    func FlushAsync(): Task
+    func ReadAsync(Byte[] buffer, Int32 offset, Int32 count): Task`1
+    func ReadExactlyAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask
+    func ReadExactlyAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): ValueTask
+    func ReadAtLeastAsync(Memory`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream, CancellationToken cancellationToken): ValueTask`1
+    func WriteAsync(Byte[] buffer, Int32 offset, Int32 count): Task
+    func ReadExactly(Span`1 buffer): Void
+    func ReadExactly(Byte[] buffer, Int32 offset, Int32 count): Void
+    func ReadAtLeast(Span`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream): Int32
+    func GetLifetimeService(): Object
+    func InitializeLifetimeService(): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SafeSocketHandle {
+    func DangerousGetHandle(): IntPtr
+    func Close(): Void
+    func Dispose(): Void
+    func SetHandleAsInvalid(): Void
+    func DangerousAddRef(Boolean& success): Void
+    func DangerousRelease(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SendPacketsElement {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Socket {
+    func Bind(EndPoint localEP): Void
+    func Connect(EndPoint remoteEP): Void
+    func Connect(IPAddress address, Int32 port): Void
+    func Connect(String host, Int32 port): Void
+    func Connect(IPAddress[] addresses, Int32 port): Void
+    func Close(): Void
+    func Close(Int32 timeout): Void
+    func Listen(): Void
+    func Listen(Int32 backlog): Void
+    func Accept(): Socket
+    func Send(Byte[] buffer, Int32 size, SocketFlags socketFlags): Int32
+    func Send(Byte[] buffer, SocketFlags socketFlags): Int32
+    func Send(Byte[] buffer): Int32
+    func Send(IList`1 buffers): Int32
+    func Send(IList`1 buffers, SocketFlags socketFlags): Int32
+    func Send(IList`1 buffers, SocketFlags socketFlags, SocketError& errorCode): Int32
+    func Send(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags): Int32
+    func Send(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, SocketError& errorCode): Int32
+    func Send(ReadOnlySpan`1 buffer): Int32
+    func Send(ReadOnlySpan`1 buffer, SocketFlags socketFlags): Int32
+    func Send(ReadOnlySpan`1 buffer, SocketFlags socketFlags, SocketError& errorCode): Int32
+    func SendFile(String fileName): Void
+    func SendFile(String fileName, Byte[] preBuffer, Byte[] postBuffer, TransmitFileOptions flags): Void
+    func SendFile(String fileName, ReadOnlySpan`1 preBuffer, ReadOnlySpan`1 postBuffer, TransmitFileOptions flags): Void
+    func SendTo(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, EndPoint remoteEP): Int32
+    func SendTo(Byte[] buffer, Int32 size, SocketFlags socketFlags, EndPoint remoteEP): Int32
+    func SendTo(Byte[] buffer, SocketFlags socketFlags, EndPoint remoteEP): Int32
+    func SendTo(Byte[] buffer, EndPoint remoteEP): Int32
+    func SendTo(ReadOnlySpan`1 buffer, EndPoint remoteEP): Int32
+    func SendTo(ReadOnlySpan`1 buffer, SocketFlags socketFlags, EndPoint remoteEP): Int32
+    func SendTo(ReadOnlySpan`1 buffer, SocketFlags socketFlags, SocketAddress socketAddress): Int32
+    func Receive(Byte[] buffer, Int32 size, SocketFlags socketFlags): Int32
+    func Receive(Byte[] buffer, SocketFlags socketFlags): Int32
+    func Receive(Byte[] buffer): Int32
+    func Receive(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags): Int32
+    func Receive(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, SocketError& errorCode): Int32
+    func Receive(Span`1 buffer): Int32
+    func Receive(Span`1 buffer, SocketFlags socketFlags): Int32
+    func Receive(Span`1 buffer, SocketFlags socketFlags, SocketError& errorCode): Int32
+    func Receive(IList`1 buffers): Int32
+    func Receive(IList`1 buffers, SocketFlags socketFlags): Int32
+    func Receive(IList`1 buffers, SocketFlags socketFlags, SocketError& errorCode): Int32
+    func ReceiveMessageFrom(Byte[] buffer, Int32 offset, Int32 size, SocketFlags& socketFlags, EndPoint& remoteEP, IPPacketInformation& ipPacketInformation): Int32
+    func ReceiveMessageFrom(Span`1 buffer, SocketFlags& socketFlags, EndPoint& remoteEP, IPPacketInformation& ipPacketInformation): Int32
+    func ReceiveFrom(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, EndPoint& remoteEP): Int32
+    func ReceiveFrom(Byte[] buffer, Int32 size, SocketFlags socketFlags, EndPoint& remoteEP): Int32
+    func ReceiveFrom(Byte[] buffer, SocketFlags socketFlags, EndPoint& remoteEP): Int32
+    func ReceiveFrom(Byte[] buffer, EndPoint& remoteEP): Int32
+    func ReceiveFrom(Span`1 buffer, EndPoint& remoteEP): Int32
+    func ReceiveFrom(Span`1 buffer, SocketFlags socketFlags, EndPoint& remoteEP): Int32
+    func ReceiveFrom(Span`1 buffer, SocketFlags socketFlags, SocketAddress receivedAddress): Int32
+    func IOControl(Int32 ioControlCode, Byte[] optionInValue, Byte[] optionOutValue): Int32
+    func IOControl(IOControlCode ioControlCode, Byte[] optionInValue, Byte[] optionOutValue): Int32
+    func SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, Int32 optionValue): Void
+    func SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, Byte[] optionValue): Void
+    func SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, Boolean optionValue): Void
+    func SetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, Object optionValue): Void
+    func SetRawSocketOption(Int32 optionLevel, Int32 optionName, ReadOnlySpan`1 optionValue): Void
+    func GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName): Object
+    func GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, Byte[] optionValue): Void
+    func GetSocketOption(SocketOptionLevel optionLevel, SocketOptionName optionName, Int32 optionLength): Byte[]
+    func GetRawSocketOption(Int32 optionLevel, Int32 optionName, Span`1 optionValue): Int32
+    func SetIPProtectionLevel(IPProtectionLevel level): Void
+    func Poll(Int32 microSeconds, SelectMode mode): Boolean
+    func Poll(TimeSpan timeout, SelectMode mode): Boolean
+    func Select(IList checkRead, IList checkWrite, IList checkError, Int32 microSeconds): Void
+    func Select(IList checkRead, IList checkWrite, IList checkError, TimeSpan timeout): Void
+    func BeginConnect(EndPoint remoteEP, AsyncCallback callback, Object state): IAsyncResult
+    func BeginConnect(String host, Int32 port, AsyncCallback requestCallback, Object state): IAsyncResult
+    func BeginConnect(IPAddress address, Int32 port, AsyncCallback requestCallback, Object state): IAsyncResult
+    func BeginConnect(IPAddress[] addresses, Int32 port, AsyncCallback requestCallback, Object state): IAsyncResult
+    func EndConnect(IAsyncResult asyncResult): Void
+    func BeginDisconnect(Boolean reuseSocket, AsyncCallback callback, Object state): IAsyncResult
+    func Disconnect(Boolean reuseSocket): Void
+    func EndDisconnect(IAsyncResult asyncResult): Void
+    func BeginSend(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, AsyncCallback callback, Object state): IAsyncResult
+    func BeginSend(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, SocketError& errorCode, AsyncCallback callback, Object state): IAsyncResult
+    func BeginSend(IList`1 buffers, SocketFlags socketFlags, AsyncCallback callback, Object state): IAsyncResult
+    func BeginSend(IList`1 buffers, SocketFlags socketFlags, SocketError& errorCode, AsyncCallback callback, Object state): IAsyncResult
+    func EndSend(IAsyncResult asyncResult): Int32
+    func EndSend(IAsyncResult asyncResult, SocketError& errorCode): Int32
+    func BeginSendFile(String fileName, AsyncCallback callback, Object state): IAsyncResult
+    func BeginSendFile(String fileName, Byte[] preBuffer, Byte[] postBuffer, TransmitFileOptions flags, AsyncCallback callback, Object state): IAsyncResult
+    func EndSendFile(IAsyncResult asyncResult): Void
+    func BeginSendTo(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, EndPoint remoteEP, AsyncCallback callback, Object state): IAsyncResult
+    func EndSendTo(IAsyncResult asyncResult): Int32
+    func BeginReceive(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, AsyncCallback callback, Object state): IAsyncResult
+    func BeginReceive(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, SocketError& errorCode, AsyncCallback callback, Object state): IAsyncResult
+    func BeginReceive(IList`1 buffers, SocketFlags socketFlags, AsyncCallback callback, Object state): IAsyncResult
+    func BeginReceive(IList`1 buffers, SocketFlags socketFlags, SocketError& errorCode, AsyncCallback callback, Object state): IAsyncResult
+    func EndReceive(IAsyncResult asyncResult): Int32
+    func EndReceive(IAsyncResult asyncResult, SocketError& errorCode): Int32
+    func BeginReceiveMessageFrom(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, EndPoint& remoteEP, AsyncCallback callback, Object state): IAsyncResult
+    func EndReceiveMessageFrom(IAsyncResult asyncResult, SocketFlags& socketFlags, EndPoint& endPoint, IPPacketInformation& ipPacketInformation): Int32
+    func BeginReceiveFrom(Byte[] buffer, Int32 offset, Int32 size, SocketFlags socketFlags, EndPoint& remoteEP, AsyncCallback callback, Object state): IAsyncResult
+    func EndReceiveFrom(IAsyncResult asyncResult, EndPoint& endPoint): Int32
+    func BeginAccept(AsyncCallback callback, Object state): IAsyncResult
+    func EndAccept(IAsyncResult asyncResult): Socket
+    func BeginAccept(Int32 receiveSize, AsyncCallback callback, Object state): IAsyncResult
+    func BeginAccept(Socket acceptSocket, Int32 receiveSize, AsyncCallback callback, Object state): IAsyncResult
+    func EndAccept(Byte[]& buffer, IAsyncResult asyncResult): Socket
+    func EndAccept(Byte[]& buffer, Int32& bytesTransferred, IAsyncResult asyncResult): Socket
+    func Shutdown(SocketShutdown how): Void
+    func AcceptAsync(SocketAsyncEventArgs e): Boolean
+    func ConnectAsync(SocketAsyncEventArgs e): Boolean
+    func ConnectAsync(SocketType socketType, ProtocolType protocolType, SocketAsyncEventArgs e): Boolean
+    func CancelConnectAsync(SocketAsyncEventArgs e): Void
+    func DisconnectAsync(SocketAsyncEventArgs e): Boolean
+    func ReceiveAsync(SocketAsyncEventArgs e): Boolean
+    func ReceiveFromAsync(SocketAsyncEventArgs e): Boolean
+    func ReceiveMessageFromAsync(SocketAsyncEventArgs e): Boolean
+    func SendAsync(SocketAsyncEventArgs e): Boolean
+    func SendPacketsAsync(SocketAsyncEventArgs e): Boolean
+    func SendToAsync(SocketAsyncEventArgs e): Boolean
+    func Dispose(): Void
+    func AcceptAsync(): Task`1
+    func AcceptAsync(CancellationToken cancellationToken): ValueTask`1
+    func AcceptAsync(Socket acceptSocket): Task`1
+    func AcceptAsync(Socket acceptSocket, CancellationToken cancellationToken): ValueTask`1
+    func ConnectAsync(EndPoint remoteEP): Task
+    func ConnectAsync(EndPoint remoteEP, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(IPAddress address, Int32 port): Task
+    func ConnectAsync(IPAddress address, Int32 port, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(IPAddress[] addresses, Int32 port): Task
+    func ConnectAsync(IPAddress[] addresses, Int32 port, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(String host, Int32 port): Task
+    func ConnectAsync(String host, Int32 port, CancellationToken cancellationToken): ValueTask
+    func DisconnectAsync(Boolean reuseSocket, CancellationToken cancellationToken): ValueTask
+    func ReceiveAsync(ArraySegment`1 buffer): Task`1
+    func ReceiveAsync(ArraySegment`1 buffer, SocketFlags socketFlags): Task`1
+    func ReceiveAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask`1
+    func ReceiveAsync(Memory`1 buffer, SocketFlags socketFlags, CancellationToken cancellationToken): ValueTask`1
+    func ReceiveAsync(IList`1 buffers): Task`1
+    func ReceiveAsync(IList`1 buffers, SocketFlags socketFlags): Task`1
+    func ReceiveFromAsync(ArraySegment`1 buffer, EndPoint remoteEndPoint): Task`1
+    func ReceiveFromAsync(ArraySegment`1 buffer, SocketFlags socketFlags, EndPoint remoteEndPoint): Task`1
+    func ReceiveFromAsync(Memory`1 buffer, EndPoint remoteEndPoint, CancellationToken cancellationToken): ValueTask`1
+    func ReceiveFromAsync(Memory`1 buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken): ValueTask`1
+    func ReceiveFromAsync(Memory`1 buffer, SocketFlags socketFlags, SocketAddress receivedAddress, CancellationToken cancellationToken): ValueTask`1
+    func ReceiveMessageFromAsync(ArraySegment`1 buffer, EndPoint remoteEndPoint): Task`1
+    func ReceiveMessageFromAsync(ArraySegment`1 buffer, SocketFlags socketFlags, EndPoint remoteEndPoint): Task`1
+    func ReceiveMessageFromAsync(Memory`1 buffer, EndPoint remoteEndPoint, CancellationToken cancellationToken): ValueTask`1
+    func ReceiveMessageFromAsync(Memory`1 buffer, SocketFlags socketFlags, EndPoint remoteEndPoint, CancellationToken cancellationToken): ValueTask`1
+    func SendAsync(ArraySegment`1 buffer): Task`1
+    func SendAsync(ArraySegment`1 buffer, SocketFlags socketFlags): Task`1
+    func SendAsync(ReadOnlyMemory`1 buffer, CancellationToken cancellationToken): ValueTask`1
+    func SendAsync(ReadOnlyMemory`1 buffer, SocketFlags socketFlags, CancellationToken cancellationToken): ValueTask`1
+    func SendAsync(IList`1 buffers): Task`1
+    func SendAsync(IList`1 buffers, SocketFlags socketFlags): Task`1
+    func SendToAsync(ArraySegment`1 buffer, EndPoint remoteEP): Task`1
+    func SendToAsync(ArraySegment`1 buffer, SocketFlags socketFlags, EndPoint remoteEP): Task`1
+    func SendToAsync(ReadOnlyMemory`1 buffer, EndPoint remoteEP, CancellationToken cancellationToken): ValueTask`1
+    func SendToAsync(ReadOnlyMemory`1 buffer, SocketFlags socketFlags, EndPoint remoteEP, CancellationToken cancellationToken): ValueTask`1
+    func SendToAsync(ReadOnlyMemory`1 buffer, SocketFlags socketFlags, SocketAddress socketAddress, CancellationToken cancellationToken): ValueTask`1
+    func SendFileAsync(String fileName, CancellationToken cancellationToken): ValueTask
+    func SendFileAsync(String fileName, ReadOnlyMemory`1 preBuffer, ReadOnlyMemory`1 postBuffer, TransmitFileOptions flags, CancellationToken cancellationToken): ValueTask
+    func DuplicateAndClose(Int32 targetProcessId): SocketInformation
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SocketAsyncEventArgs {
+    func SetBuffer(Int32 offset, Int32 count): Void
+    func SetBuffer(Byte[] buffer, Int32 offset, Int32 count): Void
+    func SetBuffer(Memory`1 buffer): Void
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TcpClient {
+    func Connect(String hostname, Int32 port): Void
+    func Connect(IPAddress address, Int32 port): Void
+    func Connect(IPEndPoint remoteEP): Void
+    func Connect(IPAddress[] ipAddresses, Int32 port): Void
+    func ConnectAsync(IPAddress address, Int32 port): Task
+    func ConnectAsync(String host, Int32 port): Task
+    func ConnectAsync(IPAddress[] addresses, Int32 port): Task
+    func ConnectAsync(IPEndPoint remoteEP): Task
+    func ConnectAsync(IPAddress address, Int32 port, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(String host, Int32 port, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(IPAddress[] addresses, Int32 port, CancellationToken cancellationToken): ValueTask
+    func ConnectAsync(IPEndPoint remoteEP, CancellationToken cancellationToken): ValueTask
+    func BeginConnect(IPAddress address, Int32 port, AsyncCallback requestCallback, Object state): IAsyncResult
+    func BeginConnect(String host, Int32 port, AsyncCallback requestCallback, Object state): IAsyncResult
+    func BeginConnect(IPAddress[] addresses, Int32 port, AsyncCallback requestCallback, Object state): IAsyncResult
+    func EndConnect(IAsyncResult asyncResult): Void
+    func GetStream(): NetworkStream
+    func Close(): Void
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TcpListener {
+    func AllowNatTraversal(Boolean allowed): Void
+    func Start(): Void
+    func Start(Int32 backlog): Void
+    func Stop(): Void
+    func Dispose(): Void
+    func Pending(): Boolean
+    func AcceptSocket(): Socket
+    func AcceptTcpClient(): TcpClient
+    func BeginAcceptSocket(AsyncCallback callback, Object state): IAsyncResult
+    func EndAcceptSocket(IAsyncResult asyncResult): Socket
+    func BeginAcceptTcpClient(AsyncCallback callback, Object state): IAsyncResult
+    func EndAcceptTcpClient(IAsyncResult asyncResult): TcpClient
+    func AcceptSocketAsync(): Task`1
+    func AcceptSocketAsync(CancellationToken cancellationToken): ValueTask`1
+    func AcceptTcpClientAsync(): Task`1
+    func AcceptTcpClientAsync(CancellationToken cancellationToken): ValueTask`1
+    func Create(Int32 port): TcpListener
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class UdpClient {
+    func AllowNatTraversal(Boolean allowed): Void
+    func Dispose(): Void
+    func BeginSend(Byte[] datagram, Int32 bytes, AsyncCallback requestCallback, Object state): IAsyncResult
+    func BeginSend(Byte[] datagram, Int32 bytes, String hostname, Int32 port, AsyncCallback requestCallback, Object state): IAsyncResult
+    func BeginSend(Byte[] datagram, Int32 bytes, IPEndPoint endPoint, AsyncCallback requestCallback, Object state): IAsyncResult
+    func EndSend(IAsyncResult asyncResult): Int32
+    func BeginReceive(AsyncCallback requestCallback, Object state): IAsyncResult
+    func EndReceive(IAsyncResult asyncResult, IPEndPoint& remoteEP): Byte[]
+    func JoinMulticastGroup(IPAddress multicastAddr): Void
+    func JoinMulticastGroup(IPAddress multicastAddr, IPAddress localAddress): Void
+    func JoinMulticastGroup(Int32 ifindex, IPAddress multicastAddr): Void
+    func JoinMulticastGroup(IPAddress multicastAddr, Int32 timeToLive): Void
+    func DropMulticastGroup(IPAddress multicastAddr): Void
+    func DropMulticastGroup(IPAddress multicastAddr, Int32 ifindex): Void
+    func SendAsync(Byte[] datagram, Int32 bytes): Task`1
+    func SendAsync(ReadOnlyMemory`1 datagram, CancellationToken cancellationToken): ValueTask`1
+    func SendAsync(Byte[] datagram, Int32 bytes, String hostname, Int32 port): Task`1
+    func SendAsync(ReadOnlyMemory`1 datagram, String hostname, Int32 port, CancellationToken cancellationToken): ValueTask`1
+    func SendAsync(Byte[] datagram, Int32 bytes, IPEndPoint endPoint): Task`1
+    func SendAsync(ReadOnlyMemory`1 datagram, IPEndPoint endPoint, CancellationToken cancellationToken): ValueTask`1
+    func ReceiveAsync(): Task`1
+    func ReceiveAsync(CancellationToken cancellationToken): ValueTask`1
+    func Close(): Void
+    func Connect(String hostname, Int32 port): Void
+    func Connect(IPAddress addr, Int32 port): Void
+    func Connect(IPEndPoint endPoint): Void
+    func Receive(IPEndPoint& remoteEP): Byte[]
+    func Send(Byte[] dgram, Int32 bytes, IPEndPoint endPoint): Int32
+    func Send(ReadOnlySpan`1 datagram, IPEndPoint endPoint): Int32
+    func Send(Byte[] dgram, Int32 bytes, String hostname, Int32 port): Int32
+    func Send(ReadOnlySpan`1 datagram, String hostname, Int32 port): Int32
+    func Send(Byte[] dgram, Int32 bytes): Int32
+    func Send(ReadOnlySpan`1 datagram): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class UnixDomainSocketEndPoint {
+    func Serialize(): SocketAddress
+    func Create(SocketAddress socketAddress): EndPoint
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func GetType(): Type
+  }
+}

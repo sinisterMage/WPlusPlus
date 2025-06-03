@@ -1,0 +1,669 @@
+using System.Reflection;
+
+ingot System.Reflection.TypeExtensions {
+  class TypeExtensions {
+    func GetConstructor(Type type, Type[] types): ConstructorInfo
+    func GetConstructors(Type type): ConstructorInfo[]
+    func GetConstructors(Type type, BindingFlags bindingAttr): ConstructorInfo[]
+    func GetDefaultMembers(Type type): MemberInfo[]
+    func GetEvent(Type type, String name): EventInfo
+    func GetEvent(Type type, String name, BindingFlags bindingAttr): EventInfo
+    func GetEvents(Type type): EventInfo[]
+    func GetEvents(Type type, BindingFlags bindingAttr): EventInfo[]
+    func GetField(Type type, String name): FieldInfo
+    func GetField(Type type, String name, BindingFlags bindingAttr): FieldInfo
+    func GetFields(Type type): FieldInfo[]
+    func GetFields(Type type, BindingFlags bindingAttr): FieldInfo[]
+    func GetGenericArguments(Type type): Type[]
+    func GetInterfaces(Type type): Type[]
+    func GetMember(Type type, String name): MemberInfo[]
+    func GetMember(Type type, String name, BindingFlags bindingAttr): MemberInfo[]
+    func GetMembers(Type type): MemberInfo[]
+    func GetMembers(Type type, BindingFlags bindingAttr): MemberInfo[]
+    func GetMethod(Type type, String name): MethodInfo
+    func GetMethod(Type type, String name, BindingFlags bindingAttr): MethodInfo
+    func GetMethod(Type type, String name, Type[] types): MethodInfo
+    func GetMethods(Type type): MethodInfo[]
+    func GetMethods(Type type, BindingFlags bindingAttr): MethodInfo[]
+    func GetNestedType(Type type, String name, BindingFlags bindingAttr): Type
+    func GetNestedTypes(Type type, BindingFlags bindingAttr): Type[]
+    func GetProperties(Type type): PropertyInfo[]
+    func GetProperties(Type type, BindingFlags bindingAttr): PropertyInfo[]
+    func GetProperty(Type type, String name): PropertyInfo
+    func GetProperty(Type type, String name, BindingFlags bindingAttr): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType, Type[] types): PropertyInfo
+    func IsAssignableFrom(Type type, Type c): Boolean
+    func IsInstanceOfType(Type type, Object o): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AssemblyExtensions {
+    func GetExportedTypes(Assembly assembly): Type[]
+    func GetModules(Assembly assembly): Module[]
+    func GetTypes(Assembly assembly): Type[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class EventInfoExtensions {
+    func GetAddMethod(EventInfo eventInfo): MethodInfo
+    func GetAddMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInfoExtensions {
+    func HasMetadataToken(MemberInfo member): Boolean
+    func GetMetadataToken(MemberInfo member): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodInfoExtensions {
+    func GetBaseDefinition(MethodInfo method): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ModuleExtensions {
+    func HasModuleVersionId(Module module): Boolean
+    func GetModuleVersionId(Module module): Guid
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyInfoExtensions {
+    func GetAccessors(PropertyInfo property): MethodInfo[]
+    func GetAccessors(PropertyInfo property, Boolean nonPublic): MethodInfo[]
+    func GetGetMethod(PropertyInfo property): MethodInfo
+    func GetGetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetSetMethod(PropertyInfo property): MethodInfo
+    func GetSetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeExtensions {
+    func GetConstructor(Type type, Type[] types): ConstructorInfo
+    func GetConstructors(Type type): ConstructorInfo[]
+    func GetConstructors(Type type, BindingFlags bindingAttr): ConstructorInfo[]
+    func GetDefaultMembers(Type type): MemberInfo[]
+    func GetEvent(Type type, String name): EventInfo
+    func GetEvent(Type type, String name, BindingFlags bindingAttr): EventInfo
+    func GetEvents(Type type): EventInfo[]
+    func GetEvents(Type type, BindingFlags bindingAttr): EventInfo[]
+    func GetField(Type type, String name): FieldInfo
+    func GetField(Type type, String name, BindingFlags bindingAttr): FieldInfo
+    func GetFields(Type type): FieldInfo[]
+    func GetFields(Type type, BindingFlags bindingAttr): FieldInfo[]
+    func GetGenericArguments(Type type): Type[]
+    func GetInterfaces(Type type): Type[]
+    func GetMember(Type type, String name): MemberInfo[]
+    func GetMember(Type type, String name, BindingFlags bindingAttr): MemberInfo[]
+    func GetMembers(Type type): MemberInfo[]
+    func GetMembers(Type type, BindingFlags bindingAttr): MemberInfo[]
+    func GetMethod(Type type, String name): MethodInfo
+    func GetMethod(Type type, String name, BindingFlags bindingAttr): MethodInfo
+    func GetMethod(Type type, String name, Type[] types): MethodInfo
+    func GetMethods(Type type): MethodInfo[]
+    func GetMethods(Type type, BindingFlags bindingAttr): MethodInfo[]
+    func GetNestedType(Type type, String name, BindingFlags bindingAttr): Type
+    func GetNestedTypes(Type type, BindingFlags bindingAttr): Type[]
+    func GetProperties(Type type): PropertyInfo[]
+    func GetProperties(Type type, BindingFlags bindingAttr): PropertyInfo[]
+    func GetProperty(Type type, String name): PropertyInfo
+    func GetProperty(Type type, String name, BindingFlags bindingAttr): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType, Type[] types): PropertyInfo
+    func IsAssignableFrom(Type type, Type c): Boolean
+    func IsInstanceOfType(Type type, Object o): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AssemblyExtensions {
+    func GetExportedTypes(Assembly assembly): Type[]
+    func GetModules(Assembly assembly): Module[]
+    func GetTypes(Assembly assembly): Type[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class EventInfoExtensions {
+    func GetAddMethod(EventInfo eventInfo): MethodInfo
+    func GetAddMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInfoExtensions {
+    func HasMetadataToken(MemberInfo member): Boolean
+    func GetMetadataToken(MemberInfo member): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodInfoExtensions {
+    func GetBaseDefinition(MethodInfo method): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ModuleExtensions {
+    func HasModuleVersionId(Module module): Boolean
+    func GetModuleVersionId(Module module): Guid
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyInfoExtensions {
+    func GetAccessors(PropertyInfo property): MethodInfo[]
+    func GetAccessors(PropertyInfo property, Boolean nonPublic): MethodInfo[]
+    func GetGetMethod(PropertyInfo property): MethodInfo
+    func GetGetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetSetMethod(PropertyInfo property): MethodInfo
+    func GetSetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeExtensions {
+    func GetConstructor(Type type, Type[] types): ConstructorInfo
+    func GetConstructors(Type type): ConstructorInfo[]
+    func GetConstructors(Type type, BindingFlags bindingAttr): ConstructorInfo[]
+    func GetDefaultMembers(Type type): MemberInfo[]
+    func GetEvent(Type type, String name): EventInfo
+    func GetEvent(Type type, String name, BindingFlags bindingAttr): EventInfo
+    func GetEvents(Type type): EventInfo[]
+    func GetEvents(Type type, BindingFlags bindingAttr): EventInfo[]
+    func GetField(Type type, String name): FieldInfo
+    func GetField(Type type, String name, BindingFlags bindingAttr): FieldInfo
+    func GetFields(Type type): FieldInfo[]
+    func GetFields(Type type, BindingFlags bindingAttr): FieldInfo[]
+    func GetGenericArguments(Type type): Type[]
+    func GetInterfaces(Type type): Type[]
+    func GetMember(Type type, String name): MemberInfo[]
+    func GetMember(Type type, String name, BindingFlags bindingAttr): MemberInfo[]
+    func GetMembers(Type type): MemberInfo[]
+    func GetMembers(Type type, BindingFlags bindingAttr): MemberInfo[]
+    func GetMethod(Type type, String name): MethodInfo
+    func GetMethod(Type type, String name, BindingFlags bindingAttr): MethodInfo
+    func GetMethod(Type type, String name, Type[] types): MethodInfo
+    func GetMethods(Type type): MethodInfo[]
+    func GetMethods(Type type, BindingFlags bindingAttr): MethodInfo[]
+    func GetNestedType(Type type, String name, BindingFlags bindingAttr): Type
+    func GetNestedTypes(Type type, BindingFlags bindingAttr): Type[]
+    func GetProperties(Type type): PropertyInfo[]
+    func GetProperties(Type type, BindingFlags bindingAttr): PropertyInfo[]
+    func GetProperty(Type type, String name): PropertyInfo
+    func GetProperty(Type type, String name, BindingFlags bindingAttr): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType, Type[] types): PropertyInfo
+    func IsAssignableFrom(Type type, Type c): Boolean
+    func IsInstanceOfType(Type type, Object o): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AssemblyExtensions {
+    func GetExportedTypes(Assembly assembly): Type[]
+    func GetModules(Assembly assembly): Module[]
+    func GetTypes(Assembly assembly): Type[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class EventInfoExtensions {
+    func GetAddMethod(EventInfo eventInfo): MethodInfo
+    func GetAddMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInfoExtensions {
+    func HasMetadataToken(MemberInfo member): Boolean
+    func GetMetadataToken(MemberInfo member): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodInfoExtensions {
+    func GetBaseDefinition(MethodInfo method): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ModuleExtensions {
+    func HasModuleVersionId(Module module): Boolean
+    func GetModuleVersionId(Module module): Guid
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyInfoExtensions {
+    func GetAccessors(PropertyInfo property): MethodInfo[]
+    func GetAccessors(PropertyInfo property, Boolean nonPublic): MethodInfo[]
+    func GetGetMethod(PropertyInfo property): MethodInfo
+    func GetGetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetSetMethod(PropertyInfo property): MethodInfo
+    func GetSetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeExtensions {
+    func GetConstructor(Type type, Type[] types): ConstructorInfo
+    func GetConstructors(Type type): ConstructorInfo[]
+    func GetConstructors(Type type, BindingFlags bindingAttr): ConstructorInfo[]
+    func GetDefaultMembers(Type type): MemberInfo[]
+    func GetEvent(Type type, String name): EventInfo
+    func GetEvent(Type type, String name, BindingFlags bindingAttr): EventInfo
+    func GetEvents(Type type): EventInfo[]
+    func GetEvents(Type type, BindingFlags bindingAttr): EventInfo[]
+    func GetField(Type type, String name): FieldInfo
+    func GetField(Type type, String name, BindingFlags bindingAttr): FieldInfo
+    func GetFields(Type type): FieldInfo[]
+    func GetFields(Type type, BindingFlags bindingAttr): FieldInfo[]
+    func GetGenericArguments(Type type): Type[]
+    func GetInterfaces(Type type): Type[]
+    func GetMember(Type type, String name): MemberInfo[]
+    func GetMember(Type type, String name, BindingFlags bindingAttr): MemberInfo[]
+    func GetMembers(Type type): MemberInfo[]
+    func GetMembers(Type type, BindingFlags bindingAttr): MemberInfo[]
+    func GetMethod(Type type, String name): MethodInfo
+    func GetMethod(Type type, String name, BindingFlags bindingAttr): MethodInfo
+    func GetMethod(Type type, String name, Type[] types): MethodInfo
+    func GetMethods(Type type): MethodInfo[]
+    func GetMethods(Type type, BindingFlags bindingAttr): MethodInfo[]
+    func GetNestedType(Type type, String name, BindingFlags bindingAttr): Type
+    func GetNestedTypes(Type type, BindingFlags bindingAttr): Type[]
+    func GetProperties(Type type): PropertyInfo[]
+    func GetProperties(Type type, BindingFlags bindingAttr): PropertyInfo[]
+    func GetProperty(Type type, String name): PropertyInfo
+    func GetProperty(Type type, String name, BindingFlags bindingAttr): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType, Type[] types): PropertyInfo
+    func IsAssignableFrom(Type type, Type c): Boolean
+    func IsInstanceOfType(Type type, Object o): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AssemblyExtensions {
+    func GetExportedTypes(Assembly assembly): Type[]
+    func GetModules(Assembly assembly): Module[]
+    func GetTypes(Assembly assembly): Type[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class EventInfoExtensions {
+    func GetAddMethod(EventInfo eventInfo): MethodInfo
+    func GetAddMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInfoExtensions {
+    func HasMetadataToken(MemberInfo member): Boolean
+    func GetMetadataToken(MemberInfo member): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodInfoExtensions {
+    func GetBaseDefinition(MethodInfo method): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ModuleExtensions {
+    func HasModuleVersionId(Module module): Boolean
+    func GetModuleVersionId(Module module): Guid
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyInfoExtensions {
+    func GetAccessors(PropertyInfo property): MethodInfo[]
+    func GetAccessors(PropertyInfo property, Boolean nonPublic): MethodInfo[]
+    func GetGetMethod(PropertyInfo property): MethodInfo
+    func GetGetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetSetMethod(PropertyInfo property): MethodInfo
+    func GetSetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeExtensions {
+    func GetConstructor(Type type, Type[] types): ConstructorInfo
+    func GetConstructors(Type type): ConstructorInfo[]
+    func GetConstructors(Type type, BindingFlags bindingAttr): ConstructorInfo[]
+    func GetDefaultMembers(Type type): MemberInfo[]
+    func GetEvent(Type type, String name): EventInfo
+    func GetEvent(Type type, String name, BindingFlags bindingAttr): EventInfo
+    func GetEvents(Type type): EventInfo[]
+    func GetEvents(Type type, BindingFlags bindingAttr): EventInfo[]
+    func GetField(Type type, String name): FieldInfo
+    func GetField(Type type, String name, BindingFlags bindingAttr): FieldInfo
+    func GetFields(Type type): FieldInfo[]
+    func GetFields(Type type, BindingFlags bindingAttr): FieldInfo[]
+    func GetGenericArguments(Type type): Type[]
+    func GetInterfaces(Type type): Type[]
+    func GetMember(Type type, String name): MemberInfo[]
+    func GetMember(Type type, String name, BindingFlags bindingAttr): MemberInfo[]
+    func GetMembers(Type type): MemberInfo[]
+    func GetMembers(Type type, BindingFlags bindingAttr): MemberInfo[]
+    func GetMethod(Type type, String name): MethodInfo
+    func GetMethod(Type type, String name, BindingFlags bindingAttr): MethodInfo
+    func GetMethod(Type type, String name, Type[] types): MethodInfo
+    func GetMethods(Type type): MethodInfo[]
+    func GetMethods(Type type, BindingFlags bindingAttr): MethodInfo[]
+    func GetNestedType(Type type, String name, BindingFlags bindingAttr): Type
+    func GetNestedTypes(Type type, BindingFlags bindingAttr): Type[]
+    func GetProperties(Type type): PropertyInfo[]
+    func GetProperties(Type type, BindingFlags bindingAttr): PropertyInfo[]
+    func GetProperty(Type type, String name): PropertyInfo
+    func GetProperty(Type type, String name, BindingFlags bindingAttr): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType, Type[] types): PropertyInfo
+    func IsAssignableFrom(Type type, Type c): Boolean
+    func IsInstanceOfType(Type type, Object o): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AssemblyExtensions {
+    func GetExportedTypes(Assembly assembly): Type[]
+    func GetModules(Assembly assembly): Module[]
+    func GetTypes(Assembly assembly): Type[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class EventInfoExtensions {
+    func GetAddMethod(EventInfo eventInfo): MethodInfo
+    func GetAddMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInfoExtensions {
+    func HasMetadataToken(MemberInfo member): Boolean
+    func GetMetadataToken(MemberInfo member): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodInfoExtensions {
+    func GetBaseDefinition(MethodInfo method): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ModuleExtensions {
+    func HasModuleVersionId(Module module): Boolean
+    func GetModuleVersionId(Module module): Guid
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyInfoExtensions {
+    func GetAccessors(PropertyInfo property): MethodInfo[]
+    func GetAccessors(PropertyInfo property, Boolean nonPublic): MethodInfo[]
+    func GetGetMethod(PropertyInfo property): MethodInfo
+    func GetGetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetSetMethod(PropertyInfo property): MethodInfo
+    func GetSetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeExtensions {
+    func GetConstructor(Type type, Type[] types): ConstructorInfo
+    func GetConstructors(Type type): ConstructorInfo[]
+    func GetConstructors(Type type, BindingFlags bindingAttr): ConstructorInfo[]
+    func GetDefaultMembers(Type type): MemberInfo[]
+    func GetEvent(Type type, String name): EventInfo
+    func GetEvent(Type type, String name, BindingFlags bindingAttr): EventInfo
+    func GetEvents(Type type): EventInfo[]
+    func GetEvents(Type type, BindingFlags bindingAttr): EventInfo[]
+    func GetField(Type type, String name): FieldInfo
+    func GetField(Type type, String name, BindingFlags bindingAttr): FieldInfo
+    func GetFields(Type type): FieldInfo[]
+    func GetFields(Type type, BindingFlags bindingAttr): FieldInfo[]
+    func GetGenericArguments(Type type): Type[]
+    func GetInterfaces(Type type): Type[]
+    func GetMember(Type type, String name): MemberInfo[]
+    func GetMember(Type type, String name, BindingFlags bindingAttr): MemberInfo[]
+    func GetMembers(Type type): MemberInfo[]
+    func GetMembers(Type type, BindingFlags bindingAttr): MemberInfo[]
+    func GetMethod(Type type, String name): MethodInfo
+    func GetMethod(Type type, String name, BindingFlags bindingAttr): MethodInfo
+    func GetMethod(Type type, String name, Type[] types): MethodInfo
+    func GetMethods(Type type): MethodInfo[]
+    func GetMethods(Type type, BindingFlags bindingAttr): MethodInfo[]
+    func GetNestedType(Type type, String name, BindingFlags bindingAttr): Type
+    func GetNestedTypes(Type type, BindingFlags bindingAttr): Type[]
+    func GetProperties(Type type): PropertyInfo[]
+    func GetProperties(Type type, BindingFlags bindingAttr): PropertyInfo[]
+    func GetProperty(Type type, String name): PropertyInfo
+    func GetProperty(Type type, String name, BindingFlags bindingAttr): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType, Type[] types): PropertyInfo
+    func IsAssignableFrom(Type type, Type c): Boolean
+    func IsInstanceOfType(Type type, Object o): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AssemblyExtensions {
+    func GetExportedTypes(Assembly assembly): Type[]
+    func GetModules(Assembly assembly): Module[]
+    func GetTypes(Assembly assembly): Type[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class EventInfoExtensions {
+    func GetAddMethod(EventInfo eventInfo): MethodInfo
+    func GetAddMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInfoExtensions {
+    func HasMetadataToken(MemberInfo member): Boolean
+    func GetMetadataToken(MemberInfo member): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodInfoExtensions {
+    func GetBaseDefinition(MethodInfo method): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ModuleExtensions {
+    func HasModuleVersionId(Module module): Boolean
+    func GetModuleVersionId(Module module): Guid
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyInfoExtensions {
+    func GetAccessors(PropertyInfo property): MethodInfo[]
+    func GetAccessors(PropertyInfo property, Boolean nonPublic): MethodInfo[]
+    func GetGetMethod(PropertyInfo property): MethodInfo
+    func GetGetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetSetMethod(PropertyInfo property): MethodInfo
+    func GetSetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeExtensions {
+    func GetConstructor(Type type, Type[] types): ConstructorInfo
+    func GetConstructors(Type type): ConstructorInfo[]
+    func GetConstructors(Type type, BindingFlags bindingAttr): ConstructorInfo[]
+    func GetDefaultMembers(Type type): MemberInfo[]
+    func GetEvent(Type type, String name): EventInfo
+    func GetEvent(Type type, String name, BindingFlags bindingAttr): EventInfo
+    func GetEvents(Type type): EventInfo[]
+    func GetEvents(Type type, BindingFlags bindingAttr): EventInfo[]
+    func GetField(Type type, String name): FieldInfo
+    func GetField(Type type, String name, BindingFlags bindingAttr): FieldInfo
+    func GetFields(Type type): FieldInfo[]
+    func GetFields(Type type, BindingFlags bindingAttr): FieldInfo[]
+    func GetGenericArguments(Type type): Type[]
+    func GetInterfaces(Type type): Type[]
+    func GetMember(Type type, String name): MemberInfo[]
+    func GetMember(Type type, String name, BindingFlags bindingAttr): MemberInfo[]
+    func GetMembers(Type type): MemberInfo[]
+    func GetMembers(Type type, BindingFlags bindingAttr): MemberInfo[]
+    func GetMethod(Type type, String name): MethodInfo
+    func GetMethod(Type type, String name, BindingFlags bindingAttr): MethodInfo
+    func GetMethod(Type type, String name, Type[] types): MethodInfo
+    func GetMethods(Type type): MethodInfo[]
+    func GetMethods(Type type, BindingFlags bindingAttr): MethodInfo[]
+    func GetNestedType(Type type, String name, BindingFlags bindingAttr): Type
+    func GetNestedTypes(Type type, BindingFlags bindingAttr): Type[]
+    func GetProperties(Type type): PropertyInfo[]
+    func GetProperties(Type type, BindingFlags bindingAttr): PropertyInfo[]
+    func GetProperty(Type type, String name): PropertyInfo
+    func GetProperty(Type type, String name, BindingFlags bindingAttr): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType): PropertyInfo
+    func GetProperty(Type type, String name, Type returnType, Type[] types): PropertyInfo
+    func IsAssignableFrom(Type type, Type c): Boolean
+    func IsInstanceOfType(Type type, Object o): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AssemblyExtensions {
+    func GetExportedTypes(Assembly assembly): Type[]
+    func GetModules(Assembly assembly): Module[]
+    func GetTypes(Assembly assembly): Type[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class EventInfoExtensions {
+    func GetAddMethod(EventInfo eventInfo): MethodInfo
+    func GetAddMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo): MethodInfo
+    func GetRaiseMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo): MethodInfo
+    func GetRemoveMethod(EventInfo eventInfo, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInfoExtensions {
+    func HasMetadataToken(MemberInfo member): Boolean
+    func GetMetadataToken(MemberInfo member): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodInfoExtensions {
+    func GetBaseDefinition(MethodInfo method): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ModuleExtensions {
+    func HasModuleVersionId(Module module): Boolean
+    func GetModuleVersionId(Module module): Guid
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyInfoExtensions {
+    func GetAccessors(PropertyInfo property): MethodInfo[]
+    func GetAccessors(PropertyInfo property, Boolean nonPublic): MethodInfo[]
+    func GetGetMethod(PropertyInfo property): MethodInfo
+    func GetGetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetSetMethod(PropertyInfo property): MethodInfo
+    func GetSetMethod(PropertyInfo property, Boolean nonPublic): MethodInfo
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

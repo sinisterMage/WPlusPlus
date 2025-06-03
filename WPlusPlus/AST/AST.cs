@@ -154,14 +154,17 @@ namespace WPlusPlus.AST
         }
     }
     public class NewNode : Node
-    {
-        public string EntityName { get; }
+{
+    public string EntityName { get; }
+    public List<Node> Arguments { get; }
 
-        public NewNode(string entityName)
-        {
-            EntityName = entityName;
-        }
+    public NewNode(string entityName, List<Node> arguments)
+    {
+        EntityName = entityName;
+        Arguments = arguments;
     }
+}
+
     public class AltersNode : Node
     {
         public string ChildEntity { get; }

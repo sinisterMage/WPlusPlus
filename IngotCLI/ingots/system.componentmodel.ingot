@@ -1,0 +1,45 @@
+using System;
+using System.ComponentModel;
+
+ingot System.ComponentModel {
+  class IServiceProvider {
+    func GetService(Type serviceType): Object
+  }
+  class CancelEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IChangeTracking {
+    func AcceptChanges(): Void
+  }
+  class IEditableObject {
+    func BeginEdit(): Void
+    func EndEdit(): Void
+    func CancelEdit(): Void
+  }
+  class IRevertibleChangeTracking {
+    func RejectChanges(): Void
+  }
+  class IServiceProvider {
+    func GetService(Type serviceType): Object
+  }
+  class CancelEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IChangeTracking {
+    func AcceptChanges(): Void
+  }
+  class IEditableObject {
+    func BeginEdit(): Void
+    func EndEdit(): Void
+    func CancelEdit(): Void
+  }
+  class IRevertibleChangeTracking {
+    func RejectChanges(): Void
+  }
+}

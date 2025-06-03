@@ -1,0 +1,672 @@
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Runtime.InteropServices.ComTypes;
+using System.Runtime.InteropServices.Marshalling;
+using System.Security;
+
+ingot System.Runtime.InteropServices {
+  class SecureStringMarshal {
+    func SecureStringToCoTaskMemAnsi(SecureString s): IntPtr
+    func SecureStringToGlobalAllocAnsi(SecureString s): IntPtr
+    func SecureStringToCoTaskMemUnicode(SecureString s): IntPtr
+    func SecureStringToGlobalAllocUnicode(SecureString s): IntPtr
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AutomationProxyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComAliasNameAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComAwareEventInfo {
+    func AddEventHandler(Object target, Delegate handler): Void
+    func RemoveEventHandler(Object target, Delegate handler): Void
+    func GetAddMethod(Boolean nonPublic): MethodInfo
+    func GetOtherMethods(Boolean nonPublic): MethodInfo[]
+    func GetRaiseMethod(Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(Boolean nonPublic): MethodInfo
+    func GetCustomAttributes(Type attributeType, Boolean inherit): Object[]
+    func GetCustomAttributes(Boolean inherit): Object[]
+    func GetCustomAttributesData(): IList`1
+    func IsDefined(Type attributeType, Boolean inherit): Boolean
+    func GetOtherMethods(): MethodInfo[]
+    func GetAddMethod(): MethodInfo
+    func GetRemoveMethod(): MethodInfo
+    func GetRaiseMethod(): MethodInfo
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func HasSameMetadataDefinitionAs(MemberInfo other): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComCompatibleVersionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComConversionLossAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComRegisterFunctionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComUnregisterFunctionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class HandleCollector {
+    func Add(): Void
+    func Remove(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ImportedFromTypeLibAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ManagedToNativeComInteropStubAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class PrimaryInteropAssemblyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RuntimeEnvironment {
+    func FromGlobalAccessCache(Assembly a): Boolean
+    func GetRuntimeDirectory(): String
+    func GetRuntimeInterfaceAsIntPtr(Guid clsid, Guid riid): IntPtr
+    func GetRuntimeInterfaceAsObject(Guid clsid, Guid riid): Object
+    func GetSystemVersion(): String
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeLibFuncAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeLibImportClassAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeLibTypeAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeLibVarAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeLibVersionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComExposedClassAttribute`1 {
+    func GetComInterfaceEntries(Int32& count): ComInterfaceEntry*
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class UniqueComInterfaceMarshaller`1 {
+    func ConvertToUnmanaged(T managed): Void*
+    func ConvertToManaged(Void* unmanaged): T
+    func Free(Void* unmanaged): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ComInterfaceMarshaller`1 {
+    func ConvertToUnmanaged(T managed): Void*
+    func ConvertToManaged(Void* unmanaged): T
+    func Free(Void* unmanaged): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ComObject {
+    func FinalRelease(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExceptionAsDefaultMarshaller`1 {
+    func ConvertToUnmanaged(Exception e): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExceptionAsHResultMarshaller`1 {
+    func ConvertToUnmanaged(Exception e): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExceptionAsNaNMarshaller`1 {
+    func ConvertToUnmanaged(Exception e): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExceptionAsVoidMarshaller {
+    func ConvertToUnmanaged(Exception e): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GeneratedComClassAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class GeneratedComInterfaceAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IComExposedClass {
+    func GetComInterfaceEntries(Int32& count): ComInterfaceEntry*
+  }
+  class IComExposedDetails {
+    func GetComInterfaceEntries(Int32& count): ComInterfaceEntry*
+  }
+  class IIUnknownCacheStrategy {
+    func ConstructTableInfo(RuntimeTypeHandle handle, IIUnknownDerivedDetails interfaceDetails, Void* ptr): TableInfo
+    func TryGetTableInfo(RuntimeTypeHandle handle, TableInfo& info): Boolean
+    func TrySetTableInfo(RuntimeTypeHandle handle, TableInfo info): Boolean
+    func Clear(IIUnknownStrategy unknownStrategy): Void
+  }
+  class IIUnknownDerivedDetails {
+  }
+  class IIUnknownInterfaceDetailsStrategy {
+    func GetIUnknownDerivedDetails(RuntimeTypeHandle type): IIUnknownDerivedDetails
+    func GetComExposedTypeDetails(RuntimeTypeHandle type): IComExposedDetails
+  }
+  class IIUnknownInterfaceType {
+  }
+  class IIUnknownStrategy {
+    func CreateInstancePointer(Void* unknown): Void*
+    func QueryInterface(Void* instancePtr, Guid& iid, Void*& ppObj): Int32
+    func Release(Void* instancePtr): Int32
+  }
+  class IUnknownDerivedAttribute`2 {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IUnmanagedVirtualMethodTableProvider {
+    func GetVirtualMethodTableInfoForKey(Type type): VirtualMethodTableInfo
+  }
+  class StrategyBasedComWrappers {
+    func GetOrCreateComInterfaceForObject(Object instance, CreateComInterfaceFlags flags): IntPtr
+    func GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags): Object
+    func GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, Object wrapper): Object
+    func GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, Object wrapper, IntPtr inner): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IAdviseSink {
+    func OnDataChange(FORMATETC& format, STGMEDIUM& stgmedium): Void
+    func OnViewChange(Int32 aspect, Int32 index): Void
+    func OnRename(IMoniker moniker): Void
+    func OnSave(): Void
+    func OnClose(): Void
+  }
+  class IDataObject {
+    func GetData(FORMATETC& format, STGMEDIUM& medium): Void
+    func GetDataHere(FORMATETC& format, STGMEDIUM& medium): Void
+    func QueryGetData(FORMATETC& format): Int32
+    func GetCanonicalFormatEtc(FORMATETC& formatIn, FORMATETC& formatOut): Int32
+    func SetData(FORMATETC& formatIn, STGMEDIUM& medium, Boolean release): Void
+    func EnumFormatEtc(DATADIR direction): IEnumFORMATETC
+    func DAdvise(FORMATETC& pFormatetc, ADVF advf, IAdviseSink adviseSink, Int32& connection): Int32
+    func DUnadvise(Int32 connection): Void
+    func EnumDAdvise(IEnumSTATDATA& enumAdvise): Int32
+  }
+  class IEnumFORMATETC {
+    func Next(Int32 celt, FORMATETC[] rgelt, Int32[] pceltFetched): Int32
+    func Skip(Int32 celt): Int32
+    func Reset(): Int32
+    func Clone(IEnumFORMATETC& newEnum): Void
+  }
+  class IEnumSTATDATA {
+    func Next(Int32 celt, STATDATA[] rgelt, Int32[] pceltFetched): Int32
+    func Skip(Int32 celt): Int32
+    func Reset(): Int32
+    func Clone(IEnumSTATDATA& newEnum): Void
+  }
+  class IDispatchConstantAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IUnknownConstantAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class SecureStringMarshal {
+    func SecureStringToCoTaskMemAnsi(SecureString s): IntPtr
+    func SecureStringToGlobalAllocAnsi(SecureString s): IntPtr
+    func SecureStringToCoTaskMemUnicode(SecureString s): IntPtr
+    func SecureStringToGlobalAllocUnicode(SecureString s): IntPtr
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AutomationProxyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComAliasNameAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComAwareEventInfo {
+    func AddEventHandler(Object target, Delegate handler): Void
+    func RemoveEventHandler(Object target, Delegate handler): Void
+    func GetAddMethod(Boolean nonPublic): MethodInfo
+    func GetOtherMethods(Boolean nonPublic): MethodInfo[]
+    func GetRaiseMethod(Boolean nonPublic): MethodInfo
+    func GetRemoveMethod(Boolean nonPublic): MethodInfo
+    func GetCustomAttributes(Type attributeType, Boolean inherit): Object[]
+    func GetCustomAttributes(Boolean inherit): Object[]
+    func GetCustomAttributesData(): IList`1
+    func IsDefined(Type attributeType, Boolean inherit): Boolean
+    func GetOtherMethods(): MethodInfo[]
+    func GetAddMethod(): MethodInfo
+    func GetRemoveMethod(): MethodInfo
+    func GetRaiseMethod(): MethodInfo
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func HasSameMetadataDefinitionAs(MemberInfo other): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComCompatibleVersionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComConversionLossAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComRegisterFunctionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComUnregisterFunctionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class HandleCollector {
+    func Add(): Void
+    func Remove(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ImportedFromTypeLibAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ManagedToNativeComInteropStubAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class PrimaryInteropAssemblyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RuntimeEnvironment {
+    func FromGlobalAccessCache(Assembly a): Boolean
+    func GetRuntimeDirectory(): String
+    func GetRuntimeInterfaceAsIntPtr(Guid clsid, Guid riid): IntPtr
+    func GetRuntimeInterfaceAsObject(Guid clsid, Guid riid): Object
+    func GetSystemVersion(): String
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeLibFuncAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeLibImportClassAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeLibTypeAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeLibVarAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeLibVersionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ComExposedClassAttribute`1 {
+    func GetComInterfaceEntries(Int32& count): ComInterfaceEntry*
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class UniqueComInterfaceMarshaller`1 {
+    func ConvertToUnmanaged(T managed): Void*
+    func ConvertToManaged(Void* unmanaged): T
+    func Free(Void* unmanaged): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ComInterfaceMarshaller`1 {
+    func ConvertToUnmanaged(T managed): Void*
+    func ConvertToManaged(Void* unmanaged): T
+    func Free(Void* unmanaged): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ComObject {
+    func FinalRelease(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExceptionAsDefaultMarshaller`1 {
+    func ConvertToUnmanaged(Exception e): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExceptionAsHResultMarshaller`1 {
+    func ConvertToUnmanaged(Exception e): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExceptionAsNaNMarshaller`1 {
+    func ConvertToUnmanaged(Exception e): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExceptionAsVoidMarshaller {
+    func ConvertToUnmanaged(Exception e): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GeneratedComClassAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class GeneratedComInterfaceAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IComExposedClass {
+    func GetComInterfaceEntries(Int32& count): ComInterfaceEntry*
+  }
+  class IComExposedDetails {
+    func GetComInterfaceEntries(Int32& count): ComInterfaceEntry*
+  }
+  class IIUnknownCacheStrategy {
+    func ConstructTableInfo(RuntimeTypeHandle handle, IIUnknownDerivedDetails interfaceDetails, Void* ptr): TableInfo
+    func TryGetTableInfo(RuntimeTypeHandle handle, TableInfo& info): Boolean
+    func TrySetTableInfo(RuntimeTypeHandle handle, TableInfo info): Boolean
+    func Clear(IIUnknownStrategy unknownStrategy): Void
+  }
+  class IIUnknownDerivedDetails {
+  }
+  class IIUnknownInterfaceDetailsStrategy {
+    func GetIUnknownDerivedDetails(RuntimeTypeHandle type): IIUnknownDerivedDetails
+    func GetComExposedTypeDetails(RuntimeTypeHandle type): IComExposedDetails
+  }
+  class IIUnknownInterfaceType {
+  }
+  class IIUnknownStrategy {
+    func CreateInstancePointer(Void* unknown): Void*
+    func QueryInterface(Void* instancePtr, Guid& iid, Void*& ppObj): Int32
+    func Release(Void* instancePtr): Int32
+  }
+  class IUnknownDerivedAttribute`2 {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IUnmanagedVirtualMethodTableProvider {
+    func GetVirtualMethodTableInfoForKey(Type type): VirtualMethodTableInfo
+  }
+  class StrategyBasedComWrappers {
+    func GetOrCreateComInterfaceForObject(Object instance, CreateComInterfaceFlags flags): IntPtr
+    func GetOrCreateObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags): Object
+    func GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, Object wrapper): Object
+    func GetOrRegisterObjectForComInstance(IntPtr externalComObject, CreateObjectFlags flags, Object wrapper, IntPtr inner): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IAdviseSink {
+    func OnDataChange(FORMATETC& format, STGMEDIUM& stgmedium): Void
+    func OnViewChange(Int32 aspect, Int32 index): Void
+    func OnRename(IMoniker moniker): Void
+    func OnSave(): Void
+    func OnClose(): Void
+  }
+  class IDataObject {
+    func GetData(FORMATETC& format, STGMEDIUM& medium): Void
+    func GetDataHere(FORMATETC& format, STGMEDIUM& medium): Void
+    func QueryGetData(FORMATETC& format): Int32
+    func GetCanonicalFormatEtc(FORMATETC& formatIn, FORMATETC& formatOut): Int32
+    func SetData(FORMATETC& formatIn, STGMEDIUM& medium, Boolean release): Void
+    func EnumFormatEtc(DATADIR direction): IEnumFORMATETC
+    func DAdvise(FORMATETC& pFormatetc, ADVF advf, IAdviseSink adviseSink, Int32& connection): Int32
+    func DUnadvise(Int32 connection): Void
+    func EnumDAdvise(IEnumSTATDATA& enumAdvise): Int32
+  }
+  class IEnumFORMATETC {
+    func Next(Int32 celt, FORMATETC[] rgelt, Int32[] pceltFetched): Int32
+    func Skip(Int32 celt): Int32
+    func Reset(): Int32
+    func Clone(IEnumFORMATETC& newEnum): Void
+  }
+  class IEnumSTATDATA {
+    func Next(Int32 celt, STATDATA[] rgelt, Int32[] pceltFetched): Int32
+    func Skip(Int32 celt): Int32
+    func Reset(): Int32
+    func Clone(IEnumSTATDATA& newEnum): Void
+  }
+  class IDispatchConstantAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IUnknownConstantAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+}

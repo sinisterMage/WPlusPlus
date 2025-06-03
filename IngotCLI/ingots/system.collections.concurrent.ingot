@@ -1,0 +1,242 @@
+using System.Collections.Concurrent;
+
+ingot System.Collections.Concurrent {
+  class BlockingCollection`1 {
+    func Add(T item): Void
+    func Add(T item, CancellationToken cancellationToken): Void
+    func TryAdd(T item): Boolean
+    func TryAdd(T item, TimeSpan timeout): Boolean
+    func TryAdd(T item, Int32 millisecondsTimeout): Boolean
+    func TryAdd(T item, Int32 millisecondsTimeout, CancellationToken cancellationToken): Boolean
+    func Take(): T
+    func Take(CancellationToken cancellationToken): T
+    func TryTake(T& item): Boolean
+    func TryTake(T& item, TimeSpan timeout): Boolean
+    func TryTake(T& item, Int32 millisecondsTimeout): Boolean
+    func TryTake(T& item, Int32 millisecondsTimeout, CancellationToken cancellationToken): Boolean
+    func AddToAny(BlockingCollection`1[] collections, T item): Int32
+    func AddToAny(BlockingCollection`1[] collections, T item, CancellationToken cancellationToken): Int32
+    func TryAddToAny(BlockingCollection`1[] collections, T item): Int32
+    func TryAddToAny(BlockingCollection`1[] collections, T item, TimeSpan timeout): Int32
+    func TryAddToAny(BlockingCollection`1[] collections, T item, Int32 millisecondsTimeout): Int32
+    func TryAddToAny(BlockingCollection`1[] collections, T item, Int32 millisecondsTimeout, CancellationToken cancellationToken): Int32
+    func TakeFromAny(BlockingCollection`1[] collections, T& item): Int32
+    func TakeFromAny(BlockingCollection`1[] collections, T& item, CancellationToken cancellationToken): Int32
+    func TryTakeFromAny(BlockingCollection`1[] collections, T& item): Int32
+    func TryTakeFromAny(BlockingCollection`1[] collections, T& item, TimeSpan timeout): Int32
+    func TryTakeFromAny(BlockingCollection`1[] collections, T& item, Int32 millisecondsTimeout): Int32
+    func TryTakeFromAny(BlockingCollection`1[] collections, T& item, Int32 millisecondsTimeout, CancellationToken cancellationToken): Int32
+    func CompleteAdding(): Void
+    func Dispose(): Void
+    func ToArray(): T[]
+    func CopyTo(T[] array, Int32 index): Void
+    func GetConsumingEnumerable(): IEnumerable`1
+    func GetConsumingEnumerable(CancellationToken cancellationToken): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConcurrentBag`1 {
+    func Add(T item): Void
+    func TryTake(T& result): Boolean
+    func TryPeek(T& result): Boolean
+    func CopyTo(T[] array, Int32 index): Void
+    func ToArray(): T[]
+    func Clear(): Void
+    func GetEnumerator(): IEnumerator`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConcurrentDictionary`2 {
+    func TryAdd(TKey key, TValue value): Boolean
+    func ContainsKey(TKey key): Boolean
+    func TryRemove(TKey key, TValue& value): Boolean
+    func TryRemove(KeyValuePair`2 item): Boolean
+    func TryGetValue(TKey key, TValue& value): Boolean
+    func TryUpdate(TKey key, TValue newValue, TValue comparisonValue): Boolean
+    func Clear(): Void
+    func ToArray(): KeyValuePair`2[]
+    func GetEnumerator(): IEnumerator`1
+    func GetOrAdd(TKey key, Func`2 valueFactory): TValue
+    func GetOrAdd(TKey key, Func`3 valueFactory, TArg factoryArgument): TValue
+    func GetOrAdd(TKey key, TValue value): TValue
+    func AddOrUpdate(TKey key, Func`3 addValueFactory, Func`4 updateValueFactory, TArg factoryArgument): TValue
+    func AddOrUpdate(TKey key, Func`2 addValueFactory, Func`3 updateValueFactory): TValue
+    func AddOrUpdate(TKey key, TValue addValue, Func`3 updateValueFactory): TValue
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConcurrentStack`1 {
+    func Clear(): Void
+    func CopyTo(T[] array, Int32 index): Void
+    func Push(T item): Void
+    func PushRange(T[] items): Void
+    func PushRange(T[] items, Int32 startIndex, Int32 count): Void
+    func TryPeek(T& result): Boolean
+    func TryPop(T& result): Boolean
+    func TryPopRange(T[] items): Int32
+    func TryPopRange(T[] items, Int32 startIndex, Int32 count): Int32
+    func ToArray(): T[]
+    func GetEnumerator(): IEnumerator`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class OrderablePartitioner`1 {
+    func GetOrderablePartitions(Int32 partitionCount): IList`1
+    func GetOrderableDynamicPartitions(): IEnumerable`1
+    func GetPartitions(Int32 partitionCount): IList`1
+    func GetDynamicPartitions(): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Partitioner`1 {
+    func GetPartitions(Int32 partitionCount): IList`1
+    func GetDynamicPartitions(): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Partitioner {
+    func Create(IList`1 list, Boolean loadBalance): OrderablePartitioner`1
+    func Create(TSource[] array, Boolean loadBalance): OrderablePartitioner`1
+    func Create(IEnumerable`1 source): OrderablePartitioner`1
+    func Create(IEnumerable`1 source, EnumerablePartitionerOptions partitionerOptions): OrderablePartitioner`1
+    func Create(Int64 fromInclusive, Int64 toExclusive): OrderablePartitioner`1
+    func Create(Int64 fromInclusive, Int64 toExclusive, Int64 rangeSize): OrderablePartitioner`1
+    func Create(Int32 fromInclusive, Int32 toExclusive): OrderablePartitioner`1
+    func Create(Int32 fromInclusive, Int32 toExclusive, Int32 rangeSize): OrderablePartitioner`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BlockingCollection`1 {
+    func Add(T item): Void
+    func Add(T item, CancellationToken cancellationToken): Void
+    func TryAdd(T item): Boolean
+    func TryAdd(T item, TimeSpan timeout): Boolean
+    func TryAdd(T item, Int32 millisecondsTimeout): Boolean
+    func TryAdd(T item, Int32 millisecondsTimeout, CancellationToken cancellationToken): Boolean
+    func Take(): T
+    func Take(CancellationToken cancellationToken): T
+    func TryTake(T& item): Boolean
+    func TryTake(T& item, TimeSpan timeout): Boolean
+    func TryTake(T& item, Int32 millisecondsTimeout): Boolean
+    func TryTake(T& item, Int32 millisecondsTimeout, CancellationToken cancellationToken): Boolean
+    func AddToAny(BlockingCollection`1[] collections, T item): Int32
+    func AddToAny(BlockingCollection`1[] collections, T item, CancellationToken cancellationToken): Int32
+    func TryAddToAny(BlockingCollection`1[] collections, T item): Int32
+    func TryAddToAny(BlockingCollection`1[] collections, T item, TimeSpan timeout): Int32
+    func TryAddToAny(BlockingCollection`1[] collections, T item, Int32 millisecondsTimeout): Int32
+    func TryAddToAny(BlockingCollection`1[] collections, T item, Int32 millisecondsTimeout, CancellationToken cancellationToken): Int32
+    func TakeFromAny(BlockingCollection`1[] collections, T& item): Int32
+    func TakeFromAny(BlockingCollection`1[] collections, T& item, CancellationToken cancellationToken): Int32
+    func TryTakeFromAny(BlockingCollection`1[] collections, T& item): Int32
+    func TryTakeFromAny(BlockingCollection`1[] collections, T& item, TimeSpan timeout): Int32
+    func TryTakeFromAny(BlockingCollection`1[] collections, T& item, Int32 millisecondsTimeout): Int32
+    func TryTakeFromAny(BlockingCollection`1[] collections, T& item, Int32 millisecondsTimeout, CancellationToken cancellationToken): Int32
+    func CompleteAdding(): Void
+    func Dispose(): Void
+    func ToArray(): T[]
+    func CopyTo(T[] array, Int32 index): Void
+    func GetConsumingEnumerable(): IEnumerable`1
+    func GetConsumingEnumerable(CancellationToken cancellationToken): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConcurrentBag`1 {
+    func Add(T item): Void
+    func TryTake(T& result): Boolean
+    func TryPeek(T& result): Boolean
+    func CopyTo(T[] array, Int32 index): Void
+    func ToArray(): T[]
+    func Clear(): Void
+    func GetEnumerator(): IEnumerator`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConcurrentDictionary`2 {
+    func TryAdd(TKey key, TValue value): Boolean
+    func ContainsKey(TKey key): Boolean
+    func TryRemove(TKey key, TValue& value): Boolean
+    func TryRemove(KeyValuePair`2 item): Boolean
+    func TryGetValue(TKey key, TValue& value): Boolean
+    func TryUpdate(TKey key, TValue newValue, TValue comparisonValue): Boolean
+    func Clear(): Void
+    func ToArray(): KeyValuePair`2[]
+    func GetEnumerator(): IEnumerator`1
+    func GetOrAdd(TKey key, Func`2 valueFactory): TValue
+    func GetOrAdd(TKey key, Func`3 valueFactory, TArg factoryArgument): TValue
+    func GetOrAdd(TKey key, TValue value): TValue
+    func AddOrUpdate(TKey key, Func`3 addValueFactory, Func`4 updateValueFactory, TArg factoryArgument): TValue
+    func AddOrUpdate(TKey key, Func`2 addValueFactory, Func`3 updateValueFactory): TValue
+    func AddOrUpdate(TKey key, TValue addValue, Func`3 updateValueFactory): TValue
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConcurrentStack`1 {
+    func Clear(): Void
+    func CopyTo(T[] array, Int32 index): Void
+    func Push(T item): Void
+    func PushRange(T[] items): Void
+    func PushRange(T[] items, Int32 startIndex, Int32 count): Void
+    func TryPeek(T& result): Boolean
+    func TryPop(T& result): Boolean
+    func TryPopRange(T[] items): Int32
+    func TryPopRange(T[] items, Int32 startIndex, Int32 count): Int32
+    func ToArray(): T[]
+    func GetEnumerator(): IEnumerator`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class OrderablePartitioner`1 {
+    func GetOrderablePartitions(Int32 partitionCount): IList`1
+    func GetOrderableDynamicPartitions(): IEnumerable`1
+    func GetPartitions(Int32 partitionCount): IList`1
+    func GetDynamicPartitions(): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Partitioner`1 {
+    func GetPartitions(Int32 partitionCount): IList`1
+    func GetDynamicPartitions(): IEnumerable`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Partitioner {
+    func Create(IList`1 list, Boolean loadBalance): OrderablePartitioner`1
+    func Create(TSource[] array, Boolean loadBalance): OrderablePartitioner`1
+    func Create(IEnumerable`1 source): OrderablePartitioner`1
+    func Create(IEnumerable`1 source, EnumerablePartitionerOptions partitionerOptions): OrderablePartitioner`1
+    func Create(Int64 fromInclusive, Int64 toExclusive): OrderablePartitioner`1
+    func Create(Int64 fromInclusive, Int64 toExclusive, Int64 rangeSize): OrderablePartitioner`1
+    func Create(Int32 fromInclusive, Int32 toExclusive): OrderablePartitioner`1
+    func Create(Int32 fromInclusive, Int32 toExclusive, Int32 rangeSize): OrderablePartitioner`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

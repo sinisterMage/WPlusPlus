@@ -1,0 +1,104 @@
+using System.IO.Pipelines;
+
+ingot System.IO.Pipelines {
+  class IDuplexPipe {
+  }
+  class Pipe {
+    /// Resets the pipe.
+    func Reset(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PipeOptions {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PipeReader {
+    func TryRead(ReadResult& result): Boolean
+    /// Asynchronously reads a sequence of bytes from the current .
+    func ReadAsync(CancellationToken cancellationToken): ValueTask`1
+    /// Asynchronously reads a sequence of bytes from the current .
+    func ReadAtLeastAsync(Int32 minimumSize, CancellationToken cancellationToken): ValueTask`1
+    /// Moves forward the pipeline's read cursor to after the consumed data, marking the data as processed.
+    func AdvanceTo(SequencePosition consumed): Void
+    /// Moves forward the pipeline's read cursor to after the consumed data, marking the data as processed, read and examined.
+    func AdvanceTo(SequencePosition consumed, SequencePosition examined): Void
+    /// Returns a  representation of the .
+    func AsStream(Boolean leaveOpen): Stream
+    /// Cancels the pending  operation without causing it to throw and without completing the . If there is no pending operation, this cancels the next operation.
+    func CancelPendingRead(): Void
+    /// Signals to the producer that the consumer is done reading.
+    func Complete(Exception exception): Void
+    /// Marks the current pipe reader instance as being complete, meaning no more data will be read from it.
+    func CompleteAsync(Exception exception): ValueTask
+    func OnWriterCompleted(Action`2 callback, Object state): Void
+    /// Creates a  wrapping the specified .
+    func Create(Stream stream, StreamPipeReaderOptions readerOptions): PipeReader
+    func Create(ReadOnlySequence`1 sequence): PipeReader
+    /// Asynchronously reads the bytes from the  and writes them to the specified , using a specified cancellation token.
+    func CopyToAsync(PipeWriter destination, CancellationToken cancellationToken): Task
+    /// Asynchronously reads the bytes from the  and writes them to the specified stream, using a specified cancellation token.
+    func CopyToAsync(Stream destination, CancellationToken cancellationToken): Task
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PipeScheduler {
+    func Schedule(Action`1 action, Object state): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PipeWriter {
+    /// Marks the  as being complete, meaning no more items will be written to it.
+    func Complete(Exception exception): Void
+    /// Marks the current pipe writer instance as being complete, meaning no more data will be written to it.
+    func CompleteAsync(Exception exception): ValueTask
+    /// Cancels the pending  or  operation without causing the operation to throw and without completing the . If there is no pending operation, this cancels the next operation.
+    func CancelPendingFlush(): Void
+    func OnReaderCompleted(Action`2 callback, Object state): Void
+    /// Makes bytes written available to  and runs  continuation.
+    func FlushAsync(CancellationToken cancellationToken): ValueTask`1
+    /// Notifies the  that  bytes were written to the output  or . You must call  or  again and use the returned buffer to continue writing more data after calling ; you cannot write to a previously acquired buffer.
+    func Advance(Int32 bytes): Void
+    /// Returns a  to write to that is at least the requested size, as specified by the  parameter.
+    func GetMemory(Int32 sizeHint): Memory`1
+    /// Returns a  to write to that is at least the requested size, as specified by the  parameter.
+    func GetSpan(Int32 sizeHint): Span`1
+    /// Returns a  representation of the .
+    func AsStream(Boolean leaveOpen): Stream
+    /// Creates a  wrapping the specified .
+    func Create(Stream stream, StreamPipeWriterOptions writerOptions): PipeWriter
+    func WriteAsync(ReadOnlyMemory`1 source, CancellationToken cancellationToken): ValueTask`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StreamPipeExtensions {
+    /// Asynchronously reads the bytes from the  and writes them to the specified , using a cancellation token.
+    func CopyToAsync(Stream source, PipeWriter destination, CancellationToken cancellationToken): Task
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StreamPipeReaderOptions {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StreamPipeWriterOptions {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

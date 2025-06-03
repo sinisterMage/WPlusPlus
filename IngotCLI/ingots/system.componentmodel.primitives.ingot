@@ -1,0 +1,419 @@
+using System.ComponentModel;
+using System.ComponentModel.Design.Serialization;
+
+ingot System.ComponentModel.Primitives {
+  class ISynchronizeInvoke {
+    func BeginInvoke(Delegate method, Object[] args): IAsyncResult
+    func EndInvoke(IAsyncResult result): Object
+    func Invoke(Delegate method, Object[] args): Object
+  }
+  class BrowsableAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class CategoryAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class Component {
+    func Dispose(): Void
+    func ToString(): String
+    func GetLifetimeService(): Object
+    func InitializeLifetimeService(): Object
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ComponentCollection {
+    func CopyTo(IComponent[] array, Int32 index): Void
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DescriptionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignerAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignerCategoryAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignerSerializationVisibilityAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignOnlyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DisplayNameAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class EditorAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class EventHandlerList {
+    func AddHandler(Object key, Delegate value): Void
+    func AddHandlers(EventHandlerList listToAddFrom): Void
+    func Dispose(): Void
+    func RemoveHandler(Object key, Delegate value): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IComponent {
+  }
+  class IContainer {
+    func Add(IComponent component): Void
+    func Add(IComponent component, String name): Void
+    func Remove(IComponent component): Void
+  }
+  class ImmutableObjectAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class InitializationEventAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class InvalidAsynchronousStateException {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetBaseException(): Exception
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvalidEnumArgumentException {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetBaseException(): Exception
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ISite {
+  }
+  class ISupportInitialize {
+    func BeginInit(): Void
+    func EndInit(): Void
+  }
+  class LocalizableAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class MergablePropertyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class NotifyParentPropertyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ParenthesizePropertyNameAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ReadOnlyAttribute {
+    func Equals(Object value): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RefreshPropertiesAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignerSerializerAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ISynchronizeInvoke {
+    func BeginInvoke(Delegate method, Object[] args): IAsyncResult
+    func EndInvoke(IAsyncResult result): Object
+    func Invoke(Delegate method, Object[] args): Object
+  }
+  class BrowsableAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class CategoryAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class Component {
+    func Dispose(): Void
+    func ToString(): String
+    func GetLifetimeService(): Object
+    func InitializeLifetimeService(): Object
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ComponentCollection {
+    func CopyTo(IComponent[] array, Int32 index): Void
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DescriptionAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignerAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignerCategoryAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignerSerializationVisibilityAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignOnlyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DisplayNameAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class EditorAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class EventHandlerList {
+    func AddHandler(Object key, Delegate value): Void
+    func AddHandlers(EventHandlerList listToAddFrom): Void
+    func Dispose(): Void
+    func RemoveHandler(Object key, Delegate value): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IComponent {
+  }
+  class IContainer {
+    func Add(IComponent component): Void
+    func Add(IComponent component, String name): Void
+    func Remove(IComponent component): Void
+  }
+  class ImmutableObjectAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class InitializationEventAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class InvalidAsynchronousStateException {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetBaseException(): Exception
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvalidEnumArgumentException {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetBaseException(): Exception
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ISite {
+  }
+  class ISupportInitialize {
+    func BeginInit(): Void
+    func EndInit(): Void
+  }
+  class LocalizableAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class MergablePropertyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class NotifyParentPropertyAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ParenthesizePropertyNameAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ReadOnlyAttribute {
+    func Equals(Object value): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RefreshPropertiesAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func IsDefaultAttribute(): Boolean
+    func Match(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DesignerSerializerAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+}

@@ -38,6 +38,12 @@
         "title": "Run W++ File with Ingot"
       }
     ],
+    "snippets": [
+      {
+        "language": "wpp",
+        "path": "./snippets/wpp.code-snippets"
+      }
+    ],
     "iconThemes": [
       {
         "id": "wpp-theme",

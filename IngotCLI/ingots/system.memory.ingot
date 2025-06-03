@@ -1,0 +1,180 @@
+using System.Buffers;
+using System.Runtime.InteropServices;
+using System.Text;
+
+ingot System.Memory {
+  class EncodingExtensions {
+    func GetBytes(Encoding encoding, ReadOnlySpan`1 chars, IBufferWriter`1 writer): Int64
+    func GetBytes(Encoding encoding, ReadOnlySequence`1& chars, IBufferWriter`1 writer): Int64
+    func GetBytes(Encoding encoding, ReadOnlySequence`1& chars, Span`1 bytes): Int32
+    func GetBytes(Encoding encoding, ReadOnlySequence`1& chars): Byte[]
+    func GetChars(Encoding encoding, ReadOnlySpan`1 bytes, IBufferWriter`1 writer): Int64
+    func GetChars(Encoding encoding, ReadOnlySequence`1& bytes, IBufferWriter`1 writer): Int64
+    func GetChars(Encoding encoding, ReadOnlySequence`1& bytes, Span`1 chars): Int32
+    func GetString(Encoding encoding, ReadOnlySequence`1& bytes): String
+    func Convert(Encoder encoder, ReadOnlySpan`1 chars, IBufferWriter`1 writer, Boolean flush, Int64& bytesUsed, Boolean& completed): Void
+    func Convert(Encoder encoder, ReadOnlySequence`1& chars, IBufferWriter`1 writer, Boolean flush, Int64& bytesUsed, Boolean& completed): Void
+    func Convert(Decoder decoder, ReadOnlySpan`1 bytes, IBufferWriter`1 writer, Boolean flush, Int64& charsUsed, Boolean& completed): Void
+    func Convert(Decoder decoder, ReadOnlySequence`1& bytes, IBufferWriter`1 writer, Boolean flush, Int64& charsUsed, Boolean& completed): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SequenceMarshal {
+    func TryGetReadOnlySequenceSegment(ReadOnlySequence`1 sequence, ReadOnlySequenceSegment`1& startSegment, Int32& startIndex, ReadOnlySequenceSegment`1& endSegment, Int32& endIndex): Boolean
+    func TryGetArray(ReadOnlySequence`1 sequence, ArraySegment`1& segment): Boolean
+    func TryGetReadOnlyMemory(ReadOnlySequence`1 sequence, ReadOnlyMemory`1& memory): Boolean
+    func TryRead(SequenceReader`1& reader, T& value): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BuffersExtensions {
+    func PositionOf(ReadOnlySequence`1& source, T value): Nullable`1
+    func CopyTo(ReadOnlySequence`1& source, Span`1 destination): Void
+    func ToArray(ReadOnlySequence`1& sequence): T[]
+    func Write(IBufferWriter`1 writer, ReadOnlySpan`1 value): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IBufferWriter`1 {
+    /// Notifies  that  amount of data was written to /
+    func Advance(Int32 count): Void
+    /// Requests the  that is at least  in size if possible, otherwise returns maximum available memory.
+            If  is equal to 0, currently available memory would get returned.
+    func GetMemory(Int32 sizeHint): Memory`1
+    /// Requests the  that is at least  in size if possible, otherwise returns maximum available memory.
+            If  is equal to 0, currently available memory would get returned.
+    func GetSpan(Int32 sizeHint): Span`1
+  }
+  class MemoryPool`1 {
+    /// Returns a memory block capable of holding at least  elements of T.
+    func Rent(Int32 minBufferSize): IMemoryOwner`1
+    /// Frees all resources used by the memory pool.
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlySequenceSegment`1 {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SequenceReaderExtensions {
+    func TryReadLittleEndian(SequenceReader`1& reader, Int16& value): Boolean
+    func TryReadBigEndian(SequenceReader`1& reader, Int16& value): Boolean
+    func TryReadLittleEndian(SequenceReader`1& reader, Int32& value): Boolean
+    func TryReadBigEndian(SequenceReader`1& reader, Int32& value): Boolean
+    func TryReadLittleEndian(SequenceReader`1& reader, Int64& value): Boolean
+    func TryReadBigEndian(SequenceReader`1& reader, Int64& value): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ArrayBufferWriter`1 {
+    func Clear(): Void
+    func ResetWrittenCount(): Void
+    func Advance(Int32 count): Void
+    func GetMemory(Int32 sizeHint): Memory`1
+    func GetSpan(Int32 sizeHint): Span`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class EncodingExtensions {
+    func GetBytes(Encoding encoding, ReadOnlySpan`1 chars, IBufferWriter`1 writer): Int64
+    func GetBytes(Encoding encoding, ReadOnlySequence`1& chars, IBufferWriter`1 writer): Int64
+    func GetBytes(Encoding encoding, ReadOnlySequence`1& chars, Span`1 bytes): Int32
+    func GetBytes(Encoding encoding, ReadOnlySequence`1& chars): Byte[]
+    func GetChars(Encoding encoding, ReadOnlySpan`1 bytes, IBufferWriter`1 writer): Int64
+    func GetChars(Encoding encoding, ReadOnlySequence`1& bytes, IBufferWriter`1 writer): Int64
+    func GetChars(Encoding encoding, ReadOnlySequence`1& bytes, Span`1 chars): Int32
+    func GetString(Encoding encoding, ReadOnlySequence`1& bytes): String
+    func Convert(Encoder encoder, ReadOnlySpan`1 chars, IBufferWriter`1 writer, Boolean flush, Int64& bytesUsed, Boolean& completed): Void
+    func Convert(Encoder encoder, ReadOnlySequence`1& chars, IBufferWriter`1 writer, Boolean flush, Int64& bytesUsed, Boolean& completed): Void
+    func Convert(Decoder decoder, ReadOnlySpan`1 bytes, IBufferWriter`1 writer, Boolean flush, Int64& charsUsed, Boolean& completed): Void
+    func Convert(Decoder decoder, ReadOnlySequence`1& bytes, IBufferWriter`1 writer, Boolean flush, Int64& charsUsed, Boolean& completed): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SequenceMarshal {
+    func TryGetReadOnlySequenceSegment(ReadOnlySequence`1 sequence, ReadOnlySequenceSegment`1& startSegment, Int32& startIndex, ReadOnlySequenceSegment`1& endSegment, Int32& endIndex): Boolean
+    func TryGetArray(ReadOnlySequence`1 sequence, ArraySegment`1& segment): Boolean
+    func TryGetReadOnlyMemory(ReadOnlySequence`1 sequence, ReadOnlyMemory`1& memory): Boolean
+    func TryRead(SequenceReader`1& reader, T& value): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BuffersExtensions {
+    func PositionOf(ReadOnlySequence`1& source, T value): Nullable`1
+    func CopyTo(ReadOnlySequence`1& source, Span`1 destination): Void
+    func ToArray(ReadOnlySequence`1& sequence): T[]
+    func Write(IBufferWriter`1 writer, ReadOnlySpan`1 value): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IBufferWriter`1 {
+    /// Notifies  that  amount of data was written to /
+    func Advance(Int32 count): Void
+    /// Requests the  that is at least  in size if possible, otherwise returns maximum available memory.
+            If  is equal to 0, currently available memory would get returned.
+    func GetMemory(Int32 sizeHint): Memory`1
+    /// Requests the  that is at least  in size if possible, otherwise returns maximum available memory.
+            If  is equal to 0, currently available memory would get returned.
+    func GetSpan(Int32 sizeHint): Span`1
+  }
+  class MemoryPool`1 {
+    /// Returns a memory block capable of holding at least  elements of T.
+    func Rent(Int32 minBufferSize): IMemoryOwner`1
+    /// Frees all resources used by the memory pool.
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlySequenceSegment`1 {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SequenceReaderExtensions {
+    func TryReadLittleEndian(SequenceReader`1& reader, Int16& value): Boolean
+    func TryReadBigEndian(SequenceReader`1& reader, Int16& value): Boolean
+    func TryReadLittleEndian(SequenceReader`1& reader, Int32& value): Boolean
+    func TryReadBigEndian(SequenceReader`1& reader, Int32& value): Boolean
+    func TryReadLittleEndian(SequenceReader`1& reader, Int64& value): Boolean
+    func TryReadBigEndian(SequenceReader`1& reader, Int64& value): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ArrayBufferWriter`1 {
+    func Clear(): Void
+    func ResetWrittenCount(): Void
+    func Advance(Int32 count): Void
+    func GetMemory(Int32 sizeHint): Memory`1
+    func GetSpan(Int32 sizeHint): Span`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

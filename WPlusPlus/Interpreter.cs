@@ -51,17 +51,19 @@ public Interpreter(Dictionary<string, (object Value, bool IsConst)> parentScope,
 
 
                 case IdentifierNode id:
-                    if (variables.TryGetValue(id.Name, out var val))
-                    {
-                        if (val.Value is double d) return d;
-                        if (val.Value is string s) return s;
-                        if (val.Value is FunctionObject or AsyncFunctionObject) return val.Value;
-                        if (val.Value is Dictionary<string, object> dict) return dict;
-                        if (val.Value is null) return null; // ✅ NEW: handle null
+    if (variables.TryGetValue(id.Name, out var val))
+    {
+        if (val.Value is double d) return d;
+        if (val.Value is string s) return s;
+        if (val.Value is FunctionObject or AsyncFunctionObject) return val.Value;
+        if (val.Value is Dictionary<string, object> dict) return dict;
+        if (val.Value is Type t) return t; // ✅ Support System.Type
+        if (val.Value is RuntimeTypeHandle handle) return handle;
+        if (val.Value is null) return null;
 
-                        throw new Exception("Unsupported value type.");
-                    }
-                    throw new Exception($"Undefined variable: {id.Name}");
+        throw new Exception("Unsupported value type.");
+    }
+    throw new Exception($"Undefined variable: {id.Name}");
 
 
 
@@ -80,14 +82,14 @@ public Interpreter(Dictionary<string, (object Value, bool IsConst)> parentScope,
                     return newVal;
 
                 case PrintNode print:
-    var result = await Evaluate(print.Expression);
+    foreach (var arg in print.Arguments)
+    {
+        var result = await Evaluate(arg);
+        Console.Write(result);
+    }
+    Console.WriteLine(); // new line after all args
+    return null;
 
-    if (result is string str)
-        Console.WriteLine(str);
-    else
-        Console.WriteLine(result);
-
-    return result;
 
 
 
@@ -135,6 +137,12 @@ public Interpreter(Dictionary<string, (object Value, bool IsConst)> parentScope,
                     };
                     return asyncFunc;
 
+case TypeOfNode typeofNode:
+        var resolvedType = Type.GetType(typeofNode.TypeName);
+        if (resolvedType == null)
+            throw new Exception($"[typeof] Type '{typeofNode.TypeName}' not found.");
+        Console.WriteLine($"[INTERPRETER] typeof({typeofNode.TypeName}) → {resolvedType}");
+        return resolvedType;
 
 
                 case AwaitNode awaitNode:

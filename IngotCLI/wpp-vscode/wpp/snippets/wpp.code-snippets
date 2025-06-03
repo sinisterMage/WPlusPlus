@@ -1,27 +1,147 @@
 {
   "Print Statement": {
     "prefix": "print",
-    "body": ["print \"$1\";"],
-    "description": "Print a message to the console"
+    "body": ["print(\"$1\");"],
+    "description": "Print something"
+  },
+  "Let Declaration": {
+    "prefix": "let",
+    "body": ["let $1 = $2;"],
+    "description": "Declare a mutable variable"
+  },
+  "Const Declaration": {
+    "prefix": "const",
+    "body": ["const $1 = $2;"],
+    "description": "Declare an immutable constant"
+  },
+  "Async Function": {
+    "prefix": "async",
+    "body": ["async $1 => {", "  $2", "}"],
+    "description": "Define an async function"
+  },
+  "Await": {
+    "prefix": "await",
+    "body": ["await $1"],
+    "description": "Await an async operation"
+  },
+  "Return": {
+    "prefix": "return",
+    "body": ["return $1;"],
+    "description": "Return a value"
   },
   "If Statement": {
     "prefix": "if",
-    "body": [
-      "if ($1) {",
-      "    $2",
-      "} else {",
-      "    $3",
-      "}"
-    ],
-    "description": "Basic if/else block"
+    "body": ["if ($1) {", "  $2", "}"],
+    "description": "If statement"
+  },
+  "If Else Statement": {
+    "prefix": "ifelse",
+    "body": ["if ($1) {", "  $2", "} else {", "  $3", "}"],
+    "description": "If-else statement"
   },
   "While Loop": {
     "prefix": "while",
-    "body": [
-      "while ($1) {",
-      "    $2",
-      "}"
-    ],
+    "body": ["while ($1) {", "  $2", "}"],
     "description": "While loop"
+  },
+  "For Loop": {
+    "prefix": "for",
+    "body": ["for (let $1 = 0; $1 < $2; $1++) {", "  $3", "}"],
+    "description": "For loop"
+  },
+  "Break": {
+    "prefix": "break",
+    "body": ["break;"],
+    "description": "Break out of a loop"
+  },
+  "Continue": {
+    "prefix": "continue",
+    "body": ["continue;"],
+    "description": "Continue to next loop iteration"
+  },
+  "True": {
+    "prefix": "true",
+    "body": ["true"],
+    "description": "Boolean true"
+  },
+  "False": {
+    "prefix": "false",
+    "body": ["false"],
+    "description": "Boolean false"
+  },
+  "Null": {
+    "prefix": "null",
+    "body": ["null"],
+    "description": "Null value"
+  },
+  "Import": {
+    "prefix": "import",
+    "body": ["import \"$1\";"],
+    "description": "Import a file"
+  },
+  "Entity": {
+    "prefix": "entity",
+    "body": ["entity $1 {", "  $2 => {", "    $3", "  }", "}"],
+    "description": "Define a W++ entity"
+  },
+  "Inherits": {
+    "prefix": "inherits",
+    "body": ["inherits $1"],
+    "description": "Inherit from another entity"
+  },
+  "Disown": {
+    "prefix": "disown",
+    "body": ["disown $1;"],
+    "description": "Remove ownership"
+  },
+  "Birth": {
+    "prefix": "birth",
+    "body": ["birth $1;"],
+    "description": "Create a new instance"
+  },
+  "Vanish": {
+    "prefix": "vanish",
+    "body": ["vanish $1;"],
+    "description": "Delete an instance"
+  },
+  "Me": {
+    "prefix": "me",
+    "body": ["me"],
+    "description": "Reference the current entity"
+  },
+  "Ancestor": {
+    "prefix": "ancestor",
+    "body": ["ancestor"],
+    "description": "Reference the parent entity"
+  },
+  "New": {
+    "prefix": "new",
+    "body": ["new $1();"],
+    "description": "Create a new object"
+  },
+  "Alters": {
+    "prefix": "alters",
+    "body": ["alters $1 => {", "  $2", "}"],
+    "description": "Override or alter inherited behavior"
+  },
+  "Switch": {
+    "prefix": "switch",
+    "body": ["switch ($1) {", "  case $2:", "    $3", "    break;", "  default:", "    $4", "}"],
+    "description": "Switch-case statement"
+  },
+  "Case": {
+    "prefix": "case",
+    "body": ["case $1:", "  $2"],
+    "description": "Case label inside switch"
+  },
+  "Default": {
+    "prefix": "default",
+    "body": ["default:", "  $1"],
+    "description": "Default case in switch"
+  },
+  "Externcall": {
+    "prefix": "externcall",
+    "body": ["externcall $1;"],
+    "description": "Call an external function"
   }
 }

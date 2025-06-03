@@ -1,12 +1,13 @@
 ﻿namespace WPlusPlus.AST
 {
     public class PrintNode : Node
-    {
-        public Node Expression { get; }
+{
+    public List<Node> Arguments { get; }
 
-        public PrintNode(Node expression)
-        {
-            Expression = expression;
-        }
+    public PrintNode(List<Node> arguments)
+    {
+        Arguments = arguments;
     }
+}
+
 }

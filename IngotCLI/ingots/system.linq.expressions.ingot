@@ -1,0 +1,3215 @@
+using System.Dynamic;
+using System.Linq;
+using System.Linq.Expressions;
+using System.Linq.Expressions.Interpreter;
+using System.Runtime.CompilerServices;
+
+ingot System.Linq.Expressions {
+  class IRuntimeVariables {
+  }
+  class RuntimeOps {
+    func ExpandoTryGetValue(ExpandoObject expando, Object indexClass, Int32 index, String name, Boolean ignoreCase, Object& value): Boolean
+    func ExpandoTrySetValue(ExpandoObject expando, Object indexClass, Int32 index, Object value, String name, Boolean ignoreCase): Object
+    func ExpandoTryDeleteValue(ExpandoObject expando, Object indexClass, Int32 index, String name, Boolean ignoreCase): Boolean
+    func ExpandoCheckVersion(ExpandoObject expando, Object version): Boolean
+    func ExpandoPromoteClass(ExpandoObject expando, Object oldClass, Object newClass): Void
+    func Quote(Expression expression, Object hoistedLocals, Object[] locals): Expression
+    func MergeRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, Int32[] indexes): IRuntimeVariables
+    func CreateRuntimeVariables(Object[] data, Int64[] indexes): IRuntimeVariables
+    func CreateRuntimeVariables(): IRuntimeVariables
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlyCollectionBuilder`1 {
+    func IndexOf(T item): Int32
+    func Insert(Int32 index, T item): Void
+    func RemoveAt(Int32 index): Void
+    func Add(T item): Void
+    func Clear(): Void
+    func Contains(T item): Boolean
+    func CopyTo(T[] array, Int32 arrayIndex): Void
+    func Remove(T item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func Reverse(): Void
+    func Reverse(Int32 index, Int32 count): Void
+    func ToArray(): T[]
+    func ToReadOnlyCollection(): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RuleCache`1 {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSite {
+    func Create(Type delegateType, CallSiteBinder binder): CallSite
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSite`1 {
+    func Create(CallSiteBinder binder): CallSite`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteBinder {
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteOps {
+    func CreateMatchmaker(CallSite`1 site): CallSite`1
+    func SetNotMatched(CallSite site): Boolean
+    func GetMatch(CallSite site): Boolean
+    func ClearMatch(CallSite site): Void
+    func AddRule(CallSite`1 site, T rule): Void
+    func UpdateRules(CallSite`1 this, Int32 matched): Void
+    func GetRules(CallSite`1 site): T[]
+    func GetRuleCache(CallSite`1 site): RuleCache`1
+    func MoveRule(RuleCache`1 cache, T rule, Int32 i): Void
+    func GetCachedRules(RuleCache`1 cache): T[]
+    func Bind(CallSiteBinder binder, CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteHelpers {
+    func IsInternalFrame(MethodBase mb): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DebugInfoGenerator {
+    func CreatePdbGenerator(): DebugInfoGenerator
+    func MarkSequencePoint(LambdaExpression method, Int32 ilOffset, DebugInfoExpression sequencePoint): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Closure {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IQueryable {
+  }
+  class IQueryable`1 {
+  }
+  class IQueryProvider {
+    func CreateQuery(Expression expression): IQueryable
+    func CreateQuery(Expression expression): IQueryable`1
+    func Execute(Expression expression): Object
+    func Execute(Expression expression): TResult
+  }
+  class IOrderedQueryable {
+  }
+  class IOrderedQueryable`1 {
+  }
+  class BinaryExpression {
+    func Update(Expression left, LambdaExpression conversion, Expression right): BinaryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Expression {
+    func Assign(Expression left, Expression right): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right, Boolean liftToNull, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Equal(Expression left, Expression right): BinaryExpression
+    func Equal(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func ReferenceEqual(Expression left, Expression right): BinaryExpression
+    func NotEqual(Expression left, Expression right): BinaryExpression
+    func NotEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func ReferenceNotEqual(Expression left, Expression right): BinaryExpression
+    func GreaterThan(Expression left, Expression right): BinaryExpression
+    func GreaterThan(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func LessThan(Expression left, Expression right): BinaryExpression
+    func LessThan(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func GreaterThanOrEqual(Expression left, Expression right): BinaryExpression
+    func GreaterThanOrEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func LessThanOrEqual(Expression left, Expression right): BinaryExpression
+    func LessThanOrEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func AndAlso(Expression left, Expression right): BinaryExpression
+    func AndAlso(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrElse(Expression left, Expression right): BinaryExpression
+    func OrElse(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Coalesce(Expression left, Expression right): BinaryExpression
+    func Coalesce(Expression left, Expression right, LambdaExpression conversion): BinaryExpression
+    func Add(Expression left, Expression right): BinaryExpression
+    func Add(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssign(Expression left, Expression right): BinaryExpression
+    func AddAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func AddChecked(Expression left, Expression right): BinaryExpression
+    func AddChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Subtract(Expression left, Expression right): BinaryExpression
+    func Subtract(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssign(Expression left, Expression right): BinaryExpression
+    func SubtractAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func SubtractChecked(Expression left, Expression right): BinaryExpression
+    func SubtractChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Divide(Expression left, Expression right): BinaryExpression
+    func Divide(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func DivideAssign(Expression left, Expression right): BinaryExpression
+    func DivideAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func DivideAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Modulo(Expression left, Expression right): BinaryExpression
+    func Modulo(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ModuloAssign(Expression left, Expression right): BinaryExpression
+    func ModuloAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ModuloAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Multiply(Expression left, Expression right): BinaryExpression
+    func Multiply(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func MultiplyChecked(Expression left, Expression right): BinaryExpression
+    func MultiplyChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShift(Expression left, Expression right): BinaryExpression
+    func LeftShift(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func RightShift(Expression left, Expression right): BinaryExpression
+    func RightShift(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func And(Expression left, Expression right): BinaryExpression
+    func And(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AndAssign(Expression left, Expression right): BinaryExpression
+    func AndAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AndAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Or(Expression left, Expression right): BinaryExpression
+    func Or(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrAssign(Expression left, Expression right): BinaryExpression
+    func OrAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func ExclusiveOr(Expression left, Expression right): BinaryExpression
+    func ExclusiveOr(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Power(Expression left, Expression right): BinaryExpression
+    func Power(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func PowerAssign(Expression left, Expression right): BinaryExpression
+    func PowerAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func PowerAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func ArrayIndex(Expression array, Expression index): BinaryExpression
+    func Block(Expression arg0, Expression arg1): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4): BlockExpression
+    func Block(Expression[] expressions): BlockExpression
+    func Block(IEnumerable`1 expressions): BlockExpression
+    func Block(Type type, Expression[] expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 expressions): BlockExpression
+    func Block(IEnumerable`1 variables, Expression[] expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 variables, Expression[] expressions): BlockExpression
+    func Block(IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Catch(Type type, Expression body): CatchBlock
+    func Catch(ParameterExpression variable, Expression body): CatchBlock
+    func Catch(Type type, Expression body, Expression filter): CatchBlock
+    func Catch(ParameterExpression variable, Expression body, Expression filter): CatchBlock
+    func MakeCatchBlock(Type type, ParameterExpression variable, Expression body, Expression filter): CatchBlock
+    func Condition(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Condition(Expression test, Expression ifTrue, Expression ifFalse, Type type): ConditionalExpression
+    func IfThen(Expression test, Expression ifTrue): ConditionalExpression
+    func IfThenElse(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Constant(Object value): ConstantExpression
+    func Constant(Object value, Type type): ConstantExpression
+    func DebugInfo(SymbolDocumentInfo document, Int32 startLine, Int32 startColumn, Int32 endLine, Int32 endColumn): DebugInfoExpression
+    func ClearDebugInfo(SymbolDocumentInfo document): DebugInfoExpression
+    func Empty(): DefaultExpression
+    func Default(Type type): DefaultExpression
+    func ElementInit(MethodInfo addMethod, Expression[] arguments): ElementInit
+    func ElementInit(MethodInfo addMethod, IEnumerable`1 arguments): ElementInit
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func Dynamic(CallSiteBinder binder, Type returnType, IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression[] arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable`1 arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression[] arguments): DynamicExpression
+    func Break(LabelTarget target): GotoExpression
+    func Break(LabelTarget target, Expression value): GotoExpression
+    func Break(LabelTarget target, Type type): GotoExpression
+    func Break(LabelTarget target, Expression value, Type type): GotoExpression
+    func Continue(LabelTarget target): GotoExpression
+    func Continue(LabelTarget target, Type type): GotoExpression
+    func Return(LabelTarget target): GotoExpression
+    func Return(LabelTarget target, Type type): GotoExpression
+    func Return(LabelTarget target, Expression value): GotoExpression
+    func Return(LabelTarget target, Expression value, Type type): GotoExpression
+    func Goto(LabelTarget target): GotoExpression
+    func Goto(LabelTarget target, Type type): GotoExpression
+    func Goto(LabelTarget target, Expression value): GotoExpression
+    func Goto(LabelTarget target, Expression value, Type type): GotoExpression
+    func MakeGoto(GotoExpressionKind kind, LabelTarget target, Expression value, Type type): GotoExpression
+    func MakeIndex(Expression instance, PropertyInfo indexer, IEnumerable`1 arguments): IndexExpression
+    func ArrayAccess(Expression array, Expression[] indexes): IndexExpression
+    func ArrayAccess(Expression array, IEnumerable`1 indexes): IndexExpression
+    func Property(Expression instance, String propertyName, Expression[] arguments): IndexExpression
+    func Property(Expression instance, PropertyInfo indexer, Expression[] arguments): IndexExpression
+    func Property(Expression instance, PropertyInfo indexer, IEnumerable`1 arguments): IndexExpression
+    func Invoke(Expression expression, Expression[] arguments): InvocationExpression
+    func Invoke(Expression expression, IEnumerable`1 arguments): InvocationExpression
+    func Label(LabelTarget target): LabelExpression
+    func Label(LabelTarget target, Expression defaultValue): LabelExpression
+    func Label(): LabelTarget
+    func Label(String name): LabelTarget
+    func Label(Type type): LabelTarget
+    func Label(Type type, String name): LabelTarget
+    func Lambda(Expression body, ParameterExpression[] parameters): Expression`1
+    func Lambda(Expression body, Boolean tailCall, ParameterExpression[] parameters): Expression`1
+    func Lambda(Expression body, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, Boolean tailCall, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, String name, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Expression body, Boolean tailCall, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Expression body, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, Boolean tailCall, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, String name, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, String name, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func GetFuncType(Type[] typeArgs): Type
+    func TryGetFuncType(Type[] typeArgs, Type& funcType): Boolean
+    func GetActionType(Type[] typeArgs): Type
+    func TryGetActionType(Type[] typeArgs, Type& actionType): Boolean
+    func GetDelegateType(Type[] typeArgs): Type
+    func ListInit(NewExpression newExpression, Expression[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, MethodInfo addMethod, Expression[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, MethodInfo addMethod, IEnumerable`1 initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, ElementInit[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func Loop(Expression body): LoopExpression
+    func Loop(Expression body, LabelTarget break): LoopExpression
+    func Loop(Expression body, LabelTarget break, LabelTarget continue): LoopExpression
+    func Bind(MemberInfo member, Expression expression): MemberAssignment
+    func Bind(MethodInfo propertyAccessor, Expression expression): MemberAssignment
+    func Field(Expression expression, FieldInfo field): MemberExpression
+    func Field(Expression expression, String fieldName): MemberExpression
+    func Field(Expression expression, Type type, String fieldName): MemberExpression
+    func Property(Expression expression, String propertyName): MemberExpression
+    func Property(Expression expression, Type type, String propertyName): MemberExpression
+    func Property(Expression expression, PropertyInfo property): MemberExpression
+    func Property(Expression expression, MethodInfo propertyAccessor): MemberExpression
+    func PropertyOrField(Expression expression, String propertyOrFieldName): MemberExpression
+    func MakeMemberAccess(Expression expression, MemberInfo member): MemberExpression
+    func MemberInit(NewExpression newExpression, MemberBinding[] bindings): MemberInitExpression
+    func MemberInit(NewExpression newExpression, IEnumerable`1 bindings): MemberInitExpression
+    func ListBind(MemberInfo member, ElementInit[] initializers): MemberListBinding
+    func ListBind(MemberInfo member, IEnumerable`1 initializers): MemberListBinding
+    func ListBind(MethodInfo propertyAccessor, ElementInit[] initializers): MemberListBinding
+    func ListBind(MethodInfo propertyAccessor, IEnumerable`1 initializers): MemberListBinding
+    func MemberBind(MemberInfo member, MemberBinding[] bindings): MemberMemberBinding
+    func MemberBind(MemberInfo member, IEnumerable`1 bindings): MemberMemberBinding
+    func MemberBind(MethodInfo propertyAccessor, MemberBinding[] bindings): MemberMemberBinding
+    func MemberBind(MethodInfo propertyAccessor, IEnumerable`1 bindings): MemberMemberBinding
+    func Call(MethodInfo method, Expression arg0): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4): MethodCallExpression
+    func Call(MethodInfo method, Expression[] arguments): MethodCallExpression
+    func Call(MethodInfo method, IEnumerable`1 arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression[] arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression arg0, Expression arg1): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression arg0, Expression arg1, Expression arg2): MethodCallExpression
+    func Call(Expression instance, String methodName, Type[] typeArguments, Expression[] arguments): MethodCallExpression
+    func Call(Type type, String methodName, Type[] typeArguments, Expression[] arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, IEnumerable`1 arguments): MethodCallExpression
+    func ArrayIndex(Expression array, Expression[] indexes): MethodCallExpression
+    func ArrayIndex(Expression array, IEnumerable`1 indexes): MethodCallExpression
+    func NewArrayInit(Type type, Expression[] initializers): NewArrayExpression
+    func NewArrayInit(Type type, IEnumerable`1 initializers): NewArrayExpression
+    func NewArrayBounds(Type type, Expression[] bounds): NewArrayExpression
+    func NewArrayBounds(Type type, IEnumerable`1 bounds): NewArrayExpression
+    func New(ConstructorInfo constructor): NewExpression
+    func New(ConstructorInfo constructor, Expression[] arguments): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments, IEnumerable`1 members): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments, MemberInfo[] members): NewExpression
+    func New(Type type): NewExpression
+    func Parameter(Type type): ParameterExpression
+    func Variable(Type type): ParameterExpression
+    func Parameter(Type type, String name): ParameterExpression
+    func Variable(Type type, String name): ParameterExpression
+    func RuntimeVariables(ParameterExpression[] variables): RuntimeVariablesExpression
+    func RuntimeVariables(IEnumerable`1 variables): RuntimeVariablesExpression
+    func SwitchCase(Expression body, Expression[] testValues): SwitchCase
+    func SwitchCase(Expression body, IEnumerable`1 testValues): SwitchCase
+    func Switch(Expression switchValue, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, SwitchCase[] cases): SwitchExpression
+    func Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable`1 cases): SwitchExpression
+    func Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable`1 cases): SwitchExpression
+    func SymbolDocument(String fileName): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language, Guid languageVendor): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language, Guid languageVendor, Guid documentType): SymbolDocumentInfo
+    func TryFault(Expression body, Expression fault): TryExpression
+    func TryFinally(Expression body, Expression finally): TryExpression
+    func TryCatch(Expression body, CatchBlock[] handlers): TryExpression
+    func TryCatchFinally(Expression body, Expression finally, CatchBlock[] handlers): TryExpression
+    func MakeTry(Type type, Expression body, Expression finally, Expression fault, IEnumerable`1 handlers): TryExpression
+    func TypeIs(Expression expression, Type type): TypeBinaryExpression
+    func TypeEqual(Expression expression, Type type): TypeBinaryExpression
+    func MakeUnary(ExpressionType unaryType, Expression operand, Type type): UnaryExpression
+    func MakeUnary(ExpressionType unaryType, Expression operand, Type type, MethodInfo method): UnaryExpression
+    func Negate(Expression expression): UnaryExpression
+    func Negate(Expression expression, MethodInfo method): UnaryExpression
+    func UnaryPlus(Expression expression): UnaryExpression
+    func UnaryPlus(Expression expression, MethodInfo method): UnaryExpression
+    func NegateChecked(Expression expression): UnaryExpression
+    func NegateChecked(Expression expression, MethodInfo method): UnaryExpression
+    func Not(Expression expression): UnaryExpression
+    func Not(Expression expression, MethodInfo method): UnaryExpression
+    func IsFalse(Expression expression): UnaryExpression
+    func IsFalse(Expression expression, MethodInfo method): UnaryExpression
+    func IsTrue(Expression expression): UnaryExpression
+    func IsTrue(Expression expression, MethodInfo method): UnaryExpression
+    func OnesComplement(Expression expression): UnaryExpression
+    func OnesComplement(Expression expression, MethodInfo method): UnaryExpression
+    func TypeAs(Expression expression, Type type): UnaryExpression
+    func Unbox(Expression expression, Type type): UnaryExpression
+    func Convert(Expression expression, Type type): UnaryExpression
+    func Convert(Expression expression, Type type, MethodInfo method): UnaryExpression
+    func ConvertChecked(Expression expression, Type type): UnaryExpression
+    func ConvertChecked(Expression expression, Type type, MethodInfo method): UnaryExpression
+    func ArrayLength(Expression array): UnaryExpression
+    func Quote(Expression expression): UnaryExpression
+    func Rethrow(): UnaryExpression
+    func Rethrow(Type type): UnaryExpression
+    func Throw(Expression value): UnaryExpression
+    func Throw(Expression value, Type type): UnaryExpression
+    func Increment(Expression expression): UnaryExpression
+    func Increment(Expression expression, MethodInfo method): UnaryExpression
+    func Decrement(Expression expression): UnaryExpression
+    func Decrement(Expression expression, MethodInfo method): UnaryExpression
+    func PreIncrementAssign(Expression expression): UnaryExpression
+    func PreIncrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PreDecrementAssign(Expression expression): UnaryExpression
+    func PreDecrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PostIncrementAssign(Expression expression): UnaryExpression
+    func PostIncrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PostDecrementAssign(Expression expression): UnaryExpression
+    func PostDecrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BlockExpression {
+    func Update(IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CatchBlock {
+    func ToString(): String
+    func Update(ParameterExpression variable, Expression filter, Expression body): CatchBlock
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConditionalExpression {
+    func Update(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConstantExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DebugInfoExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DefaultExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ElementInit {
+    func GetArgument(Int32 index): Expression
+    func ToString(): String
+    func Update(IEnumerable`1 arguments): ElementInit
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExpressionVisitor {
+    func Visit(Expression node): Expression
+    func Visit(ReadOnlyCollection`1 nodes): ReadOnlyCollection`1
+    func Visit(ReadOnlyCollection`1 nodes, Func`2 elementVisitor): ReadOnlyCollection`1
+    func VisitAndConvert(T node, String callerName): T
+    func VisitAndConvert(ReadOnlyCollection`1 nodes, String callerName): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GotoExpression {
+    func Update(LabelTarget target, Expression value): GotoExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IArgumentProvider {
+    func GetArgument(Int32 index): Expression
+  }
+  class IDynamicExpression {
+    func Rewrite(Expression[] args): Expression
+    func CreateCallSite(): Object
+  }
+  class IndexExpression {
+    func Update(Expression object, IEnumerable`1 arguments): IndexExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvocationExpression {
+    func Update(Expression expression, IEnumerable`1 arguments): InvocationExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LabelExpression {
+    func Update(LabelTarget target, Expression defaultValue): LabelExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LabelTarget {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LambdaExpression {
+    func Compile(): Delegate
+    func Compile(Boolean preferInterpretation): Delegate
+    func Compile(DebugInfoGenerator debugInfoGenerator): Delegate
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Expression`1 {
+    func Compile(): TDelegate
+    func Compile(Boolean preferInterpretation): TDelegate
+    func Update(Expression body, IEnumerable`1 parameters): Expression`1
+    func Compile(DebugInfoGenerator debugInfoGenerator): TDelegate
+    func Compile(): Delegate
+    func Compile(Boolean preferInterpretation): Delegate
+    func Compile(DebugInfoGenerator debugInfoGenerator): Delegate
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ListInitExpression {
+    func Reduce(): Expression
+    func Update(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LoopExpression {
+    func Update(LabelTarget breakLabel, LabelTarget continueLabel, Expression body): LoopExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberAssignment {
+    func Update(Expression expression): MemberAssignment
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberBinding {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberExpression {
+    func Update(Expression expression): MemberExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInitExpression {
+    func Reduce(): Expression
+    func Update(NewExpression newExpression, IEnumerable`1 bindings): MemberInitExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberListBinding {
+    func Update(IEnumerable`1 initializers): MemberListBinding
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberMemberBinding {
+    func Update(IEnumerable`1 bindings): MemberMemberBinding
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodCallExpression {
+    func Update(Expression object, IEnumerable`1 arguments): MethodCallExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NewArrayExpression {
+    func Update(IEnumerable`1 expressions): NewArrayExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NewExpression {
+    func GetArgument(Int32 index): Expression
+    func Update(IEnumerable`1 arguments): NewExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ParameterExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RuntimeVariablesExpression {
+    func Update(IEnumerable`1 variables): RuntimeVariablesExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SwitchCase {
+    func ToString(): String
+    func Update(IEnumerable`1 testValues, Expression body): SwitchCase
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SwitchExpression {
+    func Update(Expression switchValue, IEnumerable`1 cases, Expression defaultBody): SwitchExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SymbolDocumentInfo {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TryExpression {
+    func Update(Expression body, IEnumerable`1 handlers, Expression finally, Expression fault): TryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeBinaryExpression {
+    func Update(Expression expression): TypeBinaryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class UnaryExpression {
+    func Reduce(): Expression
+    func Update(Expression operand): UnaryExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicExpressionVisitor {
+    func Visit(Expression node): Expression
+    func Visit(ReadOnlyCollection`1 nodes): ReadOnlyCollection`1
+    func VisitAndConvert(T node, String callerName): T
+    func VisitAndConvert(ReadOnlyCollection`1 nodes, String callerName): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicExpression {
+    func Reduce(): Expression
+    func Update(IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression[] arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable`1 arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression[] arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LightLambda {
+    func Run(Object[] arguments): Object
+    func RunVoid(Object[] arguments): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicMetaObjectBinder {
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicMetaObject {
+    func BindConvert(ConvertBinder binder): DynamicMetaObject
+    func BindGetMember(GetMemberBinder binder): DynamicMetaObject
+    func BindSetMember(SetMemberBinder binder, DynamicMetaObject value): DynamicMetaObject
+    func BindDeleteMember(DeleteMemberBinder binder): DynamicMetaObject
+    func BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes): DynamicMetaObject
+    func BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value): DynamicMetaObject
+    func BindDeleteIndex(DeleteIndexBinder binder, DynamicMetaObject[] indexes): DynamicMetaObject
+    func BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindInvoke(InvokeBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindCreateInstance(CreateInstanceBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindUnaryOperation(UnaryOperationBinder binder): DynamicMetaObject
+    func BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg): DynamicMetaObject
+    func GetDynamicMemberNames(): IEnumerable`1
+    func Create(Object value, Expression expression): DynamicMetaObject
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IDynamicMetaObjectProvider {
+    func GetMetaObject(Expression parameter): DynamicMetaObject
+  }
+  class BindingRestrictions {
+    func Merge(BindingRestrictions restrictions): BindingRestrictions
+    func GetTypeRestriction(Expression expression, Type type): BindingRestrictions
+    func GetInstanceRestriction(Expression expression, Object instance): BindingRestrictions
+    func GetExpressionRestriction(Expression expression): BindingRestrictions
+    func Combine(IList`1 contributingObjects): BindingRestrictions
+    func ToExpression(): Expression
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BinaryOperationBinder {
+    func FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg): DynamicMetaObject
+    func FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallInfo {
+    func GetHashCode(): Int32
+    func Equals(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ExpandoObject {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConvertBinder {
+    func FallbackConvert(DynamicMetaObject target): DynamicMetaObject
+    func FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CreateInstanceBinder {
+    func FallbackCreateInstance(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackCreateInstance(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DeleteIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes): DynamicMetaObject
+    func FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DeleteMemberBinder {
+    func FallbackDeleteMember(DynamicMetaObject target): DynamicMetaObject
+    func FallbackDeleteMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicObject {
+    func TryGetMember(GetMemberBinder binder, Object& result): Boolean
+    func TrySetMember(SetMemberBinder binder, Object value): Boolean
+    func TryDeleteMember(DeleteMemberBinder binder): Boolean
+    func TryInvokeMember(InvokeMemberBinder binder, Object[] args, Object& result): Boolean
+    func TryConvert(ConvertBinder binder, Object& result): Boolean
+    func TryCreateInstance(CreateInstanceBinder binder, Object[] args, Object& result): Boolean
+    func TryInvoke(InvokeBinder binder, Object[] args, Object& result): Boolean
+    func TryBinaryOperation(BinaryOperationBinder binder, Object arg, Object& result): Boolean
+    func TryUnaryOperation(UnaryOperationBinder binder, Object& result): Boolean
+    func TryGetIndex(GetIndexBinder binder, Object[] indexes, Object& result): Boolean
+    func TrySetIndex(SetIndexBinder binder, Object[] indexes, Object value): Boolean
+    func TryDeleteIndex(DeleteIndexBinder binder, Object[] indexes): Boolean
+    func GetDynamicMemberNames(): IEnumerable`1
+    func GetMetaObject(Expression parameter): DynamicMetaObject
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GetIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes): DynamicMetaObject
+    func FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GetMemberBinder {
+    func FallbackGetMember(DynamicMetaObject target): DynamicMetaObject
+    func FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvokeBinder {
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvokeMemberBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SetIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value): DynamicMetaObject
+    func FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SetMemberBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackSetMember(DynamicMetaObject target, DynamicMetaObject value): DynamicMetaObject
+    func FallbackSetMember(DynamicMetaObject target, DynamicMetaObject value, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class UnaryOperationBinder {
+    func FallbackUnaryOperation(DynamicMetaObject target): DynamicMetaObject
+    func FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IInvokeOnGetBinder {
+  }
+  class IRuntimeVariables {
+  }
+  class RuntimeOps {
+    func ExpandoTryGetValue(ExpandoObject expando, Object indexClass, Int32 index, String name, Boolean ignoreCase, Object& value): Boolean
+    func ExpandoTrySetValue(ExpandoObject expando, Object indexClass, Int32 index, Object value, String name, Boolean ignoreCase): Object
+    func ExpandoTryDeleteValue(ExpandoObject expando, Object indexClass, Int32 index, String name, Boolean ignoreCase): Boolean
+    func ExpandoCheckVersion(ExpandoObject expando, Object version): Boolean
+    func ExpandoPromoteClass(ExpandoObject expando, Object oldClass, Object newClass): Void
+    func Quote(Expression expression, Object hoistedLocals, Object[] locals): Expression
+    func MergeRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, Int32[] indexes): IRuntimeVariables
+    func CreateRuntimeVariables(Object[] data, Int64[] indexes): IRuntimeVariables
+    func CreateRuntimeVariables(): IRuntimeVariables
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlyCollectionBuilder`1 {
+    func IndexOf(T item): Int32
+    func Insert(Int32 index, T item): Void
+    func RemoveAt(Int32 index): Void
+    func Add(T item): Void
+    func Clear(): Void
+    func Contains(T item): Boolean
+    func CopyTo(T[] array, Int32 arrayIndex): Void
+    func Remove(T item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func Reverse(): Void
+    func Reverse(Int32 index, Int32 count): Void
+    func ToArray(): T[]
+    func ToReadOnlyCollection(): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RuleCache`1 {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSite {
+    func Create(Type delegateType, CallSiteBinder binder): CallSite
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSite`1 {
+    func Create(CallSiteBinder binder): CallSite`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteBinder {
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteOps {
+    func CreateMatchmaker(CallSite`1 site): CallSite`1
+    func SetNotMatched(CallSite site): Boolean
+    func GetMatch(CallSite site): Boolean
+    func ClearMatch(CallSite site): Void
+    func AddRule(CallSite`1 site, T rule): Void
+    func UpdateRules(CallSite`1 this, Int32 matched): Void
+    func GetRules(CallSite`1 site): T[]
+    func GetRuleCache(CallSite`1 site): RuleCache`1
+    func MoveRule(RuleCache`1 cache, T rule, Int32 i): Void
+    func GetCachedRules(RuleCache`1 cache): T[]
+    func Bind(CallSiteBinder binder, CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteHelpers {
+    func IsInternalFrame(MethodBase mb): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DebugInfoGenerator {
+    func CreatePdbGenerator(): DebugInfoGenerator
+    func MarkSequencePoint(LambdaExpression method, Int32 ilOffset, DebugInfoExpression sequencePoint): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Closure {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IQueryable {
+  }
+  class IQueryable`1 {
+  }
+  class IQueryProvider {
+    func CreateQuery(Expression expression): IQueryable
+    func CreateQuery(Expression expression): IQueryable`1
+    func Execute(Expression expression): Object
+    func Execute(Expression expression): TResult
+  }
+  class IOrderedQueryable {
+  }
+  class IOrderedQueryable`1 {
+  }
+  class BinaryExpression {
+    func Update(Expression left, LambdaExpression conversion, Expression right): BinaryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Expression {
+    func Assign(Expression left, Expression right): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right, Boolean liftToNull, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Equal(Expression left, Expression right): BinaryExpression
+    func Equal(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func ReferenceEqual(Expression left, Expression right): BinaryExpression
+    func NotEqual(Expression left, Expression right): BinaryExpression
+    func NotEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func ReferenceNotEqual(Expression left, Expression right): BinaryExpression
+    func GreaterThan(Expression left, Expression right): BinaryExpression
+    func GreaterThan(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func LessThan(Expression left, Expression right): BinaryExpression
+    func LessThan(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func GreaterThanOrEqual(Expression left, Expression right): BinaryExpression
+    func GreaterThanOrEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func LessThanOrEqual(Expression left, Expression right): BinaryExpression
+    func LessThanOrEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func AndAlso(Expression left, Expression right): BinaryExpression
+    func AndAlso(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrElse(Expression left, Expression right): BinaryExpression
+    func OrElse(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Coalesce(Expression left, Expression right): BinaryExpression
+    func Coalesce(Expression left, Expression right, LambdaExpression conversion): BinaryExpression
+    func Add(Expression left, Expression right): BinaryExpression
+    func Add(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssign(Expression left, Expression right): BinaryExpression
+    func AddAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func AddChecked(Expression left, Expression right): BinaryExpression
+    func AddChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Subtract(Expression left, Expression right): BinaryExpression
+    func Subtract(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssign(Expression left, Expression right): BinaryExpression
+    func SubtractAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func SubtractChecked(Expression left, Expression right): BinaryExpression
+    func SubtractChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Divide(Expression left, Expression right): BinaryExpression
+    func Divide(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func DivideAssign(Expression left, Expression right): BinaryExpression
+    func DivideAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func DivideAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Modulo(Expression left, Expression right): BinaryExpression
+    func Modulo(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ModuloAssign(Expression left, Expression right): BinaryExpression
+    func ModuloAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ModuloAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Multiply(Expression left, Expression right): BinaryExpression
+    func Multiply(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func MultiplyChecked(Expression left, Expression right): BinaryExpression
+    func MultiplyChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShift(Expression left, Expression right): BinaryExpression
+    func LeftShift(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func RightShift(Expression left, Expression right): BinaryExpression
+    func RightShift(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func And(Expression left, Expression right): BinaryExpression
+    func And(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AndAssign(Expression left, Expression right): BinaryExpression
+    func AndAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AndAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Or(Expression left, Expression right): BinaryExpression
+    func Or(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrAssign(Expression left, Expression right): BinaryExpression
+    func OrAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func ExclusiveOr(Expression left, Expression right): BinaryExpression
+    func ExclusiveOr(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Power(Expression left, Expression right): BinaryExpression
+    func Power(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func PowerAssign(Expression left, Expression right): BinaryExpression
+    func PowerAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func PowerAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func ArrayIndex(Expression array, Expression index): BinaryExpression
+    func Block(Expression arg0, Expression arg1): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4): BlockExpression
+    func Block(Expression[] expressions): BlockExpression
+    func Block(IEnumerable`1 expressions): BlockExpression
+    func Block(Type type, Expression[] expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 expressions): BlockExpression
+    func Block(IEnumerable`1 variables, Expression[] expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 variables, Expression[] expressions): BlockExpression
+    func Block(IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Catch(Type type, Expression body): CatchBlock
+    func Catch(ParameterExpression variable, Expression body): CatchBlock
+    func Catch(Type type, Expression body, Expression filter): CatchBlock
+    func Catch(ParameterExpression variable, Expression body, Expression filter): CatchBlock
+    func MakeCatchBlock(Type type, ParameterExpression variable, Expression body, Expression filter): CatchBlock
+    func Condition(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Condition(Expression test, Expression ifTrue, Expression ifFalse, Type type): ConditionalExpression
+    func IfThen(Expression test, Expression ifTrue): ConditionalExpression
+    func IfThenElse(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Constant(Object value): ConstantExpression
+    func Constant(Object value, Type type): ConstantExpression
+    func DebugInfo(SymbolDocumentInfo document, Int32 startLine, Int32 startColumn, Int32 endLine, Int32 endColumn): DebugInfoExpression
+    func ClearDebugInfo(SymbolDocumentInfo document): DebugInfoExpression
+    func Empty(): DefaultExpression
+    func Default(Type type): DefaultExpression
+    func ElementInit(MethodInfo addMethod, Expression[] arguments): ElementInit
+    func ElementInit(MethodInfo addMethod, IEnumerable`1 arguments): ElementInit
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func Dynamic(CallSiteBinder binder, Type returnType, IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression[] arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable`1 arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression[] arguments): DynamicExpression
+    func Break(LabelTarget target): GotoExpression
+    func Break(LabelTarget target, Expression value): GotoExpression
+    func Break(LabelTarget target, Type type): GotoExpression
+    func Break(LabelTarget target, Expression value, Type type): GotoExpression
+    func Continue(LabelTarget target): GotoExpression
+    func Continue(LabelTarget target, Type type): GotoExpression
+    func Return(LabelTarget target): GotoExpression
+    func Return(LabelTarget target, Type type): GotoExpression
+    func Return(LabelTarget target, Expression value): GotoExpression
+    func Return(LabelTarget target, Expression value, Type type): GotoExpression
+    func Goto(LabelTarget target): GotoExpression
+    func Goto(LabelTarget target, Type type): GotoExpression
+    func Goto(LabelTarget target, Expression value): GotoExpression
+    func Goto(LabelTarget target, Expression value, Type type): GotoExpression
+    func MakeGoto(GotoExpressionKind kind, LabelTarget target, Expression value, Type type): GotoExpression
+    func MakeIndex(Expression instance, PropertyInfo indexer, IEnumerable`1 arguments): IndexExpression
+    func ArrayAccess(Expression array, Expression[] indexes): IndexExpression
+    func ArrayAccess(Expression array, IEnumerable`1 indexes): IndexExpression
+    func Property(Expression instance, String propertyName, Expression[] arguments): IndexExpression
+    func Property(Expression instance, PropertyInfo indexer, Expression[] arguments): IndexExpression
+    func Property(Expression instance, PropertyInfo indexer, IEnumerable`1 arguments): IndexExpression
+    func Invoke(Expression expression, Expression[] arguments): InvocationExpression
+    func Invoke(Expression expression, IEnumerable`1 arguments): InvocationExpression
+    func Label(LabelTarget target): LabelExpression
+    func Label(LabelTarget target, Expression defaultValue): LabelExpression
+    func Label(): LabelTarget
+    func Label(String name): LabelTarget
+    func Label(Type type): LabelTarget
+    func Label(Type type, String name): LabelTarget
+    func Lambda(Expression body, ParameterExpression[] parameters): Expression`1
+    func Lambda(Expression body, Boolean tailCall, ParameterExpression[] parameters): Expression`1
+    func Lambda(Expression body, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, Boolean tailCall, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, String name, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Expression body, Boolean tailCall, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Expression body, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, Boolean tailCall, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, String name, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, String name, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func GetFuncType(Type[] typeArgs): Type
+    func TryGetFuncType(Type[] typeArgs, Type& funcType): Boolean
+    func GetActionType(Type[] typeArgs): Type
+    func TryGetActionType(Type[] typeArgs, Type& actionType): Boolean
+    func GetDelegateType(Type[] typeArgs): Type
+    func ListInit(NewExpression newExpression, Expression[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, MethodInfo addMethod, Expression[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, MethodInfo addMethod, IEnumerable`1 initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, ElementInit[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func Loop(Expression body): LoopExpression
+    func Loop(Expression body, LabelTarget break): LoopExpression
+    func Loop(Expression body, LabelTarget break, LabelTarget continue): LoopExpression
+    func Bind(MemberInfo member, Expression expression): MemberAssignment
+    func Bind(MethodInfo propertyAccessor, Expression expression): MemberAssignment
+    func Field(Expression expression, FieldInfo field): MemberExpression
+    func Field(Expression expression, String fieldName): MemberExpression
+    func Field(Expression expression, Type type, String fieldName): MemberExpression
+    func Property(Expression expression, String propertyName): MemberExpression
+    func Property(Expression expression, Type type, String propertyName): MemberExpression
+    func Property(Expression expression, PropertyInfo property): MemberExpression
+    func Property(Expression expression, MethodInfo propertyAccessor): MemberExpression
+    func PropertyOrField(Expression expression, String propertyOrFieldName): MemberExpression
+    func MakeMemberAccess(Expression expression, MemberInfo member): MemberExpression
+    func MemberInit(NewExpression newExpression, MemberBinding[] bindings): MemberInitExpression
+    func MemberInit(NewExpression newExpression, IEnumerable`1 bindings): MemberInitExpression
+    func ListBind(MemberInfo member, ElementInit[] initializers): MemberListBinding
+    func ListBind(MemberInfo member, IEnumerable`1 initializers): MemberListBinding
+    func ListBind(MethodInfo propertyAccessor, ElementInit[] initializers): MemberListBinding
+    func ListBind(MethodInfo propertyAccessor, IEnumerable`1 initializers): MemberListBinding
+    func MemberBind(MemberInfo member, MemberBinding[] bindings): MemberMemberBinding
+    func MemberBind(MemberInfo member, IEnumerable`1 bindings): MemberMemberBinding
+    func MemberBind(MethodInfo propertyAccessor, MemberBinding[] bindings): MemberMemberBinding
+    func MemberBind(MethodInfo propertyAccessor, IEnumerable`1 bindings): MemberMemberBinding
+    func Call(MethodInfo method, Expression arg0): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4): MethodCallExpression
+    func Call(MethodInfo method, Expression[] arguments): MethodCallExpression
+    func Call(MethodInfo method, IEnumerable`1 arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression[] arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression arg0, Expression arg1): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression arg0, Expression arg1, Expression arg2): MethodCallExpression
+    func Call(Expression instance, String methodName, Type[] typeArguments, Expression[] arguments): MethodCallExpression
+    func Call(Type type, String methodName, Type[] typeArguments, Expression[] arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, IEnumerable`1 arguments): MethodCallExpression
+    func ArrayIndex(Expression array, Expression[] indexes): MethodCallExpression
+    func ArrayIndex(Expression array, IEnumerable`1 indexes): MethodCallExpression
+    func NewArrayInit(Type type, Expression[] initializers): NewArrayExpression
+    func NewArrayInit(Type type, IEnumerable`1 initializers): NewArrayExpression
+    func NewArrayBounds(Type type, Expression[] bounds): NewArrayExpression
+    func NewArrayBounds(Type type, IEnumerable`1 bounds): NewArrayExpression
+    func New(ConstructorInfo constructor): NewExpression
+    func New(ConstructorInfo constructor, Expression[] arguments): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments, IEnumerable`1 members): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments, MemberInfo[] members): NewExpression
+    func New(Type type): NewExpression
+    func Parameter(Type type): ParameterExpression
+    func Variable(Type type): ParameterExpression
+    func Parameter(Type type, String name): ParameterExpression
+    func Variable(Type type, String name): ParameterExpression
+    func RuntimeVariables(ParameterExpression[] variables): RuntimeVariablesExpression
+    func RuntimeVariables(IEnumerable`1 variables): RuntimeVariablesExpression
+    func SwitchCase(Expression body, Expression[] testValues): SwitchCase
+    func SwitchCase(Expression body, IEnumerable`1 testValues): SwitchCase
+    func Switch(Expression switchValue, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, SwitchCase[] cases): SwitchExpression
+    func Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable`1 cases): SwitchExpression
+    func Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable`1 cases): SwitchExpression
+    func SymbolDocument(String fileName): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language, Guid languageVendor): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language, Guid languageVendor, Guid documentType): SymbolDocumentInfo
+    func TryFault(Expression body, Expression fault): TryExpression
+    func TryFinally(Expression body, Expression finally): TryExpression
+    func TryCatch(Expression body, CatchBlock[] handlers): TryExpression
+    func TryCatchFinally(Expression body, Expression finally, CatchBlock[] handlers): TryExpression
+    func MakeTry(Type type, Expression body, Expression finally, Expression fault, IEnumerable`1 handlers): TryExpression
+    func TypeIs(Expression expression, Type type): TypeBinaryExpression
+    func TypeEqual(Expression expression, Type type): TypeBinaryExpression
+    func MakeUnary(ExpressionType unaryType, Expression operand, Type type): UnaryExpression
+    func MakeUnary(ExpressionType unaryType, Expression operand, Type type, MethodInfo method): UnaryExpression
+    func Negate(Expression expression): UnaryExpression
+    func Negate(Expression expression, MethodInfo method): UnaryExpression
+    func UnaryPlus(Expression expression): UnaryExpression
+    func UnaryPlus(Expression expression, MethodInfo method): UnaryExpression
+    func NegateChecked(Expression expression): UnaryExpression
+    func NegateChecked(Expression expression, MethodInfo method): UnaryExpression
+    func Not(Expression expression): UnaryExpression
+    func Not(Expression expression, MethodInfo method): UnaryExpression
+    func IsFalse(Expression expression): UnaryExpression
+    func IsFalse(Expression expression, MethodInfo method): UnaryExpression
+    func IsTrue(Expression expression): UnaryExpression
+    func IsTrue(Expression expression, MethodInfo method): UnaryExpression
+    func OnesComplement(Expression expression): UnaryExpression
+    func OnesComplement(Expression expression, MethodInfo method): UnaryExpression
+    func TypeAs(Expression expression, Type type): UnaryExpression
+    func Unbox(Expression expression, Type type): UnaryExpression
+    func Convert(Expression expression, Type type): UnaryExpression
+    func Convert(Expression expression, Type type, MethodInfo method): UnaryExpression
+    func ConvertChecked(Expression expression, Type type): UnaryExpression
+    func ConvertChecked(Expression expression, Type type, MethodInfo method): UnaryExpression
+    func ArrayLength(Expression array): UnaryExpression
+    func Quote(Expression expression): UnaryExpression
+    func Rethrow(): UnaryExpression
+    func Rethrow(Type type): UnaryExpression
+    func Throw(Expression value): UnaryExpression
+    func Throw(Expression value, Type type): UnaryExpression
+    func Increment(Expression expression): UnaryExpression
+    func Increment(Expression expression, MethodInfo method): UnaryExpression
+    func Decrement(Expression expression): UnaryExpression
+    func Decrement(Expression expression, MethodInfo method): UnaryExpression
+    func PreIncrementAssign(Expression expression): UnaryExpression
+    func PreIncrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PreDecrementAssign(Expression expression): UnaryExpression
+    func PreDecrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PostIncrementAssign(Expression expression): UnaryExpression
+    func PostIncrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PostDecrementAssign(Expression expression): UnaryExpression
+    func PostDecrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BlockExpression {
+    func Update(IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CatchBlock {
+    func ToString(): String
+    func Update(ParameterExpression variable, Expression filter, Expression body): CatchBlock
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConditionalExpression {
+    func Update(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConstantExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DebugInfoExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DefaultExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ElementInit {
+    func GetArgument(Int32 index): Expression
+    func ToString(): String
+    func Update(IEnumerable`1 arguments): ElementInit
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExpressionVisitor {
+    func Visit(Expression node): Expression
+    func Visit(ReadOnlyCollection`1 nodes): ReadOnlyCollection`1
+    func Visit(ReadOnlyCollection`1 nodes, Func`2 elementVisitor): ReadOnlyCollection`1
+    func VisitAndConvert(T node, String callerName): T
+    func VisitAndConvert(ReadOnlyCollection`1 nodes, String callerName): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GotoExpression {
+    func Update(LabelTarget target, Expression value): GotoExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IArgumentProvider {
+    func GetArgument(Int32 index): Expression
+  }
+  class IDynamicExpression {
+    func Rewrite(Expression[] args): Expression
+    func CreateCallSite(): Object
+  }
+  class IndexExpression {
+    func Update(Expression object, IEnumerable`1 arguments): IndexExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvocationExpression {
+    func Update(Expression expression, IEnumerable`1 arguments): InvocationExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LabelExpression {
+    func Update(LabelTarget target, Expression defaultValue): LabelExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LabelTarget {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LambdaExpression {
+    func Compile(): Delegate
+    func Compile(Boolean preferInterpretation): Delegate
+    func Compile(DebugInfoGenerator debugInfoGenerator): Delegate
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Expression`1 {
+    func Compile(): TDelegate
+    func Compile(Boolean preferInterpretation): TDelegate
+    func Update(Expression body, IEnumerable`1 parameters): Expression`1
+    func Compile(DebugInfoGenerator debugInfoGenerator): TDelegate
+    func Compile(): Delegate
+    func Compile(Boolean preferInterpretation): Delegate
+    func Compile(DebugInfoGenerator debugInfoGenerator): Delegate
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ListInitExpression {
+    func Reduce(): Expression
+    func Update(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LoopExpression {
+    func Update(LabelTarget breakLabel, LabelTarget continueLabel, Expression body): LoopExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberAssignment {
+    func Update(Expression expression): MemberAssignment
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberBinding {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberExpression {
+    func Update(Expression expression): MemberExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInitExpression {
+    func Reduce(): Expression
+    func Update(NewExpression newExpression, IEnumerable`1 bindings): MemberInitExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberListBinding {
+    func Update(IEnumerable`1 initializers): MemberListBinding
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberMemberBinding {
+    func Update(IEnumerable`1 bindings): MemberMemberBinding
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodCallExpression {
+    func Update(Expression object, IEnumerable`1 arguments): MethodCallExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NewArrayExpression {
+    func Update(IEnumerable`1 expressions): NewArrayExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NewExpression {
+    func GetArgument(Int32 index): Expression
+    func Update(IEnumerable`1 arguments): NewExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ParameterExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RuntimeVariablesExpression {
+    func Update(IEnumerable`1 variables): RuntimeVariablesExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SwitchCase {
+    func ToString(): String
+    func Update(IEnumerable`1 testValues, Expression body): SwitchCase
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SwitchExpression {
+    func Update(Expression switchValue, IEnumerable`1 cases, Expression defaultBody): SwitchExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SymbolDocumentInfo {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TryExpression {
+    func Update(Expression body, IEnumerable`1 handlers, Expression finally, Expression fault): TryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeBinaryExpression {
+    func Update(Expression expression): TypeBinaryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class UnaryExpression {
+    func Reduce(): Expression
+    func Update(Expression operand): UnaryExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicExpressionVisitor {
+    func Visit(Expression node): Expression
+    func Visit(ReadOnlyCollection`1 nodes): ReadOnlyCollection`1
+    func VisitAndConvert(T node, String callerName): T
+    func VisitAndConvert(ReadOnlyCollection`1 nodes, String callerName): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicExpression {
+    func Reduce(): Expression
+    func Update(IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression[] arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable`1 arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression[] arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LightLambda {
+    func Run(Object[] arguments): Object
+    func RunVoid(Object[] arguments): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicMetaObjectBinder {
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicMetaObject {
+    func BindConvert(ConvertBinder binder): DynamicMetaObject
+    func BindGetMember(GetMemberBinder binder): DynamicMetaObject
+    func BindSetMember(SetMemberBinder binder, DynamicMetaObject value): DynamicMetaObject
+    func BindDeleteMember(DeleteMemberBinder binder): DynamicMetaObject
+    func BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes): DynamicMetaObject
+    func BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value): DynamicMetaObject
+    func BindDeleteIndex(DeleteIndexBinder binder, DynamicMetaObject[] indexes): DynamicMetaObject
+    func BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindInvoke(InvokeBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindCreateInstance(CreateInstanceBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindUnaryOperation(UnaryOperationBinder binder): DynamicMetaObject
+    func BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg): DynamicMetaObject
+    func GetDynamicMemberNames(): IEnumerable`1
+    func Create(Object value, Expression expression): DynamicMetaObject
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IDynamicMetaObjectProvider {
+    func GetMetaObject(Expression parameter): DynamicMetaObject
+  }
+  class BindingRestrictions {
+    func Merge(BindingRestrictions restrictions): BindingRestrictions
+    func GetTypeRestriction(Expression expression, Type type): BindingRestrictions
+    func GetInstanceRestriction(Expression expression, Object instance): BindingRestrictions
+    func GetExpressionRestriction(Expression expression): BindingRestrictions
+    func Combine(IList`1 contributingObjects): BindingRestrictions
+    func ToExpression(): Expression
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BinaryOperationBinder {
+    func FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg): DynamicMetaObject
+    func FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallInfo {
+    func GetHashCode(): Int32
+    func Equals(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ExpandoObject {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConvertBinder {
+    func FallbackConvert(DynamicMetaObject target): DynamicMetaObject
+    func FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CreateInstanceBinder {
+    func FallbackCreateInstance(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackCreateInstance(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DeleteIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes): DynamicMetaObject
+    func FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DeleteMemberBinder {
+    func FallbackDeleteMember(DynamicMetaObject target): DynamicMetaObject
+    func FallbackDeleteMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicObject {
+    func TryGetMember(GetMemberBinder binder, Object& result): Boolean
+    func TrySetMember(SetMemberBinder binder, Object value): Boolean
+    func TryDeleteMember(DeleteMemberBinder binder): Boolean
+    func TryInvokeMember(InvokeMemberBinder binder, Object[] args, Object& result): Boolean
+    func TryConvert(ConvertBinder binder, Object& result): Boolean
+    func TryCreateInstance(CreateInstanceBinder binder, Object[] args, Object& result): Boolean
+    func TryInvoke(InvokeBinder binder, Object[] args, Object& result): Boolean
+    func TryBinaryOperation(BinaryOperationBinder binder, Object arg, Object& result): Boolean
+    func TryUnaryOperation(UnaryOperationBinder binder, Object& result): Boolean
+    func TryGetIndex(GetIndexBinder binder, Object[] indexes, Object& result): Boolean
+    func TrySetIndex(SetIndexBinder binder, Object[] indexes, Object value): Boolean
+    func TryDeleteIndex(DeleteIndexBinder binder, Object[] indexes): Boolean
+    func GetDynamicMemberNames(): IEnumerable`1
+    func GetMetaObject(Expression parameter): DynamicMetaObject
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GetIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes): DynamicMetaObject
+    func FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GetMemberBinder {
+    func FallbackGetMember(DynamicMetaObject target): DynamicMetaObject
+    func FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvokeBinder {
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvokeMemberBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SetIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value): DynamicMetaObject
+    func FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SetMemberBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackSetMember(DynamicMetaObject target, DynamicMetaObject value): DynamicMetaObject
+    func FallbackSetMember(DynamicMetaObject target, DynamicMetaObject value, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class UnaryOperationBinder {
+    func FallbackUnaryOperation(DynamicMetaObject target): DynamicMetaObject
+    func FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IInvokeOnGetBinder {
+  }
+  class IRuntimeVariables {
+  }
+  class RuntimeOps {
+    func ExpandoTryGetValue(ExpandoObject expando, Object indexClass, Int32 index, String name, Boolean ignoreCase, Object& value): Boolean
+    func ExpandoTrySetValue(ExpandoObject expando, Object indexClass, Int32 index, Object value, String name, Boolean ignoreCase): Object
+    func ExpandoTryDeleteValue(ExpandoObject expando, Object indexClass, Int32 index, String name, Boolean ignoreCase): Boolean
+    func ExpandoCheckVersion(ExpandoObject expando, Object version): Boolean
+    func ExpandoPromoteClass(ExpandoObject expando, Object oldClass, Object newClass): Void
+    func Quote(Expression expression, Object hoistedLocals, Object[] locals): Expression
+    func MergeRuntimeVariables(IRuntimeVariables first, IRuntimeVariables second, Int32[] indexes): IRuntimeVariables
+    func CreateRuntimeVariables(Object[] data, Int64[] indexes): IRuntimeVariables
+    func CreateRuntimeVariables(): IRuntimeVariables
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlyCollectionBuilder`1 {
+    func IndexOf(T item): Int32
+    func Insert(Int32 index, T item): Void
+    func RemoveAt(Int32 index): Void
+    func Add(T item): Void
+    func Clear(): Void
+    func Contains(T item): Boolean
+    func CopyTo(T[] array, Int32 arrayIndex): Void
+    func Remove(T item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func Reverse(): Void
+    func Reverse(Int32 index, Int32 count): Void
+    func ToArray(): T[]
+    func ToReadOnlyCollection(): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RuleCache`1 {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSite {
+    func Create(Type delegateType, CallSiteBinder binder): CallSite
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSite`1 {
+    func Create(CallSiteBinder binder): CallSite`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteBinder {
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteOps {
+    func CreateMatchmaker(CallSite`1 site): CallSite`1
+    func SetNotMatched(CallSite site): Boolean
+    func GetMatch(CallSite site): Boolean
+    func ClearMatch(CallSite site): Void
+    func AddRule(CallSite`1 site, T rule): Void
+    func UpdateRules(CallSite`1 this, Int32 matched): Void
+    func GetRules(CallSite`1 site): T[]
+    func GetRuleCache(CallSite`1 site): RuleCache`1
+    func MoveRule(RuleCache`1 cache, T rule, Int32 i): Void
+    func GetCachedRules(RuleCache`1 cache): T[]
+    func Bind(CallSiteBinder binder, CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallSiteHelpers {
+    func IsInternalFrame(MethodBase mb): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DebugInfoGenerator {
+    func CreatePdbGenerator(): DebugInfoGenerator
+    func MarkSequencePoint(LambdaExpression method, Int32 ilOffset, DebugInfoExpression sequencePoint): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Closure {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IQueryable {
+  }
+  class IQueryable`1 {
+  }
+  class IQueryProvider {
+    func CreateQuery(Expression expression): IQueryable
+    func CreateQuery(Expression expression): IQueryable`1
+    func Execute(Expression expression): Object
+    func Execute(Expression expression): TResult
+  }
+  class IOrderedQueryable {
+  }
+  class IOrderedQueryable`1 {
+  }
+  class BinaryExpression {
+    func Update(Expression left, LambdaExpression conversion, Expression right): BinaryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Expression {
+    func Assign(Expression left, Expression right): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func MakeBinary(ExpressionType binaryType, Expression left, Expression right, Boolean liftToNull, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Equal(Expression left, Expression right): BinaryExpression
+    func Equal(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func ReferenceEqual(Expression left, Expression right): BinaryExpression
+    func NotEqual(Expression left, Expression right): BinaryExpression
+    func NotEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func ReferenceNotEqual(Expression left, Expression right): BinaryExpression
+    func GreaterThan(Expression left, Expression right): BinaryExpression
+    func GreaterThan(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func LessThan(Expression left, Expression right): BinaryExpression
+    func LessThan(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func GreaterThanOrEqual(Expression left, Expression right): BinaryExpression
+    func GreaterThanOrEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func LessThanOrEqual(Expression left, Expression right): BinaryExpression
+    func LessThanOrEqual(Expression left, Expression right, Boolean liftToNull, MethodInfo method): BinaryExpression
+    func AndAlso(Expression left, Expression right): BinaryExpression
+    func AndAlso(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrElse(Expression left, Expression right): BinaryExpression
+    func OrElse(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Coalesce(Expression left, Expression right): BinaryExpression
+    func Coalesce(Expression left, Expression right, LambdaExpression conversion): BinaryExpression
+    func Add(Expression left, Expression right): BinaryExpression
+    func Add(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssign(Expression left, Expression right): BinaryExpression
+    func AddAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AddAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func AddChecked(Expression left, Expression right): BinaryExpression
+    func AddChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Subtract(Expression left, Expression right): BinaryExpression
+    func Subtract(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssign(Expression left, Expression right): BinaryExpression
+    func SubtractAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func SubtractAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func SubtractChecked(Expression left, Expression right): BinaryExpression
+    func SubtractChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func Divide(Expression left, Expression right): BinaryExpression
+    func Divide(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func DivideAssign(Expression left, Expression right): BinaryExpression
+    func DivideAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func DivideAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Modulo(Expression left, Expression right): BinaryExpression
+    func Modulo(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ModuloAssign(Expression left, Expression right): BinaryExpression
+    func ModuloAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ModuloAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Multiply(Expression left, Expression right): BinaryExpression
+    func Multiply(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func MultiplyAssignChecked(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func MultiplyChecked(Expression left, Expression right): BinaryExpression
+    func MultiplyChecked(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShift(Expression left, Expression right): BinaryExpression
+    func LeftShift(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func LeftShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func RightShift(Expression left, Expression right): BinaryExpression
+    func RightShift(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func RightShiftAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func And(Expression left, Expression right): BinaryExpression
+    func And(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AndAssign(Expression left, Expression right): BinaryExpression
+    func AndAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func AndAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Or(Expression left, Expression right): BinaryExpression
+    func Or(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrAssign(Expression left, Expression right): BinaryExpression
+    func OrAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func OrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func ExclusiveOr(Expression left, Expression right): BinaryExpression
+    func ExclusiveOr(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func ExclusiveOrAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func Power(Expression left, Expression right): BinaryExpression
+    func Power(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func PowerAssign(Expression left, Expression right): BinaryExpression
+    func PowerAssign(Expression left, Expression right, MethodInfo method): BinaryExpression
+    func PowerAssign(Expression left, Expression right, MethodInfo method, LambdaExpression conversion): BinaryExpression
+    func ArrayIndex(Expression array, Expression index): BinaryExpression
+    func Block(Expression arg0, Expression arg1): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3): BlockExpression
+    func Block(Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4): BlockExpression
+    func Block(Expression[] expressions): BlockExpression
+    func Block(IEnumerable`1 expressions): BlockExpression
+    func Block(Type type, Expression[] expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 expressions): BlockExpression
+    func Block(IEnumerable`1 variables, Expression[] expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 variables, Expression[] expressions): BlockExpression
+    func Block(IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Block(Type type, IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Catch(Type type, Expression body): CatchBlock
+    func Catch(ParameterExpression variable, Expression body): CatchBlock
+    func Catch(Type type, Expression body, Expression filter): CatchBlock
+    func Catch(ParameterExpression variable, Expression body, Expression filter): CatchBlock
+    func MakeCatchBlock(Type type, ParameterExpression variable, Expression body, Expression filter): CatchBlock
+    func Condition(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Condition(Expression test, Expression ifTrue, Expression ifFalse, Type type): ConditionalExpression
+    func IfThen(Expression test, Expression ifTrue): ConditionalExpression
+    func IfThenElse(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Constant(Object value): ConstantExpression
+    func Constant(Object value, Type type): ConstantExpression
+    func DebugInfo(SymbolDocumentInfo document, Int32 startLine, Int32 startColumn, Int32 endLine, Int32 endColumn): DebugInfoExpression
+    func ClearDebugInfo(SymbolDocumentInfo document): DebugInfoExpression
+    func Empty(): DefaultExpression
+    func Default(Type type): DefaultExpression
+    func ElementInit(MethodInfo addMethod, Expression[] arguments): ElementInit
+    func ElementInit(MethodInfo addMethod, IEnumerable`1 arguments): ElementInit
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func Dynamic(CallSiteBinder binder, Type returnType, IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression[] arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable`1 arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression[] arguments): DynamicExpression
+    func Break(LabelTarget target): GotoExpression
+    func Break(LabelTarget target, Expression value): GotoExpression
+    func Break(LabelTarget target, Type type): GotoExpression
+    func Break(LabelTarget target, Expression value, Type type): GotoExpression
+    func Continue(LabelTarget target): GotoExpression
+    func Continue(LabelTarget target, Type type): GotoExpression
+    func Return(LabelTarget target): GotoExpression
+    func Return(LabelTarget target, Type type): GotoExpression
+    func Return(LabelTarget target, Expression value): GotoExpression
+    func Return(LabelTarget target, Expression value, Type type): GotoExpression
+    func Goto(LabelTarget target): GotoExpression
+    func Goto(LabelTarget target, Type type): GotoExpression
+    func Goto(LabelTarget target, Expression value): GotoExpression
+    func Goto(LabelTarget target, Expression value, Type type): GotoExpression
+    func MakeGoto(GotoExpressionKind kind, LabelTarget target, Expression value, Type type): GotoExpression
+    func MakeIndex(Expression instance, PropertyInfo indexer, IEnumerable`1 arguments): IndexExpression
+    func ArrayAccess(Expression array, Expression[] indexes): IndexExpression
+    func ArrayAccess(Expression array, IEnumerable`1 indexes): IndexExpression
+    func Property(Expression instance, String propertyName, Expression[] arguments): IndexExpression
+    func Property(Expression instance, PropertyInfo indexer, Expression[] arguments): IndexExpression
+    func Property(Expression instance, PropertyInfo indexer, IEnumerable`1 arguments): IndexExpression
+    func Invoke(Expression expression, Expression[] arguments): InvocationExpression
+    func Invoke(Expression expression, IEnumerable`1 arguments): InvocationExpression
+    func Label(LabelTarget target): LabelExpression
+    func Label(LabelTarget target, Expression defaultValue): LabelExpression
+    func Label(): LabelTarget
+    func Label(String name): LabelTarget
+    func Label(Type type): LabelTarget
+    func Label(Type type, String name): LabelTarget
+    func Lambda(Expression body, ParameterExpression[] parameters): Expression`1
+    func Lambda(Expression body, Boolean tailCall, ParameterExpression[] parameters): Expression`1
+    func Lambda(Expression body, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, Boolean tailCall, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, String name, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): Expression`1
+    func Lambda(Expression body, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Expression body, Boolean tailCall, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Expression body, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, Boolean tailCall, ParameterExpression[] parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, String name, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, String name, IEnumerable`1 parameters): LambdaExpression
+    func Lambda(Type delegateType, Expression body, String name, Boolean tailCall, IEnumerable`1 parameters): LambdaExpression
+    func GetFuncType(Type[] typeArgs): Type
+    func TryGetFuncType(Type[] typeArgs, Type& funcType): Boolean
+    func GetActionType(Type[] typeArgs): Type
+    func TryGetActionType(Type[] typeArgs, Type& actionType): Boolean
+    func GetDelegateType(Type[] typeArgs): Type
+    func ListInit(NewExpression newExpression, Expression[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, MethodInfo addMethod, Expression[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, MethodInfo addMethod, IEnumerable`1 initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, ElementInit[] initializers): ListInitExpression
+    func ListInit(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func Loop(Expression body): LoopExpression
+    func Loop(Expression body, LabelTarget break): LoopExpression
+    func Loop(Expression body, LabelTarget break, LabelTarget continue): LoopExpression
+    func Bind(MemberInfo member, Expression expression): MemberAssignment
+    func Bind(MethodInfo propertyAccessor, Expression expression): MemberAssignment
+    func Field(Expression expression, FieldInfo field): MemberExpression
+    func Field(Expression expression, String fieldName): MemberExpression
+    func Field(Expression expression, Type type, String fieldName): MemberExpression
+    func Property(Expression expression, String propertyName): MemberExpression
+    func Property(Expression expression, Type type, String propertyName): MemberExpression
+    func Property(Expression expression, PropertyInfo property): MemberExpression
+    func Property(Expression expression, MethodInfo propertyAccessor): MemberExpression
+    func PropertyOrField(Expression expression, String propertyOrFieldName): MemberExpression
+    func MakeMemberAccess(Expression expression, MemberInfo member): MemberExpression
+    func MemberInit(NewExpression newExpression, MemberBinding[] bindings): MemberInitExpression
+    func MemberInit(NewExpression newExpression, IEnumerable`1 bindings): MemberInitExpression
+    func ListBind(MemberInfo member, ElementInit[] initializers): MemberListBinding
+    func ListBind(MemberInfo member, IEnumerable`1 initializers): MemberListBinding
+    func ListBind(MethodInfo propertyAccessor, ElementInit[] initializers): MemberListBinding
+    func ListBind(MethodInfo propertyAccessor, IEnumerable`1 initializers): MemberListBinding
+    func MemberBind(MemberInfo member, MemberBinding[] bindings): MemberMemberBinding
+    func MemberBind(MemberInfo member, IEnumerable`1 bindings): MemberMemberBinding
+    func MemberBind(MethodInfo propertyAccessor, MemberBinding[] bindings): MemberMemberBinding
+    func MemberBind(MethodInfo propertyAccessor, IEnumerable`1 bindings): MemberMemberBinding
+    func Call(MethodInfo method, Expression arg0): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3): MethodCallExpression
+    func Call(MethodInfo method, Expression arg0, Expression arg1, Expression arg2, Expression arg3, Expression arg4): MethodCallExpression
+    func Call(MethodInfo method, Expression[] arguments): MethodCallExpression
+    func Call(MethodInfo method, IEnumerable`1 arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression[] arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression arg0, Expression arg1): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, Expression arg0, Expression arg1, Expression arg2): MethodCallExpression
+    func Call(Expression instance, String methodName, Type[] typeArguments, Expression[] arguments): MethodCallExpression
+    func Call(Type type, String methodName, Type[] typeArguments, Expression[] arguments): MethodCallExpression
+    func Call(Expression instance, MethodInfo method, IEnumerable`1 arguments): MethodCallExpression
+    func ArrayIndex(Expression array, Expression[] indexes): MethodCallExpression
+    func ArrayIndex(Expression array, IEnumerable`1 indexes): MethodCallExpression
+    func NewArrayInit(Type type, Expression[] initializers): NewArrayExpression
+    func NewArrayInit(Type type, IEnumerable`1 initializers): NewArrayExpression
+    func NewArrayBounds(Type type, Expression[] bounds): NewArrayExpression
+    func NewArrayBounds(Type type, IEnumerable`1 bounds): NewArrayExpression
+    func New(ConstructorInfo constructor): NewExpression
+    func New(ConstructorInfo constructor, Expression[] arguments): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments, IEnumerable`1 members): NewExpression
+    func New(ConstructorInfo constructor, IEnumerable`1 arguments, MemberInfo[] members): NewExpression
+    func New(Type type): NewExpression
+    func Parameter(Type type): ParameterExpression
+    func Variable(Type type): ParameterExpression
+    func Parameter(Type type, String name): ParameterExpression
+    func Variable(Type type, String name): ParameterExpression
+    func RuntimeVariables(ParameterExpression[] variables): RuntimeVariablesExpression
+    func RuntimeVariables(IEnumerable`1 variables): RuntimeVariablesExpression
+    func SwitchCase(Expression body, Expression[] testValues): SwitchCase
+    func SwitchCase(Expression body, IEnumerable`1 testValues): SwitchCase
+    func Switch(Expression switchValue, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, SwitchCase[] cases): SwitchExpression
+    func Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, SwitchCase[] cases): SwitchExpression
+    func Switch(Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable`1 cases): SwitchExpression
+    func Switch(Type type, Expression switchValue, Expression defaultBody, MethodInfo comparison, IEnumerable`1 cases): SwitchExpression
+    func SymbolDocument(String fileName): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language, Guid languageVendor): SymbolDocumentInfo
+    func SymbolDocument(String fileName, Guid language, Guid languageVendor, Guid documentType): SymbolDocumentInfo
+    func TryFault(Expression body, Expression fault): TryExpression
+    func TryFinally(Expression body, Expression finally): TryExpression
+    func TryCatch(Expression body, CatchBlock[] handlers): TryExpression
+    func TryCatchFinally(Expression body, Expression finally, CatchBlock[] handlers): TryExpression
+    func MakeTry(Type type, Expression body, Expression finally, Expression fault, IEnumerable`1 handlers): TryExpression
+    func TypeIs(Expression expression, Type type): TypeBinaryExpression
+    func TypeEqual(Expression expression, Type type): TypeBinaryExpression
+    func MakeUnary(ExpressionType unaryType, Expression operand, Type type): UnaryExpression
+    func MakeUnary(ExpressionType unaryType, Expression operand, Type type, MethodInfo method): UnaryExpression
+    func Negate(Expression expression): UnaryExpression
+    func Negate(Expression expression, MethodInfo method): UnaryExpression
+    func UnaryPlus(Expression expression): UnaryExpression
+    func UnaryPlus(Expression expression, MethodInfo method): UnaryExpression
+    func NegateChecked(Expression expression): UnaryExpression
+    func NegateChecked(Expression expression, MethodInfo method): UnaryExpression
+    func Not(Expression expression): UnaryExpression
+    func Not(Expression expression, MethodInfo method): UnaryExpression
+    func IsFalse(Expression expression): UnaryExpression
+    func IsFalse(Expression expression, MethodInfo method): UnaryExpression
+    func IsTrue(Expression expression): UnaryExpression
+    func IsTrue(Expression expression, MethodInfo method): UnaryExpression
+    func OnesComplement(Expression expression): UnaryExpression
+    func OnesComplement(Expression expression, MethodInfo method): UnaryExpression
+    func TypeAs(Expression expression, Type type): UnaryExpression
+    func Unbox(Expression expression, Type type): UnaryExpression
+    func Convert(Expression expression, Type type): UnaryExpression
+    func Convert(Expression expression, Type type, MethodInfo method): UnaryExpression
+    func ConvertChecked(Expression expression, Type type): UnaryExpression
+    func ConvertChecked(Expression expression, Type type, MethodInfo method): UnaryExpression
+    func ArrayLength(Expression array): UnaryExpression
+    func Quote(Expression expression): UnaryExpression
+    func Rethrow(): UnaryExpression
+    func Rethrow(Type type): UnaryExpression
+    func Throw(Expression value): UnaryExpression
+    func Throw(Expression value, Type type): UnaryExpression
+    func Increment(Expression expression): UnaryExpression
+    func Increment(Expression expression, MethodInfo method): UnaryExpression
+    func Decrement(Expression expression): UnaryExpression
+    func Decrement(Expression expression, MethodInfo method): UnaryExpression
+    func PreIncrementAssign(Expression expression): UnaryExpression
+    func PreIncrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PreDecrementAssign(Expression expression): UnaryExpression
+    func PreDecrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PostIncrementAssign(Expression expression): UnaryExpression
+    func PostIncrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func PostDecrementAssign(Expression expression): UnaryExpression
+    func PostDecrementAssign(Expression expression, MethodInfo method): UnaryExpression
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BlockExpression {
+    func Update(IEnumerable`1 variables, IEnumerable`1 expressions): BlockExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CatchBlock {
+    func ToString(): String
+    func Update(ParameterExpression variable, Expression filter, Expression body): CatchBlock
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConditionalExpression {
+    func Update(Expression test, Expression ifTrue, Expression ifFalse): ConditionalExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConstantExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DebugInfoExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DefaultExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ElementInit {
+    func GetArgument(Int32 index): Expression
+    func ToString(): String
+    func Update(IEnumerable`1 arguments): ElementInit
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ExpressionVisitor {
+    func Visit(Expression node): Expression
+    func Visit(ReadOnlyCollection`1 nodes): ReadOnlyCollection`1
+    func Visit(ReadOnlyCollection`1 nodes, Func`2 elementVisitor): ReadOnlyCollection`1
+    func VisitAndConvert(T node, String callerName): T
+    func VisitAndConvert(ReadOnlyCollection`1 nodes, String callerName): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GotoExpression {
+    func Update(LabelTarget target, Expression value): GotoExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IArgumentProvider {
+    func GetArgument(Int32 index): Expression
+  }
+  class IDynamicExpression {
+    func Rewrite(Expression[] args): Expression
+    func CreateCallSite(): Object
+  }
+  class IndexExpression {
+    func Update(Expression object, IEnumerable`1 arguments): IndexExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvocationExpression {
+    func Update(Expression expression, IEnumerable`1 arguments): InvocationExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LabelExpression {
+    func Update(LabelTarget target, Expression defaultValue): LabelExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LabelTarget {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LambdaExpression {
+    func Compile(): Delegate
+    func Compile(Boolean preferInterpretation): Delegate
+    func Compile(DebugInfoGenerator debugInfoGenerator): Delegate
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Expression`1 {
+    func Compile(): TDelegate
+    func Compile(Boolean preferInterpretation): TDelegate
+    func Update(Expression body, IEnumerable`1 parameters): Expression`1
+    func Compile(DebugInfoGenerator debugInfoGenerator): TDelegate
+    func Compile(): Delegate
+    func Compile(Boolean preferInterpretation): Delegate
+    func Compile(DebugInfoGenerator debugInfoGenerator): Delegate
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ListInitExpression {
+    func Reduce(): Expression
+    func Update(NewExpression newExpression, IEnumerable`1 initializers): ListInitExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LoopExpression {
+    func Update(LabelTarget breakLabel, LabelTarget continueLabel, Expression body): LoopExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberAssignment {
+    func Update(Expression expression): MemberAssignment
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberBinding {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberExpression {
+    func Update(Expression expression): MemberExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberInitExpression {
+    func Reduce(): Expression
+    func Update(NewExpression newExpression, IEnumerable`1 bindings): MemberInitExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberListBinding {
+    func Update(IEnumerable`1 initializers): MemberListBinding
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MemberMemberBinding {
+    func Update(IEnumerable`1 bindings): MemberMemberBinding
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MethodCallExpression {
+    func Update(Expression object, IEnumerable`1 arguments): MethodCallExpression
+    func GetArgument(Int32 index): Expression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NewArrayExpression {
+    func Update(IEnumerable`1 expressions): NewArrayExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NewExpression {
+    func GetArgument(Int32 index): Expression
+    func Update(IEnumerable`1 arguments): NewExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ParameterExpression {
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RuntimeVariablesExpression {
+    func Update(IEnumerable`1 variables): RuntimeVariablesExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SwitchCase {
+    func ToString(): String
+    func Update(IEnumerable`1 testValues, Expression body): SwitchCase
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SwitchExpression {
+    func Update(Expression switchValue, IEnumerable`1 cases, Expression defaultBody): SwitchExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SymbolDocumentInfo {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TryExpression {
+    func Update(Expression body, IEnumerable`1 handlers, Expression finally, Expression fault): TryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class TypeBinaryExpression {
+    func Update(Expression expression): TypeBinaryExpression
+    func Reduce(): Expression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class UnaryExpression {
+    func Reduce(): Expression
+    func Update(Expression operand): UnaryExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicExpressionVisitor {
+    func Visit(Expression node): Expression
+    func Visit(ReadOnlyCollection`1 nodes): ReadOnlyCollection`1
+    func VisitAndConvert(T node, String callerName): T
+    func VisitAndConvert(ReadOnlyCollection`1 nodes, String callerName): ReadOnlyCollection`1
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicExpression {
+    func Reduce(): Expression
+    func Update(IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression[] arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, IEnumerable`1 arguments): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func Dynamic(CallSiteBinder binder, Type returnType, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, IEnumerable`1 arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression[] arguments): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2): DynamicExpression
+    func MakeDynamic(Type delegateType, CallSiteBinder binder, Expression arg0, Expression arg1, Expression arg2, Expression arg3): DynamicExpression
+    func ReduceAndCheck(): Expression
+    func ReduceExtensions(): Expression
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class LightLambda {
+    func Run(Object[] arguments): Object
+    func RunVoid(Object[] arguments): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicMetaObjectBinder {
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicMetaObject {
+    func BindConvert(ConvertBinder binder): DynamicMetaObject
+    func BindGetMember(GetMemberBinder binder): DynamicMetaObject
+    func BindSetMember(SetMemberBinder binder, DynamicMetaObject value): DynamicMetaObject
+    func BindDeleteMember(DeleteMemberBinder binder): DynamicMetaObject
+    func BindGetIndex(GetIndexBinder binder, DynamicMetaObject[] indexes): DynamicMetaObject
+    func BindSetIndex(SetIndexBinder binder, DynamicMetaObject[] indexes, DynamicMetaObject value): DynamicMetaObject
+    func BindDeleteIndex(DeleteIndexBinder binder, DynamicMetaObject[] indexes): DynamicMetaObject
+    func BindInvokeMember(InvokeMemberBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindInvoke(InvokeBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindCreateInstance(CreateInstanceBinder binder, DynamicMetaObject[] args): DynamicMetaObject
+    func BindUnaryOperation(UnaryOperationBinder binder): DynamicMetaObject
+    func BindBinaryOperation(BinaryOperationBinder binder, DynamicMetaObject arg): DynamicMetaObject
+    func GetDynamicMemberNames(): IEnumerable`1
+    func Create(Object value, Expression expression): DynamicMetaObject
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IDynamicMetaObjectProvider {
+    func GetMetaObject(Expression parameter): DynamicMetaObject
+  }
+  class BindingRestrictions {
+    func Merge(BindingRestrictions restrictions): BindingRestrictions
+    func GetTypeRestriction(Expression expression, Type type): BindingRestrictions
+    func GetInstanceRestriction(Expression expression, Object instance): BindingRestrictions
+    func GetExpressionRestriction(Expression expression): BindingRestrictions
+    func Combine(IList`1 contributingObjects): BindingRestrictions
+    func ToExpression(): Expression
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BinaryOperationBinder {
+    func FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg): DynamicMetaObject
+    func FallbackBinaryOperation(DynamicMetaObject target, DynamicMetaObject arg, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CallInfo {
+    func GetHashCode(): Int32
+    func Equals(Object obj): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ExpandoObject {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConvertBinder {
+    func FallbackConvert(DynamicMetaObject target): DynamicMetaObject
+    func FallbackConvert(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CreateInstanceBinder {
+    func FallbackCreateInstance(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackCreateInstance(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DeleteIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes): DynamicMetaObject
+    func FallbackDeleteIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DeleteMemberBinder {
+    func FallbackDeleteMember(DynamicMetaObject target): DynamicMetaObject
+    func FallbackDeleteMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DynamicObject {
+    func TryGetMember(GetMemberBinder binder, Object& result): Boolean
+    func TrySetMember(SetMemberBinder binder, Object value): Boolean
+    func TryDeleteMember(DeleteMemberBinder binder): Boolean
+    func TryInvokeMember(InvokeMemberBinder binder, Object[] args, Object& result): Boolean
+    func TryConvert(ConvertBinder binder, Object& result): Boolean
+    func TryCreateInstance(CreateInstanceBinder binder, Object[] args, Object& result): Boolean
+    func TryInvoke(InvokeBinder binder, Object[] args, Object& result): Boolean
+    func TryBinaryOperation(BinaryOperationBinder binder, Object arg, Object& result): Boolean
+    func TryUnaryOperation(UnaryOperationBinder binder, Object& result): Boolean
+    func TryGetIndex(GetIndexBinder binder, Object[] indexes, Object& result): Boolean
+    func TrySetIndex(SetIndexBinder binder, Object[] indexes, Object value): Boolean
+    func TryDeleteIndex(DeleteIndexBinder binder, Object[] indexes): Boolean
+    func GetDynamicMemberNames(): IEnumerable`1
+    func GetMetaObject(Expression parameter): DynamicMetaObject
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GetIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes): DynamicMetaObject
+    func FallbackGetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GetMemberBinder {
+    func FallbackGetMember(DynamicMetaObject target): DynamicMetaObject
+    func FallbackGetMember(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvokeBinder {
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class InvokeMemberBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackInvokeMember(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func FallbackInvoke(DynamicMetaObject target, DynamicMetaObject[] args, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SetIndexBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value): DynamicMetaObject
+    func FallbackSetIndex(DynamicMetaObject target, DynamicMetaObject[] indexes, DynamicMetaObject value, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SetMemberBinder {
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func FallbackSetMember(DynamicMetaObject target, DynamicMetaObject value): DynamicMetaObject
+    func FallbackSetMember(DynamicMetaObject target, DynamicMetaObject value, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class UnaryOperationBinder {
+    func FallbackUnaryOperation(DynamicMetaObject target): DynamicMetaObject
+    func FallbackUnaryOperation(DynamicMetaObject target, DynamicMetaObject errorSuggestion): DynamicMetaObject
+    func Bind(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Bind(Object[] args, ReadOnlyCollection`1 parameters, LabelTarget returnLabel): Expression
+    func GetUpdateExpression(Type type): Expression
+    func Defer(DynamicMetaObject target, DynamicMetaObject[] args): DynamicMetaObject
+    func Defer(DynamicMetaObject[] args): DynamicMetaObject
+    func BindDelegate(CallSite`1 site, Object[] args): T
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IInvokeOnGetBinder {
+  }
+}

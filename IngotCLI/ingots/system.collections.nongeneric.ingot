@@ -1,0 +1,219 @@
+using System.Collections;
+using System.Collections.Specialized;
+
+ingot System.Collections.NonGeneric {
+  class CaseInsensitiveComparer {
+    func Compare(Object a, Object b): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CaseInsensitiveHashCodeProvider {
+    func GetHashCode(Object obj): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CollectionBase {
+    func Clear(): Void
+    func RemoveAt(Int32 index): Void
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DictionaryBase {
+    func CopyTo(Array array, Int32 index): Void
+    func Clear(): Void
+    func GetEnumerator(): IDictionaryEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Queue {
+    func Clone(): Object
+    func Clear(): Void
+    func CopyTo(Array array, Int32 index): Void
+    func Enqueue(Object obj): Void
+    func GetEnumerator(): IEnumerator
+    func Dequeue(): Object
+    func Peek(): Object
+    func Synchronized(Queue queue): Queue
+    func Contains(Object obj): Boolean
+    func ToArray(): Object[]
+    func TrimToSize(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlyCollectionBase {
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SortedList {
+    func Add(Object key, Object value): Void
+    func Clear(): Void
+    func Clone(): Object
+    func Contains(Object key): Boolean
+    func ContainsKey(Object key): Boolean
+    func ContainsValue(Object value): Boolean
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func GetByIndex(Int32 index): Object
+    func GetEnumerator(): IDictionaryEnumerator
+    func GetKey(Int32 index): Object
+    func GetKeyList(): IList
+    func GetValueList(): IList
+    func IndexOfKey(Object key): Int32
+    func IndexOfValue(Object value): Int32
+    func RemoveAt(Int32 index): Void
+    func Remove(Object key): Void
+    func SetByIndex(Int32 index, Object value): Void
+    func Synchronized(SortedList list): SortedList
+    func TrimToSize(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Stack {
+    func Clear(): Void
+    func Clone(): Object
+    func Contains(Object obj): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func GetEnumerator(): IEnumerator
+    func Peek(): Object
+    func Pop(): Object
+    func Push(Object obj): Void
+    func Synchronized(Stack stack): Stack
+    func ToArray(): Object[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CollectionsUtil {
+    func CreateCaseInsensitiveHashtable(): Hashtable
+    func CreateCaseInsensitiveHashtable(Int32 capacity): Hashtable
+    func CreateCaseInsensitiveHashtable(IDictionary d): Hashtable
+    func CreateCaseInsensitiveSortedList(): SortedList
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CaseInsensitiveComparer {
+    func Compare(Object a, Object b): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CaseInsensitiveHashCodeProvider {
+    func GetHashCode(Object obj): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CollectionBase {
+    func Clear(): Void
+    func RemoveAt(Int32 index): Void
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DictionaryBase {
+    func CopyTo(Array array, Int32 index): Void
+    func Clear(): Void
+    func GetEnumerator(): IDictionaryEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Queue {
+    func Clone(): Object
+    func Clear(): Void
+    func CopyTo(Array array, Int32 index): Void
+    func Enqueue(Object obj): Void
+    func GetEnumerator(): IEnumerator
+    func Dequeue(): Object
+    func Peek(): Object
+    func Synchronized(Queue queue): Queue
+    func Contains(Object obj): Boolean
+    func ToArray(): Object[]
+    func TrimToSize(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlyCollectionBase {
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SortedList {
+    func Add(Object key, Object value): Void
+    func Clear(): Void
+    func Clone(): Object
+    func Contains(Object key): Boolean
+    func ContainsKey(Object key): Boolean
+    func ContainsValue(Object value): Boolean
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func GetByIndex(Int32 index): Object
+    func GetEnumerator(): IDictionaryEnumerator
+    func GetKey(Int32 index): Object
+    func GetKeyList(): IList
+    func GetValueList(): IList
+    func IndexOfKey(Object key): Int32
+    func IndexOfValue(Object value): Int32
+    func RemoveAt(Int32 index): Void
+    func Remove(Object key): Void
+    func SetByIndex(Int32 index, Object value): Void
+    func Synchronized(SortedList list): SortedList
+    func TrimToSize(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Stack {
+    func Clear(): Void
+    func Clone(): Object
+    func Contains(Object obj): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func GetEnumerator(): IEnumerator
+    func Peek(): Object
+    func Pop(): Object
+    func Push(Object obj): Void
+    func Synchronized(Stack stack): Stack
+    func ToArray(): Object[]
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CollectionsUtil {
+    func CreateCaseInsensitiveHashtable(): Hashtable
+    func CreateCaseInsensitiveHashtable(Int32 capacity): Hashtable
+    func CreateCaseInsensitiveHashtable(IDictionary d): Hashtable
+    func CreateCaseInsensitiveSortedList(): SortedList
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

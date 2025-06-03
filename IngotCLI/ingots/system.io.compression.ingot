@@ -1,0 +1,163 @@
+using System.IO.Compression;
+
+ingot System.IO.Compression {
+  class ZipArchive {
+    func CreateEntry(String entryName): ZipArchiveEntry
+    func CreateEntry(String entryName, CompressionLevel compressionLevel): ZipArchiveEntry
+    func Dispose(): Void
+    func GetEntry(String entryName): ZipArchiveEntry
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ZipArchiveEntry {
+    func Delete(): Void
+    func Open(): Stream
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DeflateStream {
+    func Flush(): Void
+    func FlushAsync(CancellationToken cancellationToken): Task
+    func Seek(Int64 offset, SeekOrigin origin): Int64
+    func SetLength(Int64 value): Void
+    func ReadByte(): Int32
+    func Read(Byte[] buffer, Int32 offset, Int32 count): Int32
+    func Read(Span`1 buffer): Int32
+    func BeginRead(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback asyncCallback, Object asyncState): IAsyncResult
+    func EndRead(IAsyncResult asyncResult): Int32
+    func ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): Task`1
+    func ReadAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask`1
+    func Write(Byte[] buffer, Int32 offset, Int32 count): Void
+    func WriteByte(Byte value): Void
+    func Write(ReadOnlySpan`1 buffer): Void
+    func DisposeAsync(): ValueTask
+    func BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback asyncCallback, Object asyncState): IAsyncResult
+    func EndWrite(IAsyncResult asyncResult): Void
+    func WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): Task
+    func WriteAsync(ReadOnlyMemory`1 buffer, CancellationToken cancellationToken): ValueTask
+    func CopyTo(Stream destination, Int32 bufferSize): Void
+    func CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken): Task
+    func CopyTo(Stream destination): Void
+    func CopyToAsync(Stream destination): Task
+    func CopyToAsync(Stream destination, Int32 bufferSize): Task
+    func CopyToAsync(Stream destination, CancellationToken cancellationToken): Task
+    func Dispose(): Void
+    func Close(): Void
+    func FlushAsync(): Task
+    func ReadAsync(Byte[] buffer, Int32 offset, Int32 count): Task`1
+    func ReadExactlyAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask
+    func ReadExactlyAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): ValueTask
+    func ReadAtLeastAsync(Memory`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream, CancellationToken cancellationToken): ValueTask`1
+    func WriteAsync(Byte[] buffer, Int32 offset, Int32 count): Task
+    func ReadExactly(Span`1 buffer): Void
+    func ReadExactly(Byte[] buffer, Int32 offset, Int32 count): Void
+    func ReadAtLeast(Span`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream): Int32
+    func GetLifetimeService(): Object
+    func InitializeLifetimeService(): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ZLibException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GZipStream {
+    func Flush(): Void
+    func Seek(Int64 offset, SeekOrigin origin): Int64
+    func SetLength(Int64 value): Void
+    func ReadByte(): Int32
+    func BeginRead(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback asyncCallback, Object asyncState): IAsyncResult
+    func EndRead(IAsyncResult asyncResult): Int32
+    func Read(Byte[] buffer, Int32 offset, Int32 count): Int32
+    func Read(Span`1 buffer): Int32
+    func BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback asyncCallback, Object asyncState): IAsyncResult
+    func EndWrite(IAsyncResult asyncResult): Void
+    func Write(Byte[] buffer, Int32 offset, Int32 count): Void
+    func WriteByte(Byte value): Void
+    func Write(ReadOnlySpan`1 buffer): Void
+    func CopyTo(Stream destination, Int32 bufferSize): Void
+    func DisposeAsync(): ValueTask
+    func ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): Task`1
+    func ReadAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask`1
+    func WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): Task
+    func WriteAsync(ReadOnlyMemory`1 buffer, CancellationToken cancellationToken): ValueTask
+    func FlushAsync(CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken): Task
+    func CopyTo(Stream destination): Void
+    func CopyToAsync(Stream destination): Task
+    func CopyToAsync(Stream destination, Int32 bufferSize): Task
+    func CopyToAsync(Stream destination, CancellationToken cancellationToken): Task
+    func Dispose(): Void
+    func Close(): Void
+    func FlushAsync(): Task
+    func ReadAsync(Byte[] buffer, Int32 offset, Int32 count): Task`1
+    func ReadExactlyAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask
+    func ReadExactlyAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): ValueTask
+    func ReadAtLeastAsync(Memory`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream, CancellationToken cancellationToken): ValueTask`1
+    func WriteAsync(Byte[] buffer, Int32 offset, Int32 count): Task
+    func ReadExactly(Span`1 buffer): Void
+    func ReadExactly(Byte[] buffer, Int32 offset, Int32 count): Void
+    func ReadAtLeast(Span`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream): Int32
+    func GetLifetimeService(): Object
+    func InitializeLifetimeService(): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ZLibStream {
+    func Flush(): Void
+    func FlushAsync(CancellationToken cancellationToken): Task
+    func Seek(Int64 offset, SeekOrigin origin): Int64
+    func SetLength(Int64 value): Void
+    func ReadByte(): Int32
+    func BeginRead(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback asyncCallback, Object asyncState): IAsyncResult
+    func EndRead(IAsyncResult asyncResult): Int32
+    func Read(Byte[] buffer, Int32 offset, Int32 count): Int32
+    func Read(Span`1 buffer): Int32
+    func ReadAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): Task`1
+    func ReadAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask`1
+    func BeginWrite(Byte[] buffer, Int32 offset, Int32 count, AsyncCallback asyncCallback, Object asyncState): IAsyncResult
+    func EndWrite(IAsyncResult asyncResult): Void
+    func Write(Byte[] buffer, Int32 offset, Int32 count): Void
+    func Write(ReadOnlySpan`1 buffer): Void
+    func WriteAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): Task
+    func WriteAsync(ReadOnlyMemory`1 buffer, CancellationToken cancellationToken): ValueTask
+    func WriteByte(Byte value): Void
+    func CopyTo(Stream destination, Int32 bufferSize): Void
+    func CopyToAsync(Stream destination, Int32 bufferSize, CancellationToken cancellationToken): Task
+    func DisposeAsync(): ValueTask
+    func CopyTo(Stream destination): Void
+    func CopyToAsync(Stream destination): Task
+    func CopyToAsync(Stream destination, Int32 bufferSize): Task
+    func CopyToAsync(Stream destination, CancellationToken cancellationToken): Task
+    func Dispose(): Void
+    func Close(): Void
+    func FlushAsync(): Task
+    func ReadAsync(Byte[] buffer, Int32 offset, Int32 count): Task`1
+    func ReadExactlyAsync(Memory`1 buffer, CancellationToken cancellationToken): ValueTask
+    func ReadExactlyAsync(Byte[] buffer, Int32 offset, Int32 count, CancellationToken cancellationToken): ValueTask
+    func ReadAtLeastAsync(Memory`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream, CancellationToken cancellationToken): ValueTask`1
+    func WriteAsync(Byte[] buffer, Int32 offset, Int32 count): Task
+    func ReadExactly(Span`1 buffer): Void
+    func ReadExactly(Byte[] buffer, Int32 offset, Int32 count): Void
+    func ReadAtLeast(Span`1 buffer, Int32 minimumBytes, Boolean throwOnEndOfStream): Int32
+    func GetLifetimeService(): Object
+    func InitializeLifetimeService(): Object
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

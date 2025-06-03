@@ -1,3 +1,8 @@
+using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+
 ingot Microsoft.Bcl.AsyncInterfaces {
   class IAsyncDisposable {
     /// Performs application-defined tasks associated with freeing, releasing, or

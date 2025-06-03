@@ -1,0 +1,170 @@
+using System.Threading;
+
+ingot System.Threading {
+  class BarrierPostPhaseException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Barrier {
+    func AddParticipant(): Int64
+    func AddParticipants(Int32 participantCount): Int64
+    func RemoveParticipant(): Void
+    func RemoveParticipants(Int32 participantCount): Void
+    func SignalAndWait(): Void
+    func SignalAndWait(CancellationToken cancellationToken): Void
+    func SignalAndWait(TimeSpan timeout): Boolean
+    func SignalAndWait(TimeSpan timeout, CancellationToken cancellationToken): Boolean
+    func SignalAndWait(Int32 millisecondsTimeout): Boolean
+    func SignalAndWait(Int32 millisecondsTimeout, CancellationToken cancellationToken): Boolean
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CountdownEvent {
+    func Dispose(): Void
+    func Signal(): Boolean
+    func Signal(Int32 signalCount): Boolean
+    func AddCount(): Void
+    func TryAddCount(): Boolean
+    func AddCount(Int32 signalCount): Void
+    func TryAddCount(Int32 signalCount): Boolean
+    func Reset(): Void
+    func Reset(Int32 count): Void
+    func Wait(): Void
+    func Wait(CancellationToken cancellationToken): Void
+    func Wait(TimeSpan timeout): Boolean
+    func Wait(TimeSpan timeout, CancellationToken cancellationToken): Boolean
+    func Wait(Int32 millisecondsTimeout): Boolean
+    func Wait(Int32 millisecondsTimeout, CancellationToken cancellationToken): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HostExecutionContext {
+    func CreateCopy(): HostExecutionContext
+    func Dispose(): Void
+    func Dispose(Boolean disposing): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HostExecutionContextManager {
+    func Capture(): HostExecutionContext
+    func SetHostExecutionContext(HostExecutionContext hostExecutionContext): Object
+    func Revert(Object previousState): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReaderWriterLock {
+    func AnyWritersSince(Int32 seqNum): Boolean
+    func AcquireReaderLock(Int32 millisecondsTimeout): Void
+    func AcquireReaderLock(TimeSpan timeout): Void
+    func AcquireWriterLock(Int32 millisecondsTimeout): Void
+    func AcquireWriterLock(TimeSpan timeout): Void
+    func ReleaseReaderLock(): Void
+    func ReleaseWriterLock(): Void
+    func UpgradeToWriterLock(Int32 millisecondsTimeout): LockCookie
+    func UpgradeToWriterLock(TimeSpan timeout): LockCookie
+    func DowngradeFromWriterLock(LockCookie& lockCookie): Void
+    func ReleaseLock(): LockCookie
+    func RestoreLock(LockCookie& lockCookie): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class BarrierPostPhaseException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Barrier {
+    func AddParticipant(): Int64
+    func AddParticipants(Int32 participantCount): Int64
+    func RemoveParticipant(): Void
+    func RemoveParticipants(Int32 participantCount): Void
+    func SignalAndWait(): Void
+    func SignalAndWait(CancellationToken cancellationToken): Void
+    func SignalAndWait(TimeSpan timeout): Boolean
+    func SignalAndWait(TimeSpan timeout, CancellationToken cancellationToken): Boolean
+    func SignalAndWait(Int32 millisecondsTimeout): Boolean
+    func SignalAndWait(Int32 millisecondsTimeout, CancellationToken cancellationToken): Boolean
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CountdownEvent {
+    func Dispose(): Void
+    func Signal(): Boolean
+    func Signal(Int32 signalCount): Boolean
+    func AddCount(): Void
+    func TryAddCount(): Boolean
+    func AddCount(Int32 signalCount): Void
+    func TryAddCount(Int32 signalCount): Boolean
+    func Reset(): Void
+    func Reset(Int32 count): Void
+    func Wait(): Void
+    func Wait(CancellationToken cancellationToken): Void
+    func Wait(TimeSpan timeout): Boolean
+    func Wait(TimeSpan timeout, CancellationToken cancellationToken): Boolean
+    func Wait(Int32 millisecondsTimeout): Boolean
+    func Wait(Int32 millisecondsTimeout, CancellationToken cancellationToken): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HostExecutionContext {
+    func CreateCopy(): HostExecutionContext
+    func Dispose(): Void
+    func Dispose(Boolean disposing): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HostExecutionContextManager {
+    func Capture(): HostExecutionContext
+    func SetHostExecutionContext(HostExecutionContext hostExecutionContext): Object
+    func Revert(Object previousState): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReaderWriterLock {
+    func AnyWritersSince(Int32 seqNum): Boolean
+    func AcquireReaderLock(Int32 millisecondsTimeout): Void
+    func AcquireReaderLock(TimeSpan timeout): Void
+    func AcquireWriterLock(Int32 millisecondsTimeout): Void
+    func AcquireWriterLock(TimeSpan timeout): Void
+    func ReleaseReaderLock(): Void
+    func ReleaseWriterLock(): Void
+    func UpgradeToWriterLock(Int32 millisecondsTimeout): LockCookie
+    func UpgradeToWriterLock(TimeSpan timeout): LockCookie
+    func DowngradeFromWriterLock(LockCookie& lockCookie): Void
+    func ReleaseLock(): LockCookie
+    func RestoreLock(LockCookie& lockCookie): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

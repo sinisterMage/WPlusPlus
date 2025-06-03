@@ -1,0 +1,232 @@
+using System.Runtime.Serialization;
+
+ingot System.Runtime.Serialization.Primitives {
+  class CollectionDataContractAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ContractNamespaceAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DataContractAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DataMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class EnumMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IgnoreDataMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class InvalidDataContractException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ISerializationSurrogateProvider2 {
+    func GetCustomDataToExport(MemberInfo memberInfo, Type dataContractType): Object
+    func GetCustomDataToExport(Type runtimeType, Type dataContractType): Object
+    func GetKnownCustomDataTypes(Collection`1 customDataTypes): Void
+    func GetReferencedTypeOnImport(String typeName, String typeNamespace, Object customData): Type
+  }
+  class ISerializationSurrogateProvider {
+    func GetSurrogateType(Type type): Type
+    func GetObjectToSerialize(Object obj, Type targetType): Object
+    func GetDeserializedObject(Object obj, Type targetType): Object
+  }
+  class KnownTypeAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class CollectionDataContractAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ContractNamespaceAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DataContractAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DataMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class EnumMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IgnoreDataMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class InvalidDataContractException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ISerializationSurrogateProvider2 {
+    func GetCustomDataToExport(MemberInfo memberInfo, Type dataContractType): Object
+    func GetCustomDataToExport(Type runtimeType, Type dataContractType): Object
+    func GetKnownCustomDataTypes(Collection`1 customDataTypes): Void
+    func GetReferencedTypeOnImport(String typeName, String typeNamespace, Object customData): Type
+  }
+  class ISerializationSurrogateProvider {
+    func GetSurrogateType(Type type): Type
+    func GetObjectToSerialize(Object obj, Type targetType): Object
+    func GetDeserializedObject(Object obj, Type targetType): Object
+  }
+  class KnownTypeAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class CollectionDataContractAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ContractNamespaceAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DataContractAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class DataMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class EnumMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class IgnoreDataMemberAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class InvalidDataContractException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ISerializationSurrogateProvider2 {
+    func GetCustomDataToExport(MemberInfo memberInfo, Type dataContractType): Object
+    func GetCustomDataToExport(Type runtimeType, Type dataContractType): Object
+    func GetKnownCustomDataTypes(Collection`1 customDataTypes): Void
+    func GetReferencedTypeOnImport(String typeName, String typeNamespace, Object customData): Type
+  }
+  class ISerializationSurrogateProvider {
+    func GetSurrogateType(Type type): Type
+    func GetObjectToSerialize(Object obj, Type targetType): Object
+    func GetDeserializedObject(Object obj, Type targetType): Object
+  }
+  class KnownTypeAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+}

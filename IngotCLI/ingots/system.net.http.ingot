@@ -1,0 +1,611 @@
+using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Metrics;
+
+ingot System.Net.Http {
+  class ByteArrayContent {
+    func ReadAsStringAsync(): Task`1
+    func ReadAsStringAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsByteArrayAsync(): Task`1
+    func ReadAsByteArrayAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsStream(): Stream
+    func ReadAsStream(CancellationToken cancellationToken): Stream
+    func ReadAsStreamAsync(): Task`1
+    func ReadAsStreamAsync(CancellationToken cancellationToken): Task`1
+    func CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken): Void
+    func CopyToAsync(Stream stream): Task
+    func CopyToAsync(Stream stream, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream stream, TransportContext context): Task
+    func CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken): Task
+    func LoadIntoBufferAsync(): Task
+    func LoadIntoBufferAsync(Int64 maxBufferSize): Task
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DelegatingHandler {
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class FormUrlEncodedContent {
+    func ReadAsStringAsync(): Task`1
+    func ReadAsStringAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsByteArrayAsync(): Task`1
+    func ReadAsByteArrayAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsStream(): Stream
+    func ReadAsStream(CancellationToken cancellationToken): Stream
+    func ReadAsStreamAsync(): Task`1
+    func ReadAsStreamAsync(CancellationToken cancellationToken): Task`1
+    func CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken): Void
+    func CopyToAsync(Stream stream): Task
+    func CopyToAsync(Stream stream, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream stream, TransportContext context): Task
+    func CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken): Task
+    func LoadIntoBufferAsync(): Task
+    func LoadIntoBufferAsync(Int64 maxBufferSize): Task
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HeaderEncodingSelector`1 {
+    func Invoke(String headerName, TContext context): Encoding
+    func BeginInvoke(String headerName, TContext context, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Encoding
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class HttpClient {
+    func GetStringAsync(String requestUri): Task`1
+    func GetStringAsync(Uri requestUri): Task`1
+    func GetStringAsync(String requestUri, CancellationToken cancellationToken): Task`1
+    func GetStringAsync(Uri requestUri, CancellationToken cancellationToken): Task`1
+    func GetByteArrayAsync(String requestUri): Task`1
+    func GetByteArrayAsync(Uri requestUri): Task`1
+    func GetByteArrayAsync(String requestUri, CancellationToken cancellationToken): Task`1
+    func GetByteArrayAsync(Uri requestUri, CancellationToken cancellationToken): Task`1
+    func GetStreamAsync(String requestUri): Task`1
+    func GetStreamAsync(String requestUri, CancellationToken cancellationToken): Task`1
+    func GetStreamAsync(Uri requestUri): Task`1
+    func GetStreamAsync(Uri requestUri, CancellationToken cancellationToken): Task`1
+    func GetAsync(String requestUri): Task`1
+    func GetAsync(Uri requestUri): Task`1
+    func GetAsync(String requestUri, HttpCompletionOption completionOption): Task`1
+    func GetAsync(Uri requestUri, HttpCompletionOption completionOption): Task`1
+    func GetAsync(String requestUri, CancellationToken cancellationToken): Task`1
+    func GetAsync(Uri requestUri, CancellationToken cancellationToken): Task`1
+    func GetAsync(String requestUri, HttpCompletionOption completionOption, CancellationToken cancellationToken): Task`1
+    func GetAsync(Uri requestUri, HttpCompletionOption completionOption, CancellationToken cancellationToken): Task`1
+    func PostAsync(String requestUri, HttpContent content): Task`1
+    func PostAsync(Uri requestUri, HttpContent content): Task`1
+    func PostAsync(String requestUri, HttpContent content, CancellationToken cancellationToken): Task`1
+    func PostAsync(Uri requestUri, HttpContent content, CancellationToken cancellationToken): Task`1
+    func PutAsync(String requestUri, HttpContent content): Task`1
+    func PutAsync(Uri requestUri, HttpContent content): Task`1
+    func PutAsync(String requestUri, HttpContent content, CancellationToken cancellationToken): Task`1
+    func PutAsync(Uri requestUri, HttpContent content, CancellationToken cancellationToken): Task`1
+    func PatchAsync(String requestUri, HttpContent content): Task`1
+    func PatchAsync(Uri requestUri, HttpContent content): Task`1
+    func PatchAsync(String requestUri, HttpContent content, CancellationToken cancellationToken): Task`1
+    func PatchAsync(Uri requestUri, HttpContent content, CancellationToken cancellationToken): Task`1
+    func DeleteAsync(String requestUri): Task`1
+    func DeleteAsync(Uri requestUri): Task`1
+    func DeleteAsync(String requestUri, CancellationToken cancellationToken): Task`1
+    func DeleteAsync(Uri requestUri, CancellationToken cancellationToken): Task`1
+    func Send(HttpRequestMessage request): HttpResponseMessage
+    func Send(HttpRequestMessage request, HttpCompletionOption completionOption): HttpResponseMessage
+    func Send(HttpRequestMessage request, CancellationToken cancellationToken): HttpResponseMessage
+    func Send(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken): HttpResponseMessage
+    func SendAsync(HttpRequestMessage request): Task`1
+    func SendAsync(HttpRequestMessage request, CancellationToken cancellationToken): Task`1
+    func SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption): Task`1
+    func SendAsync(HttpRequestMessage request, HttpCompletionOption completionOption, CancellationToken cancellationToken): Task`1
+    func CancelPendingRequests(): Void
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpClientHandler {
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpContent {
+    func ReadAsStringAsync(): Task`1
+    func ReadAsStringAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsByteArrayAsync(): Task`1
+    func ReadAsByteArrayAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsStream(): Stream
+    func ReadAsStream(CancellationToken cancellationToken): Stream
+    func ReadAsStreamAsync(): Task`1
+    func ReadAsStreamAsync(CancellationToken cancellationToken): Task`1
+    func CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken): Void
+    func CopyToAsync(Stream stream): Task
+    func CopyToAsync(Stream stream, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream stream, TransportContext context): Task
+    func CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken): Task
+    func LoadIntoBufferAsync(): Task
+    func LoadIntoBufferAsync(Int64 maxBufferSize): Task
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpMessageHandler {
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpMessageInvoker {
+    func Send(HttpRequestMessage request, CancellationToken cancellationToken): HttpResponseMessage
+    func SendAsync(HttpRequestMessage request, CancellationToken cancellationToken): Task`1
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpMethod {
+    func Equals(HttpMethod other): Boolean
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func ToString(): String
+    func Parse(ReadOnlySpan`1 method): HttpMethod
+    func GetType(): Type
+  }
+  class HttpProtocolException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpRequestException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpRequestMessage {
+    func ToString(): String
+    func Dispose(): Void
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpRequestOptions {
+    func TryGetValue(HttpRequestOptionsKey`1 key, TValue& value): Boolean
+    func Set(HttpRequestOptionsKey`1 key, TValue value): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpResponseMessage {
+    func EnsureSuccessStatusCode(): HttpResponseMessage
+    func ToString(): String
+    func Dispose(): Void
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpIOException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MessageProcessingHandler {
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MultipartContent {
+    func Add(HttpContent content): Void
+    func GetEnumerator(): IEnumerator`1
+    func ReadAsStringAsync(): Task`1
+    func ReadAsStringAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsByteArrayAsync(): Task`1
+    func ReadAsByteArrayAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsStream(): Stream
+    func ReadAsStream(CancellationToken cancellationToken): Stream
+    func ReadAsStreamAsync(): Task`1
+    func ReadAsStreamAsync(CancellationToken cancellationToken): Task`1
+    func CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken): Void
+    func CopyToAsync(Stream stream): Task
+    func CopyToAsync(Stream stream, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream stream, TransportContext context): Task
+    func CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken): Task
+    func LoadIntoBufferAsync(): Task
+    func LoadIntoBufferAsync(Int64 maxBufferSize): Task
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MultipartFormDataContent {
+    func Add(HttpContent content): Void
+    func Add(HttpContent content, String name): Void
+    func Add(HttpContent content, String name, String fileName): Void
+    func GetEnumerator(): IEnumerator`1
+    func ReadAsStringAsync(): Task`1
+    func ReadAsStringAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsByteArrayAsync(): Task`1
+    func ReadAsByteArrayAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsStream(): Stream
+    func ReadAsStream(CancellationToken cancellationToken): Stream
+    func ReadAsStreamAsync(): Task`1
+    func ReadAsStreamAsync(CancellationToken cancellationToken): Task`1
+    func CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken): Void
+    func CopyToAsync(Stream stream): Task
+    func CopyToAsync(Stream stream, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream stream, TransportContext context): Task
+    func CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken): Task
+    func LoadIntoBufferAsync(): Task
+    func LoadIntoBufferAsync(Int64 maxBufferSize): Task
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlyMemoryContent {
+    func ReadAsStringAsync(): Task`1
+    func ReadAsStringAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsByteArrayAsync(): Task`1
+    func ReadAsByteArrayAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsStream(): Stream
+    func ReadAsStream(CancellationToken cancellationToken): Stream
+    func ReadAsStreamAsync(): Task`1
+    func ReadAsStreamAsync(CancellationToken cancellationToken): Task`1
+    func CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken): Void
+    func CopyToAsync(Stream stream): Task
+    func CopyToAsync(Stream stream, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream stream, TransportContext context): Task
+    func CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken): Task
+    func LoadIntoBufferAsync(): Task
+    func LoadIntoBufferAsync(Int64 maxBufferSize): Task
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StreamContent {
+    func ReadAsStringAsync(): Task`1
+    func ReadAsStringAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsByteArrayAsync(): Task`1
+    func ReadAsByteArrayAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsStream(): Stream
+    func ReadAsStream(CancellationToken cancellationToken): Stream
+    func ReadAsStreamAsync(): Task`1
+    func ReadAsStreamAsync(CancellationToken cancellationToken): Task`1
+    func CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken): Void
+    func CopyToAsync(Stream stream): Task
+    func CopyToAsync(Stream stream, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream stream, TransportContext context): Task
+    func CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken): Task
+    func LoadIntoBufferAsync(): Task
+    func LoadIntoBufferAsync(Int64 maxBufferSize): Task
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StringContent {
+    func ReadAsStringAsync(): Task`1
+    func ReadAsStringAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsByteArrayAsync(): Task`1
+    func ReadAsByteArrayAsync(CancellationToken cancellationToken): Task`1
+    func ReadAsStream(): Stream
+    func ReadAsStream(CancellationToken cancellationToken): Stream
+    func ReadAsStreamAsync(): Task`1
+    func ReadAsStreamAsync(CancellationToken cancellationToken): Task`1
+    func CopyTo(Stream stream, TransportContext context, CancellationToken cancellationToken): Void
+    func CopyToAsync(Stream stream): Task
+    func CopyToAsync(Stream stream, CancellationToken cancellationToken): Task
+    func CopyToAsync(Stream stream, TransportContext context): Task
+    func CopyToAsync(Stream stream, TransportContext context, CancellationToken cancellationToken): Task
+    func LoadIntoBufferAsync(): Task
+    func LoadIntoBufferAsync(Int64 maxBufferSize): Task
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SocketsHttpPlaintextStreamFilterContext {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SocketsHttpConnectionContext {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class SocketsHttpHandler {
+    func Dispose(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpMetricsEnrichmentContext {
+    func AddCustomTag(String name, Object value): Void
+    func AddCallback(HttpRequestMessage request, Action`1 callback): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class AuthenticationHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): AuthenticationHeaderValue
+    func TryParse(String input, AuthenticationHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class CacheControlHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): CacheControlHeaderValue
+    func TryParse(String input, CacheControlHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class ContentDispositionHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): ContentDispositionHeaderValue
+    func TryParse(String input, ContentDispositionHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class ContentRangeHeaderValue {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func ToString(): String
+    func Parse(String input): ContentRangeHeaderValue
+    func TryParse(String input, ContentRangeHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class EntityTagHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): EntityTagHeaderValue
+    func TryParse(String input, EntityTagHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class HttpContentHeaders {
+    func Add(String name, String value): Void
+    func Add(String name, IEnumerable`1 values): Void
+    func TryAddWithoutValidation(String name, String value): Boolean
+    func TryAddWithoutValidation(String name, IEnumerable`1 values): Boolean
+    func GetValues(String name): IEnumerable`1
+    func TryGetValues(String name, IEnumerable`1& values): Boolean
+    func Contains(String name): Boolean
+    func ToString(): String
+    func GetEnumerator(): IEnumerator`1
+    func Remove(String name): Boolean
+    func Clear(): Void
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpHeaders {
+    func Add(String name, String value): Void
+    func Add(String name, IEnumerable`1 values): Void
+    func TryAddWithoutValidation(String name, String value): Boolean
+    func TryAddWithoutValidation(String name, IEnumerable`1 values): Boolean
+    func GetValues(String name): IEnumerable`1
+    func TryGetValues(String name, IEnumerable`1& values): Boolean
+    func Contains(String name): Boolean
+    func ToString(): String
+    func GetEnumerator(): IEnumerator`1
+    func Remove(String name): Boolean
+    func Clear(): Void
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpHeaderValueCollection`1 {
+    func Add(T item): Void
+    func ParseAdd(String input): Void
+    func TryParseAdd(String input): Boolean
+    func Clear(): Void
+    func Contains(T item): Boolean
+    func CopyTo(T[] array, Int32 arrayIndex): Void
+    func Remove(T item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpRequestHeaders {
+    func Add(String name, String value): Void
+    func Add(String name, IEnumerable`1 values): Void
+    func TryAddWithoutValidation(String name, String value): Boolean
+    func TryAddWithoutValidation(String name, IEnumerable`1 values): Boolean
+    func GetValues(String name): IEnumerable`1
+    func TryGetValues(String name, IEnumerable`1& values): Boolean
+    func Contains(String name): Boolean
+    func ToString(): String
+    func GetEnumerator(): IEnumerator`1
+    func Remove(String name): Boolean
+    func Clear(): Void
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HttpResponseHeaders {
+    func Add(String name, String value): Void
+    func Add(String name, IEnumerable`1 values): Void
+    func TryAddWithoutValidation(String name, String value): Boolean
+    func TryAddWithoutValidation(String name, IEnumerable`1 values): Boolean
+    func GetValues(String name): IEnumerable`1
+    func TryGetValues(String name, IEnumerable`1& values): Boolean
+    func Contains(String name): Boolean
+    func ToString(): String
+    func GetEnumerator(): IEnumerator`1
+    func Remove(String name): Boolean
+    func Clear(): Void
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MediaTypeHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): MediaTypeHeaderValue
+    func TryParse(String input, MediaTypeHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class MediaTypeWithQualityHeaderValue {
+    func Parse(String input): MediaTypeWithQualityHeaderValue
+    func TryParse(String input, MediaTypeWithQualityHeaderValue& parsedValue): Boolean
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func GetType(): Type
+  }
+  class NameValueHeaderValue {
+    func GetHashCode(): Int32
+    func Equals(Object obj): Boolean
+    func Parse(String input): NameValueHeaderValue
+    func TryParse(String input, NameValueHeaderValue& parsedValue): Boolean
+    func ToString(): String
+    func GetType(): Type
+  }
+  class NameValueWithParametersHeaderValue {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func ToString(): String
+    func Parse(String input): NameValueWithParametersHeaderValue
+    func TryParse(String input, NameValueWithParametersHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class ProductHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): ProductHeaderValue
+    func TryParse(String input, ProductHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class ProductInfoHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): ProductInfoHeaderValue
+    func TryParse(String input, ProductInfoHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class RangeConditionHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): RangeConditionHeaderValue
+    func TryParse(String input, RangeConditionHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class RangeHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): RangeHeaderValue
+    func TryParse(String input, RangeHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class RangeItemHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func GetType(): Type
+  }
+  class RetryConditionHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): RetryConditionHeaderValue
+    func TryParse(String input, RetryConditionHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class StringWithQualityHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): StringWithQualityHeaderValue
+    func TryParse(String input, StringWithQualityHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class TransferCodingHeaderValue {
+    func Parse(String input): TransferCodingHeaderValue
+    func TryParse(String input, TransferCodingHeaderValue& parsedValue): Boolean
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func GetType(): Type
+  }
+  class TransferCodingWithQualityHeaderValue {
+    func Parse(String input): TransferCodingWithQualityHeaderValue
+    func TryParse(String input, TransferCodingWithQualityHeaderValue& parsedValue): Boolean
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func GetType(): Type
+  }
+  class ViaHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): ViaHeaderValue
+    func TryParse(String input, ViaHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+  class WarningHeaderValue {
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Parse(String input): WarningHeaderValue
+    func TryParse(String input, WarningHeaderValue& parsedValue): Boolean
+    func GetType(): Type
+  }
+}

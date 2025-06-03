@@ -1,0 +1,303 @@
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.ComponentModel;
+using System.Reflection;
+using System.Windows.Input;
+using System.Windows.Markup;
+
+ingot System.ObjectModel {
+  class ICommand {
+    func CanExecute(Object parameter): Boolean
+    func Execute(Object parameter): Void
+  }
+  class ValueSerializerAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ICustomTypeProvider {
+    func GetCustomType(): Type
+  }
+  class DataErrorsChangedEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class INotifyDataErrorInfo {
+    func GetErrors(String propertyName): IEnumerable
+  }
+  class INotifyPropertyChanged {
+  }
+  class INotifyPropertyChanging {
+  }
+  class PropertyChangedEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyChangedEventHandler {
+    func Invoke(Object sender, PropertyChangedEventArgs e): Void
+    func BeginInvoke(Object sender, PropertyChangedEventArgs e, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Void
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class PropertyChangingEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyChangingEventHandler {
+    func Invoke(Object sender, PropertyChangingEventArgs e): Void
+    func BeginInvoke(Object sender, PropertyChangingEventArgs e, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Void
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeConverterAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeDescriptionProviderAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class KeyedCollection`2 {
+    func Contains(TKey key): Boolean
+    func TryGetValue(TKey key, TItem& item): Boolean
+    func Remove(TKey key): Boolean
+    func Add(TItem item): Void
+    func Clear(): Void
+    func CopyTo(TItem[] array, Int32 index): Void
+    func Contains(TItem item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func IndexOf(TItem item): Int32
+    func Insert(Int32 index, TItem item): Void
+    func Remove(TItem item): Boolean
+    func RemoveAt(Int32 index): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ObservableCollection`1 {
+    func Move(Int32 oldIndex, Int32 newIndex): Void
+    func Add(T item): Void
+    func Clear(): Void
+    func CopyTo(T[] array, Int32 index): Void
+    func Contains(T item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func IndexOf(T item): Int32
+    func Insert(Int32 index, T item): Void
+    func Remove(T item): Boolean
+    func RemoveAt(Int32 index): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlyObservableCollection`1 {
+    func Contains(T value): Boolean
+    func CopyTo(T[] array, Int32 index): Void
+    func GetEnumerator(): IEnumerator`1
+    func IndexOf(T value): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class INotifyCollectionChanged {
+  }
+  class NotifyCollectionChangedEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NotifyCollectionChangedEventHandler {
+    func Invoke(Object sender, NotifyCollectionChangedEventArgs e): Void
+    func BeginInvoke(Object sender, NotifyCollectionChangedEventArgs e, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Void
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ICommand {
+    func CanExecute(Object parameter): Boolean
+    func Execute(Object parameter): Void
+  }
+  class ValueSerializerAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ICustomTypeProvider {
+    func GetCustomType(): Type
+  }
+  class DataErrorsChangedEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class INotifyDataErrorInfo {
+    func GetErrors(String propertyName): IEnumerable
+  }
+  class INotifyPropertyChanged {
+  }
+  class INotifyPropertyChanging {
+  }
+  class PropertyChangedEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyChangedEventHandler {
+    func Invoke(Object sender, PropertyChangedEventArgs e): Void
+    func BeginInvoke(Object sender, PropertyChangedEventArgs e, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Void
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class PropertyChangingEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class PropertyChangingEventHandler {
+    func Invoke(Object sender, PropertyChangingEventArgs e): Void
+    func BeginInvoke(Object sender, PropertyChangingEventArgs e, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Void
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeConverterAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class TypeDescriptionProviderAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class KeyedCollection`2 {
+    func Contains(TKey key): Boolean
+    func TryGetValue(TKey key, TItem& item): Boolean
+    func Remove(TKey key): Boolean
+    func Add(TItem item): Void
+    func Clear(): Void
+    func CopyTo(TItem[] array, Int32 index): Void
+    func Contains(TItem item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func IndexOf(TItem item): Int32
+    func Insert(Int32 index, TItem item): Void
+    func Remove(TItem item): Boolean
+    func RemoveAt(Int32 index): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ObservableCollection`1 {
+    func Move(Int32 oldIndex, Int32 newIndex): Void
+    func Add(T item): Void
+    func Clear(): Void
+    func CopyTo(T[] array, Int32 index): Void
+    func Contains(T item): Boolean
+    func GetEnumerator(): IEnumerator`1
+    func IndexOf(T item): Int32
+    func Insert(Int32 index, T item): Void
+    func Remove(T item): Boolean
+    func RemoveAt(Int32 index): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ReadOnlyObservableCollection`1 {
+    func Contains(T value): Boolean
+    func CopyTo(T[] array, Int32 index): Void
+    func GetEnumerator(): IEnumerator`1
+    func IndexOf(T value): Int32
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class INotifyCollectionChanged {
+  }
+  class NotifyCollectionChangedEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NotifyCollectionChangedEventHandler {
+    func Invoke(Object sender, NotifyCollectionChangedEventArgs e): Void
+    func BeginInvoke(Object sender, NotifyCollectionChangedEventArgs e, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Void
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+}

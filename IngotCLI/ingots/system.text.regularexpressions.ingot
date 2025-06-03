@@ -1,0 +1,535 @@
+using System.Text.RegularExpressions;
+
+ingot System.Text.RegularExpressions {
+  class Capture {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CaptureCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Capture[] array, Int32 arrayIndex): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Group {
+    func Synchronized(Group inner): Group
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GroupCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Group[] array, Int32 arrayIndex): Void
+    func TryGetValue(String key, Group& value): Boolean
+    func ContainsKey(String key): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Match {
+    func NextMatch(): Match
+    func Result(String replacement): String
+    func Synchronized(Match inner): Match
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MatchCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Match[] array, Int32 arrayIndex): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Regex {
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname): Void
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes): Void
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes, String resourceFile): Void
+    func Escape(String str): String
+    func Unescape(String str): String
+    func ToString(): String
+    func GetGroupNames(): String[]
+    func GetGroupNumbers(): Int32[]
+    func GroupNameFromNumber(Int32 i): String
+    func GroupNumberFromName(String name): Int32
+    func Count(String input): Int32
+    func Count(ReadOnlySpan`1 input): Int32
+    func Count(ReadOnlySpan`1 input, Int32 startat): Int32
+    func Count(String input, String pattern): Int32
+    func Count(String input, String pattern, RegexOptions options): Int32
+    func Count(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Int32
+    func Count(ReadOnlySpan`1 input, String pattern): Int32
+    func Count(ReadOnlySpan`1 input, String pattern, RegexOptions options): Int32
+    func Count(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): Int32
+    func IsMatch(String input, String pattern): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern): Boolean
+    func IsMatch(String input, String pattern, RegexOptions options): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern, RegexOptions options): Boolean
+    func IsMatch(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): Boolean
+    func IsMatch(String input): Boolean
+    func IsMatch(String input, Int32 startat): Boolean
+    func IsMatch(ReadOnlySpan`1 input): Boolean
+    func IsMatch(ReadOnlySpan`1 input, Int32 startat): Boolean
+    func Match(String input, String pattern): Match
+    func Match(String input, String pattern, RegexOptions options): Match
+    func Match(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Match
+    func Match(String input): Match
+    func Match(String input, Int32 startat): Match
+    func Match(String input, Int32 beginning, Int32 length): Match
+    func Matches(String input, String pattern): MatchCollection
+    func Matches(String input, String pattern, RegexOptions options): MatchCollection
+    func Matches(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): MatchCollection
+    func Matches(String input): MatchCollection
+    func Matches(String input, Int32 startat): MatchCollection
+    func Replace(String input, String pattern, String replacement): String
+    func Replace(String input, String pattern, String replacement, RegexOptions options): String
+    func Replace(String input, String pattern, String replacement, RegexOptions options, TimeSpan matchTimeout): String
+    func Replace(String input, String replacement): String
+    func Replace(String input, String replacement, Int32 count): String
+    func Replace(String input, String replacement, Int32 count, Int32 startat): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator, RegexOptions options): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout): String
+    func Replace(String input, MatchEvaluator evaluator): String
+    func Replace(String input, MatchEvaluator evaluator, Int32 count): String
+    func Replace(String input, MatchEvaluator evaluator, Int32 count, Int32 startat): String
+    func Split(String input, String pattern): String[]
+    func Split(String input, String pattern, RegexOptions options): String[]
+    func Split(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): String[]
+    func Split(String input): String[]
+    func Split(String input, Int32 count): String[]
+    func Split(String input, Int32 count, Int32 startat): String[]
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern, RegexOptions options): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, Int32 startat): ValueMatchEnumerator
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MatchEvaluator {
+    func Invoke(Match match): String
+    func BeginInvoke(Match match, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): String
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RegexCompilationInfo {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GeneratedRegexAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RegexMatchTimeoutException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexParseException {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetBaseException(): Exception
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexRunner {
+    func CharInClass(Char ch, String charClass): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexRunnerFactory {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Capture {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CaptureCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Capture[] array, Int32 arrayIndex): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Group {
+    func Synchronized(Group inner): Group
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GroupCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Group[] array, Int32 arrayIndex): Void
+    func TryGetValue(String key, Group& value): Boolean
+    func ContainsKey(String key): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Match {
+    func NextMatch(): Match
+    func Result(String replacement): String
+    func Synchronized(Match inner): Match
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MatchCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Match[] array, Int32 arrayIndex): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Regex {
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname): Void
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes): Void
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes, String resourceFile): Void
+    func Escape(String str): String
+    func Unescape(String str): String
+    func ToString(): String
+    func GetGroupNames(): String[]
+    func GetGroupNumbers(): Int32[]
+    func GroupNameFromNumber(Int32 i): String
+    func GroupNumberFromName(String name): Int32
+    func Count(String input): Int32
+    func Count(ReadOnlySpan`1 input): Int32
+    func Count(ReadOnlySpan`1 input, Int32 startat): Int32
+    func Count(String input, String pattern): Int32
+    func Count(String input, String pattern, RegexOptions options): Int32
+    func Count(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Int32
+    func Count(ReadOnlySpan`1 input, String pattern): Int32
+    func Count(ReadOnlySpan`1 input, String pattern, RegexOptions options): Int32
+    func Count(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): Int32
+    func IsMatch(String input, String pattern): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern): Boolean
+    func IsMatch(String input, String pattern, RegexOptions options): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern, RegexOptions options): Boolean
+    func IsMatch(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): Boolean
+    func IsMatch(String input): Boolean
+    func IsMatch(String input, Int32 startat): Boolean
+    func IsMatch(ReadOnlySpan`1 input): Boolean
+    func IsMatch(ReadOnlySpan`1 input, Int32 startat): Boolean
+    func Match(String input, String pattern): Match
+    func Match(String input, String pattern, RegexOptions options): Match
+    func Match(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Match
+    func Match(String input): Match
+    func Match(String input, Int32 startat): Match
+    func Match(String input, Int32 beginning, Int32 length): Match
+    func Matches(String input, String pattern): MatchCollection
+    func Matches(String input, String pattern, RegexOptions options): MatchCollection
+    func Matches(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): MatchCollection
+    func Matches(String input): MatchCollection
+    func Matches(String input, Int32 startat): MatchCollection
+    func Replace(String input, String pattern, String replacement): String
+    func Replace(String input, String pattern, String replacement, RegexOptions options): String
+    func Replace(String input, String pattern, String replacement, RegexOptions options, TimeSpan matchTimeout): String
+    func Replace(String input, String replacement): String
+    func Replace(String input, String replacement, Int32 count): String
+    func Replace(String input, String replacement, Int32 count, Int32 startat): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator, RegexOptions options): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout): String
+    func Replace(String input, MatchEvaluator evaluator): String
+    func Replace(String input, MatchEvaluator evaluator, Int32 count): String
+    func Replace(String input, MatchEvaluator evaluator, Int32 count, Int32 startat): String
+    func Split(String input, String pattern): String[]
+    func Split(String input, String pattern, RegexOptions options): String[]
+    func Split(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): String[]
+    func Split(String input): String[]
+    func Split(String input, Int32 count): String[]
+    func Split(String input, Int32 count, Int32 startat): String[]
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern, RegexOptions options): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, Int32 startat): ValueMatchEnumerator
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MatchEvaluator {
+    func Invoke(Match match): String
+    func BeginInvoke(Match match, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): String
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RegexCompilationInfo {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GeneratedRegexAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RegexMatchTimeoutException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexParseException {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetBaseException(): Exception
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexRunner {
+    func CharInClass(Char ch, String charClass): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexRunnerFactory {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Capture {
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class CaptureCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Capture[] array, Int32 arrayIndex): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Group {
+    func Synchronized(Group inner): Group
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GroupCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Group[] array, Int32 arrayIndex): Void
+    func TryGetValue(String key, Group& value): Boolean
+    func ContainsKey(String key): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Match {
+    func NextMatch(): Match
+    func Result(String replacement): String
+    func Synchronized(Match inner): Match
+    func ToString(): String
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MatchCollection {
+    func GetEnumerator(): IEnumerator
+    func CopyTo(Array array, Int32 arrayIndex): Void
+    func CopyTo(Match[] array, Int32 arrayIndex): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class Regex {
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname): Void
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes): Void
+    func CompileToAssembly(RegexCompilationInfo[] regexinfos, AssemblyName assemblyname, CustomAttributeBuilder[] attributes, String resourceFile): Void
+    func Escape(String str): String
+    func Unescape(String str): String
+    func ToString(): String
+    func GetGroupNames(): String[]
+    func GetGroupNumbers(): Int32[]
+    func GroupNameFromNumber(Int32 i): String
+    func GroupNumberFromName(String name): Int32
+    func Count(String input): Int32
+    func Count(ReadOnlySpan`1 input): Int32
+    func Count(ReadOnlySpan`1 input, Int32 startat): Int32
+    func Count(String input, String pattern): Int32
+    func Count(String input, String pattern, RegexOptions options): Int32
+    func Count(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Int32
+    func Count(ReadOnlySpan`1 input, String pattern): Int32
+    func Count(ReadOnlySpan`1 input, String pattern, RegexOptions options): Int32
+    func Count(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): Int32
+    func IsMatch(String input, String pattern): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern): Boolean
+    func IsMatch(String input, String pattern, RegexOptions options): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern, RegexOptions options): Boolean
+    func IsMatch(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Boolean
+    func IsMatch(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): Boolean
+    func IsMatch(String input): Boolean
+    func IsMatch(String input, Int32 startat): Boolean
+    func IsMatch(ReadOnlySpan`1 input): Boolean
+    func IsMatch(ReadOnlySpan`1 input, Int32 startat): Boolean
+    func Match(String input, String pattern): Match
+    func Match(String input, String pattern, RegexOptions options): Match
+    func Match(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): Match
+    func Match(String input): Match
+    func Match(String input, Int32 startat): Match
+    func Match(String input, Int32 beginning, Int32 length): Match
+    func Matches(String input, String pattern): MatchCollection
+    func Matches(String input, String pattern, RegexOptions options): MatchCollection
+    func Matches(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): MatchCollection
+    func Matches(String input): MatchCollection
+    func Matches(String input, Int32 startat): MatchCollection
+    func Replace(String input, String pattern, String replacement): String
+    func Replace(String input, String pattern, String replacement, RegexOptions options): String
+    func Replace(String input, String pattern, String replacement, RegexOptions options, TimeSpan matchTimeout): String
+    func Replace(String input, String replacement): String
+    func Replace(String input, String replacement, Int32 count): String
+    func Replace(String input, String replacement, Int32 count, Int32 startat): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator, RegexOptions options): String
+    func Replace(String input, String pattern, MatchEvaluator evaluator, RegexOptions options, TimeSpan matchTimeout): String
+    func Replace(String input, MatchEvaluator evaluator): String
+    func Replace(String input, MatchEvaluator evaluator, Int32 count): String
+    func Replace(String input, MatchEvaluator evaluator, Int32 count, Int32 startat): String
+    func Split(String input, String pattern): String[]
+    func Split(String input, String pattern, RegexOptions options): String[]
+    func Split(String input, String pattern, RegexOptions options, TimeSpan matchTimeout): String[]
+    func Split(String input): String[]
+    func Split(String input, Int32 count): String[]
+    func Split(String input, Int32 count, Int32 startat): String[]
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern, RegexOptions options): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, String pattern, RegexOptions options, TimeSpan matchTimeout): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input): ValueMatchEnumerator
+    func EnumerateMatches(ReadOnlySpan`1 input, Int32 startat): ValueMatchEnumerator
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class MatchEvaluator {
+    func Invoke(Match match): String
+    func BeginInvoke(Match match, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): String
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RegexCompilationInfo {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class GeneratedRegexAttribute {
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+    func Match(Object obj): Boolean
+    func IsDefaultAttribute(): Boolean
+    func GetType(): Type
+    func ToString(): String
+  }
+  class RegexMatchTimeoutException {
+    func GetBaseException(): Exception
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexParseException {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetBaseException(): Exception
+    func ToString(): String
+    func GetType(): Type
+    func GetType(): Type
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexRunner {
+    func CharInClass(Char ch, String charClass): Boolean
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class RegexRunnerFactory {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

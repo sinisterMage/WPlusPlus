@@ -113,9 +113,14 @@ Console.WriteLine($"✅ Result: {result}");
 
 
                 case PrintNode print:
-                    EmitNode(print.Expression, il, locals, breakLabel, continueLabel, ref returnValue, isLambda, isAsyncLambda, lambdaReturnLabel);
-                    il.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", new[] { typeof(object) }));
-                    break;
+    foreach (var arg in print.Arguments)
+    {
+        EmitNode(arg, il, locals, breakLabel, continueLabel, ref returnValue, isLambda, isAsyncLambda, lambdaReturnLabel);
+        il.Emit(OpCodes.Call, typeof(Console).GetMethod("Write", new[] { typeof(object) }));
+    }
+    il.Emit(OpCodes.Call, typeof(Console).GetMethod("WriteLine", Type.EmptyTypes)); // new line at end
+    break;
+
 
                 case NumberNode num:
                     il.Emit(OpCodes.Ldc_I4, int.Parse(num.Value));

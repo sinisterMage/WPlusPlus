@@ -2,6 +2,8 @@
 using WPlusPlus;
 using WPlusPlus.Shared; // Or whatever namespace `IRuntimeLinker` is under
 using IngotCLI;
+using System.Reflection;
+
 
 
 class Program
@@ -118,6 +120,7 @@ case "remove":
             Console.WriteLine($"❌ Entry file '{entry}' not found.");
             return;
         }
+Assembly.Load("Newtonsoft.Json");
 
         string code = File.ReadAllText(entry);
         var tokens = Lexer.Tokenize(code);

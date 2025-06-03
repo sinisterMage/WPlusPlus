@@ -1,3 +1,10 @@
+let dict = externcall("System.Collections.Generic.Dictionary`2[System.String,System.Object]", "ctor");
 
-let s = externcall("System.String", "Concat", ["W", "++"]);
-print(s);
+externcall("System.Collections.Generic.Dictionary`2[System.String,System.Object]", "Add", dict, "lang", "W++");
+externcall("System.Collections.Generic.Dictionary`2[System.String,System.Object]", "Add", dict, "version", "0.1-alpha");
+
+// Use Newtonsoft.Json.JsonConvert.SerializeObject
+let json = externcall("Newtonsoft.Json.JsonConvert", "SerializeObject", dict);
+
+print("🧪 JSON Output:");
+print(json);

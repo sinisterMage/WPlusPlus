@@ -1,0 +1,256 @@
+using System.Collections.Specialized;
+
+ingot System.Collections.Specialized {
+  class HybridDictionary {
+    func Add(Object key, Object value): Void
+    func Clear(): Void
+    func Contains(Object key): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func GetEnumerator(): IDictionaryEnumerator
+    func Remove(Object key): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IOrderedDictionary {
+    func GetEnumerator(): IDictionaryEnumerator
+    func Insert(Int32 index, Object key, Object value): Void
+    func RemoveAt(Int32 index): Void
+  }
+  class ListDictionary {
+    func Add(Object key, Object value): Void
+    func Clear(): Void
+    func Contains(Object key): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func GetEnumerator(): IDictionaryEnumerator
+    func Remove(Object key): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DictionaryNode {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NameObjectCollectionBase {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func OnDeserialization(Object sender): Void
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class KeysCollection {
+    func Get(Int32 index): String
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NameValueCollection {
+    func Add(NameValueCollection c): Void
+    func Clear(): Void
+    func CopyTo(Array dest, Int32 index): Void
+    func HasKeys(): Boolean
+    func Add(String name, String value): Void
+    func Get(String name): String
+    func GetValues(String name): String[]
+    func Set(String name, String value): Void
+    func Remove(String name): Void
+    func Get(Int32 index): String
+    func GetValues(Int32 index): String[]
+    func GetKey(Int32 index): String
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func OnDeserialization(Object sender): Void
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class OrderedDictionary {
+    func Add(Object key, Object value): Void
+    func Clear(): Void
+    func AsReadOnly(): OrderedDictionary
+    func Contains(Object key): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func Insert(Int32 index, Object key, Object value): Void
+    func RemoveAt(Int32 index): Void
+    func Remove(Object key): Void
+    func GetEnumerator(): IDictionaryEnumerator
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StringCollection {
+    func Add(String value): Int32
+    func AddRange(String[] value): Void
+    func Clear(): Void
+    func Contains(String value): Boolean
+    func CopyTo(String[] array, Int32 index): Void
+    func GetEnumerator(): StringEnumerator
+    func IndexOf(String value): Int32
+    func Insert(Int32 index, String value): Void
+    func Remove(String value): Void
+    func RemoveAt(Int32 index): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StringEnumerator {
+    func MoveNext(): Boolean
+    func Reset(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StringDictionary {
+    func Add(String key, String value): Void
+    func Clear(): Void
+    func ContainsKey(String key): Boolean
+    func ContainsValue(String value): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func GetEnumerator(): IEnumerator
+    func Remove(String key): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class HybridDictionary {
+    func Add(Object key, Object value): Void
+    func Clear(): Void
+    func Contains(Object key): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func GetEnumerator(): IDictionaryEnumerator
+    func Remove(Object key): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class IOrderedDictionary {
+    func GetEnumerator(): IDictionaryEnumerator
+    func Insert(Int32 index, Object key, Object value): Void
+    func RemoveAt(Int32 index): Void
+  }
+  class ListDictionary {
+    func Add(Object key, Object value): Void
+    func Clear(): Void
+    func Contains(Object key): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func GetEnumerator(): IDictionaryEnumerator
+    func Remove(Object key): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class DictionaryNode {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NameObjectCollectionBase {
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func OnDeserialization(Object sender): Void
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class KeysCollection {
+    func Get(Int32 index): String
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class NameValueCollection {
+    func Add(NameValueCollection c): Void
+    func Clear(): Void
+    func CopyTo(Array dest, Int32 index): Void
+    func HasKeys(): Boolean
+    func Add(String name, String value): Void
+    func Get(String name): String
+    func GetValues(String name): String[]
+    func Set(String name, String value): Void
+    func Remove(String name): Void
+    func Get(Int32 index): String
+    func GetValues(Int32 index): String[]
+    func GetKey(Int32 index): String
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func OnDeserialization(Object sender): Void
+    func GetEnumerator(): IEnumerator
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class OrderedDictionary {
+    func Add(Object key, Object value): Void
+    func Clear(): Void
+    func AsReadOnly(): OrderedDictionary
+    func Contains(Object key): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func Insert(Int32 index, Object key, Object value): Void
+    func RemoveAt(Int32 index): Void
+    func Remove(Object key): Void
+    func GetEnumerator(): IDictionaryEnumerator
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StringCollection {
+    func Add(String value): Int32
+    func AddRange(String[] value): Void
+    func Clear(): Void
+    func Contains(String value): Boolean
+    func CopyTo(String[] array, Int32 index): Void
+    func GetEnumerator(): StringEnumerator
+    func IndexOf(String value): Int32
+    func Insert(Int32 index, String value): Void
+    func Remove(String value): Void
+    func RemoveAt(Int32 index): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StringEnumerator {
+    func MoveNext(): Boolean
+    func Reset(): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class StringDictionary {
+    func Add(String key, String value): Void
+    func Clear(): Void
+    func ContainsKey(String key): Boolean
+    func ContainsValue(String value): Boolean
+    func CopyTo(Array array, Int32 index): Void
+    func GetEnumerator(): IEnumerator
+    func Remove(String key): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

@@ -1,0 +1,88 @@
+using System;
+
+ingot System.Console {
+  class Console {
+    func ReadKey(): ConsoleKeyInfo
+    func ReadKey(Boolean intercept): ConsoleKeyInfo
+    func ResetColor(): Void
+    func SetBufferSize(Int32 width, Int32 height): Void
+    func SetWindowPosition(Int32 left, Int32 top): Void
+    func SetWindowSize(Int32 width, Int32 height): Void
+    func GetCursorPosition(): ValueTuple`2
+    func Beep(): Void
+    func Beep(Int32 frequency, Int32 duration): Void
+    func MoveBufferArea(Int32 sourceLeft, Int32 sourceTop, Int32 sourceWidth, Int32 sourceHeight, Int32 targetLeft, Int32 targetTop): Void
+    func MoveBufferArea(Int32 sourceLeft, Int32 sourceTop, Int32 sourceWidth, Int32 sourceHeight, Int32 targetLeft, Int32 targetTop, Char sourceChar, ConsoleColor sourceForeColor, ConsoleColor sourceBackColor): Void
+    func Clear(): Void
+    func SetCursorPosition(Int32 left, Int32 top): Void
+    func OpenStandardInput(): Stream
+    func OpenStandardInput(Int32 bufferSize): Stream
+    func OpenStandardOutput(): Stream
+    func OpenStandardOutput(Int32 bufferSize): Stream
+    func OpenStandardError(): Stream
+    func OpenStandardError(Int32 bufferSize): Stream
+    func SetIn(TextReader newIn): Void
+    func SetOut(TextWriter newOut): Void
+    func SetError(TextWriter newError): Void
+    func Read(): Int32
+    func ReadLine(): String
+    func WriteLine(): Void
+    func WriteLine(Boolean value): Void
+    func WriteLine(Char value): Void
+    func WriteLine(Char[] buffer): Void
+    func WriteLine(Char[] buffer, Int32 index, Int32 count): Void
+    func WriteLine(Decimal value): Void
+    func WriteLine(Double value): Void
+    func WriteLine(Single value): Void
+    func WriteLine(Int32 value): Void
+    func WriteLine(UInt32 value): Void
+    func WriteLine(Int64 value): Void
+    func WriteLine(UInt64 value): Void
+    func WriteLine(Object value): Void
+    func WriteLine(String value): Void
+    func WriteLine(String format, Object arg0): Void
+    func WriteLine(String format, Object arg0, Object arg1): Void
+    func WriteLine(String format, Object arg0, Object arg1, Object arg2): Void
+    func WriteLine(String format, Object[] arg): Void
+    func Write(String format, Object arg0): Void
+    func Write(String format, Object arg0, Object arg1): Void
+    func Write(String format, Object arg0, Object arg1, Object arg2): Void
+    func Write(String format, Object[] arg): Void
+    func Write(Boolean value): Void
+    func Write(Char value): Void
+    func Write(Char[] buffer): Void
+    func Write(Char[] buffer, Int32 index, Int32 count): Void
+    func Write(Double value): Void
+    func Write(Decimal value): Void
+    func Write(Single value): Void
+    func Write(Int32 value): Void
+    func Write(UInt32 value): Void
+    func Write(Int64 value): Void
+    func Write(UInt64 value): Void
+    func Write(Object value): Void
+    func Write(String value): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ConsoleCancelEventHandler {
+    func Invoke(Object sender, ConsoleCancelEventArgs e): Void
+    func BeginInvoke(Object sender, ConsoleCancelEventArgs e, AsyncCallback callback, Object object): IAsyncResult
+    func EndInvoke(IAsyncResult result): Void
+    func GetObjectData(SerializationInfo info, StreamingContext context): Void
+    func Equals(Object obj): Boolean
+    func GetInvocationList(): Delegate[]
+    func GetHashCode(): Int32
+    func Clone(): Object
+    func DynamicInvoke(Object[] args): Object
+    func GetType(): Type
+    func ToString(): String
+  }
+  class ConsoleCancelEventArgs {
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

@@ -1,0 +1,74 @@
+using System.IO.Compression;
+
+ingot System.IO.Compression.ZipFile {
+  class ZipFile {
+    func OpenRead(String archiveFileName): ZipArchive
+    func Open(String archiveFileName, ZipArchiveMode mode): ZipArchive
+    func Open(String archiveFileName, ZipArchiveMode mode, Encoding entryNameEncoding): ZipArchive
+    func CreateFromDirectory(String sourceDirectoryName, String destinationArchiveFileName): Void
+    func CreateFromDirectory(String sourceDirectoryName, String destinationArchiveFileName, CompressionLevel compressionLevel, Boolean includeBaseDirectory): Void
+    func CreateFromDirectory(String sourceDirectoryName, String destinationArchiveFileName, CompressionLevel compressionLevel, Boolean includeBaseDirectory, Encoding entryNameEncoding): Void
+    func CreateFromDirectory(String sourceDirectoryName, Stream destination): Void
+    func CreateFromDirectory(String sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, Boolean includeBaseDirectory): Void
+    func CreateFromDirectory(String sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, Boolean includeBaseDirectory, Encoding entryNameEncoding): Void
+    func ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName): Void
+    func ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName, Boolean overwriteFiles): Void
+    func ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName, Encoding entryNameEncoding): Void
+    func ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName, Encoding entryNameEncoding, Boolean overwriteFiles): Void
+    func ExtractToDirectory(Stream source, String destinationDirectoryName): Void
+    func ExtractToDirectory(Stream source, String destinationDirectoryName, Boolean overwriteFiles): Void
+    func ExtractToDirectory(Stream source, String destinationDirectoryName, Encoding entryNameEncoding): Void
+    func ExtractToDirectory(Stream source, String destinationDirectoryName, Encoding entryNameEncoding, Boolean overwriteFiles): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ZipFileExtensions {
+    func CreateEntryFromFile(ZipArchive destination, String sourceFileName, String entryName): ZipArchiveEntry
+    func CreateEntryFromFile(ZipArchive destination, String sourceFileName, String entryName, CompressionLevel compressionLevel): ZipArchiveEntry
+    func ExtractToDirectory(ZipArchive source, String destinationDirectoryName): Void
+    func ExtractToDirectory(ZipArchive source, String destinationDirectoryName, Boolean overwriteFiles): Void
+    func ExtractToFile(ZipArchiveEntry source, String destinationFileName): Void
+    func ExtractToFile(ZipArchiveEntry source, String destinationFileName, Boolean overwrite): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ZipFile {
+    func OpenRead(String archiveFileName): ZipArchive
+    func Open(String archiveFileName, ZipArchiveMode mode): ZipArchive
+    func Open(String archiveFileName, ZipArchiveMode mode, Encoding entryNameEncoding): ZipArchive
+    func CreateFromDirectory(String sourceDirectoryName, String destinationArchiveFileName): Void
+    func CreateFromDirectory(String sourceDirectoryName, String destinationArchiveFileName, CompressionLevel compressionLevel, Boolean includeBaseDirectory): Void
+    func CreateFromDirectory(String sourceDirectoryName, String destinationArchiveFileName, CompressionLevel compressionLevel, Boolean includeBaseDirectory, Encoding entryNameEncoding): Void
+    func CreateFromDirectory(String sourceDirectoryName, Stream destination): Void
+    func CreateFromDirectory(String sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, Boolean includeBaseDirectory): Void
+    func CreateFromDirectory(String sourceDirectoryName, Stream destination, CompressionLevel compressionLevel, Boolean includeBaseDirectory, Encoding entryNameEncoding): Void
+    func ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName): Void
+    func ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName, Boolean overwriteFiles): Void
+    func ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName, Encoding entryNameEncoding): Void
+    func ExtractToDirectory(String sourceArchiveFileName, String destinationDirectoryName, Encoding entryNameEncoding, Boolean overwriteFiles): Void
+    func ExtractToDirectory(Stream source, String destinationDirectoryName): Void
+    func ExtractToDirectory(Stream source, String destinationDirectoryName, Boolean overwriteFiles): Void
+    func ExtractToDirectory(Stream source, String destinationDirectoryName, Encoding entryNameEncoding): Void
+    func ExtractToDirectory(Stream source, String destinationDirectoryName, Encoding entryNameEncoding, Boolean overwriteFiles): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+  class ZipFileExtensions {
+    func CreateEntryFromFile(ZipArchive destination, String sourceFileName, String entryName): ZipArchiveEntry
+    func CreateEntryFromFile(ZipArchive destination, String sourceFileName, String entryName, CompressionLevel compressionLevel): ZipArchiveEntry
+    func ExtractToDirectory(ZipArchive source, String destinationDirectoryName): Void
+    func ExtractToDirectory(ZipArchive source, String destinationDirectoryName, Boolean overwriteFiles): Void
+    func ExtractToFile(ZipArchiveEntry source, String destinationFileName): Void
+    func ExtractToFile(ZipArchiveEntry source, String destinationFileName, Boolean overwrite): Void
+    func GetType(): Type
+    func ToString(): String
+    func Equals(Object obj): Boolean
+    func GetHashCode(): Int32
+  }
+}

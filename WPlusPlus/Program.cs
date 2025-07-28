@@ -11,11 +11,7 @@ class Program
     static async Task Main(string[] args)
     {
         var code = @"
-       let add = (a, b) => {
-    return a + b;
-};
-
-add(2, 3);
+       print ""1"";
 
 
 

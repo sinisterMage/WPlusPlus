@@ -62,21 +62,40 @@ namespace WPlusPlus
                 {
                     case "print":
     Advance();
-    Expect("(");
 
     var args = new List<Node>();
-    while (!Match(TokenType.Symbol) || Peek().Value != ")")
+
+    if (Match(TokenType.Symbol) && Peek().Value == "(")
     {
+        Advance(); // consume '('
+        while (!Match(TokenType.Symbol) || Peek().Value != ")")
+        {
+            args.Add(ParseExpression());
+
+            if (Match(TokenType.Symbol) && Peek().Value == ",")
+                Advance();
+            else
+                break;
+        }
+        Expect(")");
+    }
+    else
+    {
+        // no parens → parse single or multiple space-separated expressions
         args.Add(ParseExpression());
-        if (Match(TokenType.Symbol) && Peek().Value == ",")
-            Advance();
-        else
-            break;
+
+        // support optional extra args like: print "hi", 123
+        while (Match(TokenType.Symbol) && Peek().Value == ",")
+        {
+            Advance(); // consume ','
+            args.Add(ParseExpression());
+        }
     }
 
-    Expect(")");
     Expect(";");
-    return new PrintNode(args); // overload PrintNode to accept List<Node>
+
+    return new PrintNode(args);
+
 
 
                     case "if":
@@ -630,7 +649,13 @@ namespace WPlusPlus
 
             // String literal
             if (Match(TokenType.String))
-                return new StringNode(Advance().Value);
+{
+    var raw = Advance().Value;
+    if (raw.StartsWith("\"") && raw.EndsWith("\"") && raw.Length >= 2)
+        raw = raw.Substring(1, raw.Length - 2); // remove surrounding quotes
+    return new StringNode(raw);
+}
+
                 // 🔥 Must go before general identifier parsing
 if (Match(TokenType.Identifier) && Peek().Value == "externcall")
 {

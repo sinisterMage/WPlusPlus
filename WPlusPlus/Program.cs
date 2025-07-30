@@ -12,15 +12,17 @@ class Program
     {
         var code = @"
        let headers = {
-  ""User-Agent"": ""W++"",
-  ""Authorization"": ""Bearer token123""
+  ""User-Agent"": ""WPlusPlus/1.0""
 };
 
-let res = await http.get(""https://api.example.com/data"", headers);
-print(res);
+let res = await http.get(""https://httpbin.org/get"", headers);
+print(""GET status: "" + res.status);
+print(""GET body: "" + res.body);
 
-let postRes = await http.post(""https://httpbin.org/post"", ""msg=hi"", headers);
-print(postRes);
+let postRes = await http.post(""https://httpbin.org/post"", ""msg=hello"", headers);
+print(""POST status: "" + postRes.status);
+print(""POST body: "" + postRes.body);
+
 
 
 

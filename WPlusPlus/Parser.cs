@@ -987,6 +987,37 @@ return new NewNode(entityName, args);
                 Expect(")");
                 return expr;
             }
+// 🔥 Object literal support
+if (Match(TokenType.Symbol) && Peek().Value == "{")
+{
+    Advance(); // consume '{'
+    var properties = new Dictionary<string, Node>();
+
+    while (!Check("}"))
+    {
+        if (!Match(TokenType.String))
+            throw new Exception("Expected string key in object literal");
+
+        var keyToken = Advance();
+        var key = keyToken.Value;
+
+        if (key.StartsWith("\"") && key.EndsWith("\""))
+            key = key.Substring(1, key.Length - 2); // strip quotes
+
+        Expect(":");
+
+        var value = ParseExpression();
+        properties[key] = value;
+
+        if (Check("}"))
+            break;
+
+        Expect(",");
+    }
+
+    Expect("}");
+    return new ObjectLiteralNode(properties);
+}
 
             throw new Exception("Unexpected token: " + Peek()?.Value);
         }

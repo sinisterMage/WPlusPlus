@@ -30,6 +30,7 @@ private string currentEntity = null;
         public Interpreter(IRuntimeLinker linker)
 {
     variables = new Dictionary<string, (object, bool)>();
+    InjectBuiltins();
     runtimeLinker = linker;
 }
 public Interpreter(Dictionary<string, (object Value, bool IsConst)> parentScope, IRuntimeLinker linker)
@@ -571,31 +572,44 @@ case TypeOfNode typeofNode:
                         throw new Exception("Cannot access member of non-object");
                     }
                     case ExternCallNode ext:
+                    {
+                        var argValues = new List<object>();
+                        foreach (var arg in ext.Arguments)
+                            argValues.Add(await Evaluate(arg));
+
+                        Console.WriteLine($"[EXTERNCALL] {ext.TypeName}.{ext.MethodName}({argValues.Count} args)");
+
+                        try
+                        {
+                            // 🔧 Support instance/static auto-detection
+                            var externResult = runtimeLinker.Invoke( // ✅ instance field
+                        typeName: ext.TypeName,
+                        methodName: ext.MethodName,
+                        args: argValues.ToArray()
+                    );
+
+
+                            return externResult;
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine($"[ERROR] externcall failed: {ex}");
+                            return null;
+                        }
+                    }
+
+case ObjectLiteralNode obj:
 {
-    var argValues = new List<object>();
-    foreach (var arg in ext.Arguments)
-        argValues.Add(await Evaluate(arg));
+    var result = new Dictionary<string, object>();
 
-    Console.WriteLine($"[EXTERNCALL] {ext.TypeName}.{ext.MethodName}({argValues.Count} args)");
-
-    try
+    foreach (var pair in obj.Properties)
     {
-        // 🔧 Support instance/static auto-detection
-        var externResult = runtimeLinker.Invoke( // ✅ instance field
-    typeName: ext.TypeName,
-    methodName: ext.MethodName,
-    args: argValues.ToArray()
-);
-
-
-        return externResult;
+        result[pair.Key] = await Evaluate(pair.Value);
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine($"[ERROR] externcall failed: {ex}");
-        return null;
-    }
+
+    return result;
 }
+
 
 
 
@@ -747,6 +761,47 @@ private Dictionary<string, MethodNode> GetAllMethods(EntityDefinition def)
         
 
 
+private void InjectBuiltins()
+{
+  variables["http"] = (new Dictionary<string, object>
+{
+    ["get"] = new AsyncFunctionObject(async (args) =>
+    {
+        if (args.Count < 1 || args.Count > 2)
+            throw new Exception("http.get(url, [headers]) expects 1 or 2 arguments");
+
+        var url = args[0]?.ToString() ?? throw new Exception("URL is null");
+
+        Dictionary<string, string> headers = new();
+        if (args.Count == 2 && args[1] is Dictionary<string, object> obj)
+        {
+            foreach (var kv in obj)
+                headers[kv.Key] = kv.Value?.ToString() ?? "";
+        }
+
+        return await HttpLib.Get(url, headers);
+    }),
+
+    ["post"] = new AsyncFunctionObject(async (args) =>
+    {
+        if (args.Count < 2 || args.Count > 3)
+            throw new Exception("http.post(url, body, [headers]) expects 2 or 3 arguments");
+
+        var url = args[0]?.ToString() ?? throw new Exception("URL is null");
+        var body = args[1]?.ToString() ?? throw new Exception("Body is null");
+
+        Dictionary<string, string> headers = new();
+        if (args.Count == 3 && args[2] is Dictionary<string, object> obj)
+        {
+            foreach (var kv in obj)
+                headers[kv.Key] = kv.Value?.ToString() ?? "";
+        }
+
+        return await HttpLib.Post(url, body, headers);
+    })
+}, true);
+
+}
 
         public class BreakException : Exception { }
         public class ContinueException : Exception { }

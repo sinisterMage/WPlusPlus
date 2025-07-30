@@ -216,19 +216,31 @@ namespace WPlusPlus.AST
         }
     }
     public class ExternCallNode : Node
-{
-    public string TypeName { get; }
-    public string MethodName { get; }
-    public List<Node> Arguments { get; }
-
-    public ExternCallNode(string typeName, string methodName, List<Node> arguments)
     {
-        TypeName = typeName;
-        MethodName = methodName;
-        Arguments = arguments;
-    }
+        public string TypeName { get; }
+        public string MethodName { get; }
+        public List<Node> Arguments { get; }
+
+        public ExternCallNode(string typeName, string methodName, List<Node> arguments)
+        {
+            TypeName = typeName;
+            MethodName = methodName;
+            Arguments = arguments;
+        }
+    // In AST/ObjectLiteralNode.cs
+
+
 }
 
+public class ObjectLiteralNode : Node
+{
+    public Dictionary<string, Node> Properties { get; }
+
+    public ObjectLiteralNode(Dictionary<string, Node> properties)
+    {
+        Properties = properties;
+    }
+}
 
 
 

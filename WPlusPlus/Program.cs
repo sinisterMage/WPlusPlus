@@ -11,7 +11,18 @@ class Program
     static async Task Main(string[] args)
     {
         var code = @"
-       print ""1"";
+       let headers = {
+  ""User-Agent"": ""W++"",
+  ""Authorization"": ""Bearer token123""
+};
+
+let res = await http.get(""https://api.example.com/data"", headers);
+print(res);
+
+let postRes = await http.post(""https://httpbin.org/post"", ""msg=hi"", headers);
+print(postRes);
+
+
 
 
 

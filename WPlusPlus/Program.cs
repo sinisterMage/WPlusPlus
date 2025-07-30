@@ -11,17 +11,13 @@ class Program
     static async Task Main(string[] args)
     {
         var code = @"
-       let headers = {
-  ""User-Agent"": ""WPlusPlus/1.0""
-};
+       let res = await http.get(""https://jsonplaceholder.typicode.com/todos/1"");
+       text(res.body);
+let obj = json.parse(res.body);
+text(obj.title);
 
-let res = await http.get(""https://httpbin.org/get"", headers);
-print(""GET status: "" + res.status);
-print(""GET body: "" + res.body);
 
-let postRes = await http.post(""https://httpbin.org/post"", ""msg=hello"", headers);
-print(""POST status: "" + postRes.status);
-print(""POST body: "" + postRes.body);
+
 
 
 

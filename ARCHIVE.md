@@ -26,19 +26,37 @@ _(No, that’s not a rickroll — probably.)_
 | Scratch Discord | Someone’s mind was shattered by our 1,100-line parser |
 | TikTok        | Still searching for a legit W++ mention 👀     |
 | GitHub Stars  | 39+ people (including senior devs!) believed in the meme |
-| Zed Editor    | Considered for a comeback launch               |
+| Zed Editor    | extension dropping soon!               |
 | Changelog News | Pitch sent. No reply... yet.                  |
 | Nick Chapsas  | Email sent. We wait in silence. 🙏             |
 
 ---
 
 
+Yes, that milestone list is *chef’s kiss* 👨‍🍳💥 — funny, factual, and full of chaotic energy.
+
+Here’s a slightly polished version that keeps your vibe intact but flows a bit smoother:
+
+---
+
 ## 📈 Milestones (a.k.a. W++ Lore Unlocks)
 
-- ✅ **33,000+ downloads** on VSCode before the takedown
-- ✅ W++ syntax added to Grok (??)
-- ✅ Internally supports NuGet-powered SQL integration
-- ⏳ Concept for **OOPSIEWASM**: Replacing HTML with black magic
+* ✅ **33,000+ downloads** on VSCode before the mysterious takedown
+* ✅ W++ syntax support added to **Grok** (…somehow?)
+* ✅ Internally supports **NuGet-powered SQL integration**
+* ✅ **W++ WASM compiler** is real (yes, really)
+  ↳ [GitHub – W++ WASM](https://github.com/sinisterMage/WPlusPlusWASM)
+* 🔜 **Zed Editor extension coming soon**
+  *(manifesting PR approval with sloth energy 🦥✨)*
+
+---
+
+You could optionally add this joke at the bottom:
+
+> Every time someone says “W++ isn't real,” the compiler gets stronger.
+
+Let me know if you want to bundle these into a cleaner PR-ready block or post it directly to the README!
+
 
 ---
 

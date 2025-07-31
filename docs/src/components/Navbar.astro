@@ -5,7 +5,12 @@ const currentPath = Astro.url.pathname;
 <nav class="navbar">
   <a href="/" class={currentPath === '/' ? 'active' : ''}>🏠 Home</a>
   <a href="/syntax" class={currentPath === '/syntax' ? 'active' : ''}>📘 Syntax Guide</a>
+  <a href="/contribute" class={currentPath === '/contribute' ? 'active' : ''}>🛠️ Contribute</a>
+  <a href="/dev" class={currentPath === '/dev' ? 'active' : ''}>🧪 Internals</a>
+  <a href="/faq" class={currentPath === '/faq' ? 'active' : ''}>❓ FAQ</a>
+  <a href="/mascot" class={currentPath === '/mascot' ? 'active' : ''}>🦥 Mascot</a>
 </nav>
+
 
 <style>
   .navbar {

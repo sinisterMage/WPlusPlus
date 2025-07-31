@@ -1,0 +1,118 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="W++ Developer Docs">
+  <header class="header">
+    <h1>🧠 W++ Developer Guide</h1>
+    <p class="slogan">For brave souls who dare to interpret chaos.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>🌀 Interpreter Architecture</h2>
+      <p>
+        The W++ interpreter is a recursive AST-walker with dynamic scoping and async evaluation support.
+      </p>
+
+      <h3>📁 File: <code>Interpreter.cs</code></h3>
+      <ul>
+        <li><code>Evaluate(Node)</code> — Core dispatch function for interpreting AST nodes</li>
+        <li><code>EvaluateBinary()</code> — Handles binary math, logic, and comparisons</li>
+        <li><code>InjectBuiltins()</code> — Registers built-in functions like <code>http.get</code> and <code>json.parse</code></li>
+        <li><code>GetAllMethods()</code> — Recursively resolves entity method inheritance</li>
+        <li><code>ConvertJsonElement()</code> — Converts raw <code>JsonElement</code> into usable W++ types</li>
+      </ul>
+
+      <h4>Runtime Features:</h4>
+      <ul>
+        <li>🧠 Dynamic scope: every <code>Interpreter</code> instance can be nested</li>
+        <li>💾 Built-in runtime linker via <code>IRuntimeLinker</code></li>
+        <li>⚙️ Entity + method resolution with support for <code>alters</code> and <code>disown</code></li>
+        <li>🔗 Function and async function delegates (<code>FunctionObject</code>, <code>AsyncFunctionObject</code>)</li>
+        <li>🔥 Exception-based flow for <code>return</code>, <code>break</code>, <code>continue</code></li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>🧬 JIT Compiler Overview</h2>
+      <p>
+        The W++ JIT compiler emits .NET IL from AST nodes using <code>System.Reflection.Emit</code>. It's fully async-compatible and produces runtime <code>DynamicMethod</code>s that return <code>Task&lt;object&gt;</code>.
+      </p>
+
+      <h3>📁 File: <code>JitCompiler.cs</code></h3>
+      <ul>
+        <li><code>Compile(Node)</code> — Kicks off IL generation for a full AST</li>
+        <li><code>EmitNode(Node, ILGenerator...)</code> — Central recursive emitter for every supported node</li>
+        <li><code>FunctionObject</code> — Wrapper for compiled lambdas with async <code>Invoke()</code></li>
+        <li><code>AwaitTask()</code> — Safely awaits <code>Task&lt;object&gt;</code> results</li>
+      </ul>
+
+      <h4>Supported Nodes:</h4>
+      <ul>
+        <li><code>BlockNode</code>, <code>PrintNode</code>, <code>AssignmentNode</code>, <code>IdentifierNode</code></li>
+        <li><code>BinaryExpressionNode</code>, <code>UnaryExpressionNode</code></li>
+        <li><code>WhileNode</code>, <code>ForNode</code>, <code>IfElseNode</code>, <code>SwitchNode</code></li>
+        <li><code>ReturnNode</code>, <code>ThrowNode</code>, <code>TryCatchNode</code></li>
+        <li><code>LambdaNode</code>, <code>CallNode</code>, <code>BooleanNode</code>, <code>StringNode</code>, <code>NumberNode</code></li>
+      </ul>
+
+      <h4>Special Behaviors:</h4>
+      <ul>
+        <li>🧠 Variables declared with <code>DeclareLocal</code> and stored in a scoped map</li>
+        <li>🎯 Jump labels for control flow (<code>break</code>, <code>continue</code>, <code>return</code>)</li>
+        <li>🔥 Full async pipeline with <code>AwaitTask</code> instead of blocking .Result</li>
+        <li>🧪 Each function/lambda gets a <code>DynamicMethod</code> and is stored in a shared <code>_constants</code> pool</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 W++ Language • Made with existential dread and multithreaded hope
+  </footer>
+
+  <style>
+    .header {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .slogan {
+      font-size: 1.1rem;
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+
+    section {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #2c2c2c;
+      border-radius: 10px;
+    }
+
+    h2 {
+      color: #ffa500;
+    }
+
+    ul {
+      padding-left: 1.5rem;
+      line-height: 1.6;
+    }
+
+    code {
+      background: #333;
+      color: #0f0;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #777;
+      margin-bottom: 20px;
+    }
+  </style>
+</Layout>

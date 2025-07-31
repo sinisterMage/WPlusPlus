@@ -1,0 +1,129 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Contribute to W++">
+  <header class="header">
+    <h1>🛠️ Contribute to W++</h1>
+    <p class="slogan">Make the language worse — or better — one commit at a time.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>🐾 Get Started</h2>
+      <p>
+        First, clone the W++ repo and run the CLI:
+      </p>
+      <pre><code>git clone https://github.com/sinisterMage/WPlusPlus.git
+cd WPlusPlus
+dotnet run --project ingot/ingot.csproj
+      </code></pre>
+
+      <p>You'll need .NET SDK 7+ and a sense of humor.</p>
+    </section>
+
+    <section>
+  <h2>📦 Project Structure</h2>
+  <ul>
+    <li><strong>IngotCLI/</strong> – Contains the W++ CLI, including <code>ingot</code> logic, packaging, and VSCode integration</li>
+    <li><strong>WPlusPlus/</strong> – Core language code: lexer, parser, interpreter, JIT backend, and HTTP library</li>
+    <li><strong>WPlusPlus.Shared/</strong> – Shared interfaces used by CLI/runtime, like the external linker</li>
+    <li><strong>docs/</strong> – The official W++ website (built with Astro)</li>
+    <li><strong>README.md</strong>, <strong>SYNTAX.md</strong> – Docs and language reference (also being ported into the site)</li>
+  </ul>
+</section>
+
+
+    <section>
+      <h2>✨ How You Can Help</h2>
+      <ul>
+        <li>🧠 Suggest or implement new language features</li>
+        <li>📚 Improve the documentation (even typo fixes help!)</li>
+        <li>💣 Write code examples (the weirder the better)</li>
+        <li>🐛 Report and squash bugs</li>
+        <li>💾 Help with future compiler, WASM, or IL backend</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>🔄 Submitting Changes</h2>
+      <p>Fork the repo, create a branch, and open a PR:</p>
+      <pre><code>git checkout -b fix/god-mode
+git commit -m "add secret sloth god mode"
+git push origin fix/god-mode</code></pre>
+      <p>
+        Then open a Pull Request. Bonus points if your commit message is meme-worthy.
+      </p>
+    </section>
+
+    <section>
+      <h2>💬 Community</h2>
+      <p>
+  Join our <a href="https://discord.gg/a37hQPPDrp" target="_blank">official Discord server</a> to chat, brainstorm, or scream into the void.<br />
+  You can also open issues on GitHub if you’re socially allergic.
+</p>
+
+    </section>
+  </main>
+
+  <footer>
+    © 2025 W++ Language • Built by weirdos • Powered by sloths
+  </footer>
+
+  <style>
+    .header {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .slogan {
+      font-size: 1.1rem;
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+
+    section {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #2c2c2c;
+      border-radius: 10px;
+    }
+
+    h2 {
+      color: #ffa500;
+    }
+
+    ul {
+      padding-left: 1.5rem;
+      line-height: 1.6;
+    }
+
+    pre {
+      background: #111;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    code {
+      background: #333;
+      color: #0f0;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #777;
+      margin-bottom: 20px;
+    }
+    a {
+  color: #ffa500;
+  text-decoration: underline;
+}
+
+  </style>
+</Layout>

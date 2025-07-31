@@ -1,0 +1,85 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="🐾 Meet Wloth - The W++ Mascot">
+  <section class="mascot">
+    <img src="/wloth.png" alt="Wloth the Sloth Mascot" class="wloth-img" />
+    <h1>🦥 Meet Wloth</h1>
+    <p class="intro">Wloth is the official mascot of W++. He’s slow, sarcastic, and smarter than your average programming language mascot.</p>
+
+    <div class="bio">
+      <ul>
+        <li><strong>Name:</strong> Wloth</li>
+        <li><strong>Age:</strong> 69 (eternal)</li>
+        <li><strong>Species:</strong> Sloth (possibly divine)</li>
+        <li><strong>Hobbies:</strong> Sleeping, debugging in dreams, breaking linters</li>
+        <li><strong>Favorite Food:</strong> Syntax sugar (he eats it raw)</li>
+        <li><strong>Best Friend:</strong> Ofek Bickel (creator of W++)</li>
+        <li><strong>Arch Nemesis:</strong> Visual Basic and CPython</li>
+        <li><strong>Tolerable:</strong> PyPy (barely)</li>
+        <li><strong>Languages Spoken:</strong> W++, SARCASM++, Markdown (but only ironically)</li>
+        <li><strong>Pet Peeves:</strong> Compiler warnings, semicolon elitists, and languages with mandatory `main()`</li>
+      </ul>
+    </div>
+
+    <div class="quote">
+      <blockquote>
+        "Why rush code when you can vibe instead?" — Wloth, probably
+      </blockquote>
+    </div>
+  </section>
+
+  <style>
+    .mascot {
+      max-width: 800px;
+      margin: auto;
+      padding: 2rem;
+      background: #2b2b2b;
+      border-radius: 10px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #ffa500;
+    }
+
+    .intro {
+      text-align: center;
+      font-style: italic;
+      color: #ccc;
+      margin-bottom: 2rem;
+    }
+
+    .bio ul {
+      line-height: 1.7;
+      padding-left: 1.5rem;
+    }
+
+    .bio li {
+      margin-bottom: 0.6rem;
+      color: #ddd;
+    }
+
+    .quote {
+      margin-top: 2rem;
+      text-align: center;
+    }
+
+    blockquote {
+      background: #1e1e1e;
+      color: #ffa500;
+      padding: 1rem;
+      border-radius: 8px;
+      font-style: italic;
+    }
+    .wloth-img {
+  display: block;
+  margin: 2rem auto;
+  max-width: 300px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.3);
+}
+
+  </style>
+</Layout>

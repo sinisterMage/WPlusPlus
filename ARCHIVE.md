@@ -51,12 +51,6 @@ Here’s a slightly polished version that keeps your vibe intact but flows a bit
 
 ---
 
-You could optionally add this joke at the bottom:
-
-> Every time someone says “W++ isn't real,” the compiler gets stronger.
-
-Let me know if you want to bundle these into a cleaner PR-ready block or post it directly to the README!
-
 
 ---
 

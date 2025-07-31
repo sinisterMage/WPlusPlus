@@ -9,10 +9,14 @@ const ogImage = "https://wplusplus.org/wpp-logo.png"; // replace if you have a b
 <Layout title={title} description={description} ogImage={ogImage}>
   <header class="header">
     <img
-      src="https://wplusplus.org/wloth.png"
-      alt="Sloth Logo"
-      class="logo"
-    />
+  src="/wloth.jpg"
+  alt="Wloth the Sloth Mascot"
+  class="wloth-img"
+  width="300"
+  height="300"
+  loading="lazy"
+  decoding="async"
+/>
     <h1>W++</h1>
     <p class="slogan">At least we're better than Visual Basic.</p>
     <a
@@ -240,6 +244,14 @@ code {
   border-radius: 4px;
   font-family: monospace;
   font-size: 0.95rem;
+}
+.wloth-img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 2rem auto;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(255, 165, 0, 0.3);
 }
 
 </style>

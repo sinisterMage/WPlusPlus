@@ -1,0 +1,224 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="W++ - A Python-style scripting language for .NET">
+  <header class="header">
+    <img
+      src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Sloth_01.svg/1200px-Sloth_01.svg.png"
+      alt="Sloth Logo"
+      class="logo"
+    />
+    <h1>W++</h1>
+    <p class="slogan">At least we're better than Visual Basic.</p>
+    <a
+      href="https://github.com/sinisterMage/WPlusPlus"
+      class="github-button"
+      target="_blank"
+      rel="noopener"
+    >
+      ⭐ View on GitHub
+    </a>
+  </header>
+
+  <main>
+    <section>
+      <h2>✨ What is W++?</h2>
+      <p>
+        <strong>W++</strong> is a fun, chaotic, and completely overengineered programming
+        language made for learning, hacking, and memes. It's built in C# and powered by
+        the OOPSIE Framework™ — where
+        <em>Object-Oriented Programming Sometimes Isn’t Excellent</em>.
+      </p>
+    </section>
+
+    <section>
+      <h2>🧠 Features</h2>
+      <ul>
+        <li>✅ Full tokenizer, parser, and interpreter in C#</li>
+        <li>✅ Async/await support</li>
+        <li>✅ <code>entity</code>, <code>alters</code>, <code>disown</code> — OOPSIE OOP</li>
+        <li>✅ Reverse polymorphism</li>
+        <li>✅ Sloth mascot</li>
+        <li>✅ Custom CLI named <code>ingot</code></li>
+        <li>✅ VSCode syntax highlighting</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>📦 Sample W++ Code</h2>
+      <pre><code>{`entity Dog {
+  speak => {
+    print "Bark!";
+  }
+}
+
+alters Dog {
+  speak => {
+    print "Reversed.";
+  }
+}
+
+let d = new(Dog);
+d.speak();`}</code></pre>
+
+    </section>
+
+    <section>
+      <h2>💻 Try it</h2>
+      <p>Use the W++ CLI, <code>ingot</code>, to get started:</p>
+      <pre><code>ingot init myproject
+ingot run hello.wpp</code></pre>
+    </section>
+
+    <section>
+  <h2>🛠️ Installing W++ (v0.2.6)</h2>
+  <ol>
+    <li>
+      Go to the official repo:
+      <a href="https://github.com/sinisterMage/WPlusPlus" target="_blank" rel="noopener">
+        github.com/sinisterMage/WPlusPlus
+      </a>
+    </li>
+    <li>Click the 🔽 <strong>“Releases”</strong> tab</li>
+    <li>
+      Choose your path:
+      <ul>
+        <li>🅰️ Download the installer for your OS (<em>FreeBSD support coming soon™</em>)</li>
+        <li>🅱️ Download <code>ingot</code> directly and add it to your PATH manually</li>
+        <li>🆎 Build from source if you enjoy pain</li>
+      </ul>
+    </li>
+    <li>
+      Use <code>ingot init</code> to create a W++ project<br />
+      Use <code>ingot run</code> to run it<br />
+      Use <code>ingot help</code> for the full divine scroll of commands
+    </li>
+  </ol>
+</section>
+
+
+    <section>
+      <h2>🔥 Tech Stack Roast</h2>
+      <p>W++ doesn't compete with other languages — it <em>accidentally steps on them</em>.</p>
+      <pre><code>// Java
+"A boilerplate-driven language made for writing verbose,
+object-oriented, instant legacy code."
+
+// W++
+A chaos-driven language for writing scripts that mostly work — and occasionally explode.
+
+// C#
+"A static, strongly-typed language with enterprise ambitions."
+
+// W++
+"We barely know what our language does and we made it."
+
+// JavaScript
+"Make sure you define var, let, and const in the correct scopes...
+or face chaos."
+
+// W++
+"Scopes? Never heard of her.
+
+// Rust
+"Memory safety through fear and macros."
+
+// W++
+"We have vibes, not pointers."
+
+// Python
+"Readable, elegant, beginner-friendly."
+
+// W++
+"Readable — if you're the one who wrote it. Maybe."</code></pre>
+      <p class="footnote">It's not a bug, it's a <code>feature suggestion</code>.</p>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 W++ Language • Powered by Sloths • Built with OOPSIE™
+  </footer>
+</Layout>
+
+<style>
+  .header {
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .logo {
+    width: 140px;
+    margin-bottom: 20px;
+  }
+
+  .slogan {
+    font-size: 1.2rem;
+    color: #aaa;
+    margin-bottom: 20px;
+  }
+
+  section {
+    max-width: 800px;
+    margin: 40px auto;
+    padding: 20px;
+    background: #2c2c2c;
+    border-radius: 10px;
+  }
+
+  h2 {
+    color: #ffa500;
+  }
+
+  ul {
+    line-height: 1.7;
+  }
+
+  pre {
+    background: #111;
+    padding: 10px;
+    border-radius: 8px;
+    overflow-x: auto;
+  }
+
+  code {
+    background: #333;
+    color: #0f0;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-family: monospace;
+  }
+
+  .github-button {
+    display: inline-block;
+    background: #fafafa;
+    color: #111;
+    font-weight: bold;
+    padding: 10px 16px;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: 0.3s;
+  }
+
+  .github-button:hover {
+    background: #ddd;
+  }
+
+  footer {
+    text-align: center;
+    font-size: 0.8rem;
+    color: #777;
+    margin-bottom: 20px;
+  }
+
+  hr {
+    border: 0;
+    border-top: 1px solid #555;
+    margin: 20px 0;
+  }
+
+  .footnote {
+    color: #888;
+    font-style: italic;
+  }
+</style>

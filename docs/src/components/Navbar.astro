@@ -1,0 +1,38 @@
+---
+const currentPath = Astro.url.pathname;
+---
+
+<nav class="navbar">
+  <a href="/" class={currentPath === '/' ? 'active' : ''}>🏠 Home</a>
+  <a href="/syntax" class={currentPath === '/syntax' ? 'active' : ''}>📘 Syntax Guide</a>
+</nav>
+
+<style>
+  .navbar {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    background: #1a1a1a;
+    padding: 1rem;
+    border-bottom: 1px solid #333;
+    margin-bottom: 30px;
+  }
+
+  .navbar a {
+    color: #ffa500;
+    font-weight: bold;
+    text-decoration: none;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: 0.2s ease;
+  }
+
+  .navbar a:hover {
+    background: #333;
+  }
+
+  .navbar .active {
+    background: #ffa500;
+    color: black;
+  }
+</style>

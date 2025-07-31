@@ -1,0 +1,204 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="W++ Syntax Guide">
+  <header class="header">
+    <h1>📘 W++ Syntax Guide</h1>
+    <p class="slogan">Because sanity is optional.</p>
+  </header>
+
+  <main>
+    <section>
+      <h2>🔤 Variables</h2>
+      <pre><code>{`let x = 42;
+let name = "Sloth";`}</code></pre>
+    </section>
+
+    <section>
+      <h2>🔒 Constants</h2>
+      <p>Use <code>const</code> to declare a variable that cannot be reassigned.</p>
+      <pre><code>{`const PI = 3.14159;
+const greeting = "hello";
+
+PI = 3; // ❌ Error: Cannot assign to constant`}</code></pre>
+    </section>
+
+    <section>
+      <h2>🧠 Lambdas</h2>
+      <pre><code>{`let add = a => b => a + b;
+let result = add(2)(3);`}</code></pre>
+
+      <h3>⚡ Async Lambdas</h3>
+      <pre><code>{`let getData = async url => {
+  let res = await http.get(url);
+  return res.body;
+};`}</code></pre>
+    </section>
+
+    <section>
+      <h2>🧱 Control Flow</h2>
+      <pre><code>{`if x > 10 {
+  print "Big";
+} else {
+  print "Small";
+}
+
+while x > 0 {
+  print x;
+  x = x - 1;
+}
+
+for let i = 0; i < 3; i = i + 1 {
+  print i;
+}
+
+switch x {
+  case 1 {
+    print "one";
+  }
+  case 2 {
+    print "two";
+  }
+  default {
+    print "many";
+  }
+}`}</code></pre>
+    </section>
+
+    <section>
+      <h2>🛠 Operators</h2>
+      <ul>
+        <li><code>+</code>, <code>-</code>, <code>*</code>, <code>/</code></li>
+        <li><code>==</code>, <code>!=</code>, <code>&gt;</code>, <code>&lt;</code>, <code>&gt;=</code>, <code>&lt;=</code></li>
+        <li><code>&&</code>, <code>||</code>, <code>!</code></li>
+        <li><code>??</code> – null coalescing</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>🧬 Entities & OOPSIE OOP</h2>
+      <pre><code>{`entity Animal {
+  speak => {
+    print "rawr";
+  }
+}
+
+entity Dog inherits Animal {
+  speak => {
+    print "bark";
+  }
+}
+
+alters Animal with Dog {
+  speak => {
+    print "reverse bark";
+  }
+}
+
+let d = new(Dog);
+d.speak();`}</code></pre>
+
+      <h3>Keywords</h3>
+      <ul>
+        <li><code>entity</code> – defines an OOP sloth-structure</li>
+        <li><code>alters</code> – reversely override methods of ancestors</li>
+        <li><code>disown</code> – opt-out of parental inheritance</li>
+        <li><code>me</code> – reference to current instance</li>
+        <li><code>ancestor.method()</code> – call original method before it was altered</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>🕸 Built-in APIs</h2>
+      <pre><code>{`let res = await http.get("https://api.example.com");
+
+let res = await http.post("https://api", "body", {
+  "Authorization": "Bearer sloth-token"
+});
+
+let obj = await json.parse("{ \\"key\\": \\"value\\" }");
+let text = await json.stringify(obj);`}</code></pre>
+    </section>
+
+    <section>
+      <h2>🧪 Errors & Exceptions</h2>
+      <pre><code>{`try {
+  throw "oh no!";
+} catch e {
+  print "Error caught!";
+}`}</code></pre>
+    </section>
+
+    <section>
+      <h2>🧵 Other Things</h2>
+      <ul>
+        <li><code>typeof(String)</code> – returns .NET type info</li>
+        <li><code>await</code> – used with async calls and tasks</li>
+        <li><code>null</code> – the void in your soul</li>
+        <li><code>import "file.wpp"</code> – imports another W++ file</li>
+      </ul>
+    </section>
+  </main>
+
+  <footer>
+    © 2025 W++ Language • Syntax by Chaos • Powered by Sloths 🦥
+  </footer>
+
+  <style>
+    .header {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .slogan {
+      font-size: 1.1rem;
+      color: #aaa;
+      margin-bottom: 20px;
+    }
+
+    section {
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 20px;
+      background: #2c2c2c;
+      border-radius: 10px;
+    }
+
+    h2 {
+      color: #ffa500;
+    }
+
+    h3 {
+      color: #ffd580;
+      margin-top: 1rem;
+    }
+
+    ul {
+      padding-left: 1.5rem;
+      line-height: 1.6;
+    }
+
+    pre {
+      background: #111;
+      padding: 10px;
+      border-radius: 8px;
+      overflow-x: auto;
+    }
+
+    code {
+      background: #333;
+      color: #0f0;
+      padding: 3px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    footer {
+      text-align: center;
+      font-size: 0.8rem;
+      color: #777;
+      margin-bottom: 20px;
+    }
+  </style>
+</Layout>

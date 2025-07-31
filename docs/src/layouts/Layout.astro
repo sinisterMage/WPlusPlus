@@ -1,0 +1,34 @@
+---
+import Navbar from "../components/Navbar.astro";
+const { title = "W++ Language" } = Astro.props;
+---
+
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content="Built for chaos, learning, and memes. Powered by sloths. Definitely not Visual Basic." />
+    <title>{title}</title>
+    <style>
+      body {
+        font-family: "Segoe UI", sans-serif;
+        background: #1e1e1e;
+        color: #ffffff;
+        margin: 0;
+        padding: 0 20px;
+      }
+      a {
+        color: #ffa500;
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+        <Navbar />
+    <slot />
+  </body>
+</html>

@@ -77,46 +77,86 @@ const ogImage = "https://w-plus-plus.vercel.app/wpp-logo.png";
 
   <style>
     .header {
-      text-align: center;
-      padding: 40px 20px;
-    }
+  text-align: center;
+  padding: 2.5rem 1rem;
+}
 
-    .slogan {
-      font-size: 1.1rem;
-      color: #aaa;
-      margin-bottom: 20px;
-    }
+.slogan {
+  font-size: 1rem;
+  color: #aaa;
+  margin-bottom: 1.25rem;
+}
 
-    section {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 20px;
-      background: #2c2c2c;
-      border-radius: 10px;
-    }
+section {
+  max-width: 800px;
+  margin: 2.5rem auto;
+  padding: 1.5rem;
+  background: #2c2c2c;
+  border-radius: 10px;
+}
 
-    h2 {
-      color: #ffa500;
-    }
+h2 {
+  color: #ffa500;
+  font-size: 1.3rem;
+  margin-top: 1rem;
+}
 
-    ul {
-      padding-left: 1.5rem;
-      line-height: 1.6;
-    }
+h3, h4 {
+  margin-top: 1.2rem;
+  font-size: 1.1rem;
+  color: #ffb84d;
+}
 
-    code {
-      background: #333;
-      color: #0f0;
-      padding: 3px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-    }
+ul {
+  padding-left: 1.5rem;
+  line-height: 1.6;
+  font-size: 0.95rem;
+}
 
-    footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #777;
-      margin-bottom: 20px;
-    }
+code {
+  background: #333;
+  color: #0f0;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+  word-break: break-word;
+  font-size: 0.9rem;
+}
+
+footer {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 1.5rem;
+}
+
+/* 📱 Responsive tweaks */
+@media (max-width: 600px) {
+  section {
+    margin: 1.5rem 1rem;
+    padding: 1rem;
+  }
+
+  h2 {
+    font-size: 1.15rem;
+  }
+
+  h3, h4 {
+    font-size: 1.05rem;
+  }
+
+  .slogan {
+    font-size: 0.95rem;
+  }
+
+  ul {
+    font-size: 0.9rem;
+  }
+
+  code {
+    font-size: 0.85rem;
+  }
+}
+
   </style>
 </Layout>

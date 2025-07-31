@@ -3,41 +3,59 @@ const currentPath = Astro.url.pathname;
 ---
 
 <nav class="navbar">
-  <a href="/" class={currentPath === '/' ? 'active' : ''}>🏠 Home</a>
-  <a href="/syntax" class={currentPath === '/syntax' ? 'active' : ''}>📘 Syntax Guide</a>
-  <a href="/contribute" class={currentPath === '/contribute' ? 'active' : ''}>🛠️ Contribute</a>
-  <a href="/dev" class={currentPath === '/dev' ? 'active' : ''}>🧪 Internals</a>
-  <a href="/faq" class={currentPath === '/faq' ? 'active' : ''}>❓ FAQ</a>
-  <a href="/mascot" class={currentPath === '/mascot' ? 'active' : ''}>🦥 Mascot</a>
+  <div class="nav-links">
+    <a href="/" class={currentPath === '/' ? 'active' : ''}>🏠 Home</a>
+    <a href="/syntax" class={currentPath === '/syntax' ? 'active' : ''}>📘 Syntax Guide</a>
+    <a href="/contribute" class={currentPath === '/contribute' ? 'active' : ''}>🛠️ Contribute</a>
+    <a href="/dev" class={currentPath === '/dev' ? 'active' : ''}>🧪 Internals</a>
+    <a href="/faq" class={currentPath === '/faq' ? 'active' : ''}>❓ FAQ</a>
+    <a href="/mascot" class={currentPath === '/mascot' ? 'active' : ''}>🦥 Mascot</a>
+  </div>
 </nav>
-
 
 <style>
   .navbar {
-    display: flex;
-    justify-content: center;
-    gap: 20px;
     background: #1a1a1a;
     padding: 1rem;
     border-bottom: 1px solid #333;
     margin-bottom: 30px;
   }
 
-  .navbar a {
+  .nav-links {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 12px;
+  }
+
+  .nav-links a {
     color: #ffa500;
     font-weight: bold;
     text-decoration: none;
-    padding: 6px 12px;
+    padding: 10px 14px;
     border-radius: 6px;
     transition: 0.2s ease;
+    font-size: 1rem;
   }
 
-  .navbar a:hover {
+  .nav-links a:hover {
     background: #333;
   }
 
-  .navbar .active {
+  .nav-links .active {
     background: #ffa500;
     color: black;
+  }
+
+  @media (max-width: 600px) {
+    .nav-links {
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .nav-links a {
+      width: 100%;
+      text-align: center;
+    }
   }
 </style>

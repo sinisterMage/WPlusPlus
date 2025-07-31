@@ -151,59 +151,95 @@ let text = await json.stringify(obj);`}</code></pre>
   </footer>
 
   <style>
-    .header {
-      text-align: center;
-      padding: 40px 20px;
-    }
+   .header {
+  text-align: center;
+  padding: 40px 20px;
+}
 
-    .slogan {
-      font-size: 1.1rem;
-      color: #aaa;
-      margin-bottom: 20px;
-    }
+.slogan {
+  font-size: 1.1rem;
+  color: #aaa;
+  margin-bottom: 20px;
+}
 
-    section {
-      max-width: 800px;
-      margin: 40px auto;
-      padding: 20px;
-      background: #2c2c2c;
-      border-radius: 10px;
-    }
+section {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 20px;
+  background: #2c2c2c;
+  border-radius: 10px;
+}
 
-    h2 {
-      color: #ffa500;
-    }
+h2 {
+  color: #ffa500;
+  font-size: 1.4rem;
+}
 
-    h3 {
-      color: #ffd580;
-      margin-top: 1rem;
-    }
+h3 {
+  color: #ffd580;
+  margin-top: 1rem;
+  font-size: 1.2rem;
+}
 
-    ul {
-      padding-left: 1.5rem;
-      line-height: 1.6;
-    }
+ul {
+  padding-left: 1.5rem;
+  line-height: 1.6;
+}
 
-    pre {
-      background: #111;
-      padding: 10px;
-      border-radius: 8px;
-      overflow-x: auto;
-    }
+pre {
+  background: #111;
+  padding: 10px;
+  border-radius: 8px;
+  overflow-x: auto;
+}
 
-    code {
-      background: #333;
-      color: #0f0;
-      padding: 3px 6px;
-      border-radius: 4px;
-      font-family: monospace;
-    }
+code {
+  background: #333;
+  color: #0f0;
+  padding: 3px 6px;
+  border-radius: 4px;
+  font-family: monospace;
+}
 
-    footer {
-      text-align: center;
-      font-size: 0.8rem;
-      color: #777;
-      margin-bottom: 20px;
-    }
+footer {
+  text-align: center;
+  font-size: 0.8rem;
+  color: #777;
+  margin-bottom: 20px;
+}
+
+/* 📱 Mobile tweaks */
+@media (max-width: 600px) {
+  .header {
+    padding: 30px 10px;
+  }
+
+  .slogan {
+    font-size: 1rem;
+  }
+
+  section {
+    margin: 20px 10px;
+    padding: 15px;
+  }
+
+  h2 {
+    font-size: 1.2rem;
+  }
+
+  h3 {
+    font-size: 1.05rem;
+  }
+
+  code,
+  pre {
+    font-size: 0.9rem;
+  }
+
+  ul {
+    padding-left: 1.2rem;
+  }
+}
+
   </style>
 </Layout>

@@ -33,12 +33,6 @@ _(No, that’s not a rickroll — probably.)_
 ---
 
 
-Yes, that milestone list is *chef’s kiss* 👨‍🍳💥 — funny, factual, and full of chaotic energy.
-
-Here’s a slightly polished version that keeps your vibe intact but flows a bit smoother:
-
----
-
 ## 📈 Milestones (a.k.a. W++ Lore Unlocks)
 
 * ✅ **33,000+ downloads** on VSCode before the mysterious takedown
@@ -51,8 +45,6 @@ Here’s a slightly polished version that keeps your vibe intact but flows a bit
 
 ---
 
-
----
 
 ## 🧙 Future Prophecies
 

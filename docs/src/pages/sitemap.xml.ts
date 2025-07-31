@@ -1,4 +1,4 @@
-const BASE_URL = "https://w-plus-plus.vercel.app";
+const BASE_URL = "https://wplusplus.org";
 
 const pages = [
   "", // home

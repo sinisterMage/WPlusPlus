@@ -1,8 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
+
+const title = "W++ FAQ - Questions Nobody Asked, But We Answered";
+const description = "Everything you never needed to know about W++, including Visual Basic hatred, plugins, and the truth behind OOPSIE.";
+const ogImage = "https://w-plus-plus.vercel.app/wpp-logo.png";
 ---
 
-<Layout title="W++ - Frequently Asked Questions">
+<Layout title={title} description={description} ogImage={ogImage}>
   <section class="faq">
     <h1>❓ Frequently Asked Questions</h1>
 
@@ -57,19 +61,20 @@ import Layout from "../layouts/Layout.astro";
         Full instructions on the <a href="/">homepage</a>.
       </p>
     </details>
-    <details>
-  <summary>🎭 Is this a joke?</summary>
-  <p>
-    We like to take life in a humorous way — but the language works. Mostly.
-  </p>
-</details>
-<details>
-  <summary>🧠 Does it support AI?</summary>
-  <p>
-    Of course! The W++ installer comes with a baked-in <strong>Annoying Intelligence™</strong>.
-  </p>
-</details>
 
+    <details>
+      <summary>🎭 Is this a joke?</summary>
+      <p>
+        We like to take life in a humorous way — but the language works. Mostly.
+      </p>
+    </details>
+
+    <details>
+      <summary>🧠 Does it support AI?</summary>
+      <p>
+        Of course! The W++ installer comes with a baked-in <strong>Annoying Intelligence™</strong>.
+      </p>
+    </details>
   </section>
 </Layout>
 

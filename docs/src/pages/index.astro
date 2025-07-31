@@ -1,8 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
+
+const title = "W++ Language – A Python-style Scripting Language for .NET";
+const description = "W++ is a chaotic, meme-fueled scripting language built in C#, made for learning, hacking, and reversing Visual Basic’s sins. Powered by sloths.";
+const ogImage = "https://w-plus-plus.vercel.app/wpp-logo.png"; // replace if you have a better mascot logo
 ---
 
-<Layout title="W++ - A Python-style scripting language for .NET">
+<Layout title={title} description={description} ogImage={ogImage}>
   <header class="header">
     <img
       src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Sloth_01.svg/1200px-Sloth_01.svg.png"

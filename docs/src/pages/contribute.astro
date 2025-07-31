@@ -1,8 +1,12 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const title = "Contribute to W++";
+const description = "Want to break or improve a chaotic .NET scripting language? Help shape W++ with your ideas, code, or memes.";
+const ogImage = "https://w-plus-plus.vercel.app/wpp-logo.png";
 ---
 
-<Layout title="Contribute to W++">
+<Layout title={title} description={description} ogImage={ogImage}>
   <header class="header">
     <h1>🛠️ Contribute to W++</h1>
     <p class="slogan">Make the language worse — or better — one commit at a time.</p>
@@ -16,32 +20,30 @@ import Layout from '../layouts/Layout.astro';
       </p>
       <pre><code>git clone https://github.com/sinisterMage/WPlusPlus.git
 cd WPlusPlus
-dotnet run --project ingot/ingot.csproj
-      </code></pre>
+dotnet run --project ingot/ingot.csproj</code></pre>
 
       <p>You'll need .NET SDK 7+ and a sense of humor.</p>
     </section>
 
     <section>
-  <h2>📦 Project Structure</h2>
-  <ul>
-    <li><strong>IngotCLI/</strong> – Contains the W++ CLI, including <code>ingot</code> logic, packaging, and VSCode integration</li>
-    <li><strong>WPlusPlus/</strong> – Core language code: lexer, parser, interpreter, JIT backend, and HTTP library</li>
-    <li><strong>WPlusPlus.Shared/</strong> – Shared interfaces used by CLI/runtime, like the external linker</li>
-    <li><strong>docs/</strong> – The official W++ website (built with Astro)</li>
-    <li><strong>README.md</strong>, <strong>SYNTAX.md</strong> – Docs and language reference (also being ported into the site)</li>
-  </ul>
-</section>
-
+      <h2>📦 Project Structure</h2>
+      <ul>
+        <li><strong>IngotCLI/</strong> – W++ CLI, VSCode plugin support</li>
+        <li><strong>WPlusPlus/</strong> – Lexer, parser, interpreter, and JIT</li>
+        <li><strong>WPlusPlus.Shared/</strong> – Shared components for runtime</li>
+        <li><strong>docs/</strong> – This very website, built with Astro</li>
+        <li><strong>README.md</strong>, <strong>SYNTAX.md</strong> – Additional docs</li>
+      </ul>
+    </section>
 
     <section>
       <h2>✨ How You Can Help</h2>
       <ul>
         <li>🧠 Suggest or implement new language features</li>
-        <li>📚 Improve the documentation (even typo fixes help!)</li>
-        <li>💣 Write code examples (the weirder the better)</li>
+        <li>📚 Improve documentation (even typo fixes help!)</li>
+        <li>💣 Write chaotic code examples</li>
         <li>🐛 Report and squash bugs</li>
-        <li>💾 Help with future compiler, WASM, or IL backend</li>
+        <li>💾 Help with compiler backends (WASM, IL)</li>
       </ul>
     </section>
 
@@ -51,18 +53,15 @@ dotnet run --project ingot/ingot.csproj
       <pre><code>git checkout -b fix/god-mode
 git commit -m "add secret sloth god mode"
 git push origin fix/god-mode</code></pre>
-      <p>
-        Then open a Pull Request. Bonus points if your commit message is meme-worthy.
-      </p>
+      <p>Then open a Pull Request. Meme-worthy commits encouraged.</p>
     </section>
 
     <section>
       <h2>💬 Community</h2>
       <p>
-  Join our <a href="https://discord.gg/a37hQPPDrp" target="_blank">official Discord server</a> to chat, brainstorm, or scream into the void.<br />
-  You can also open issues on GitHub if you’re socially allergic.
-</p>
-
+        Join our <a href="https://discord.gg/a37hQPPDrp" target="_blank">official Discord server</a> to chat, brainstorm, or scream into the void.<br />
+        You can also open issues on GitHub if you’re socially allergic.
+      </p>
     </section>
   </main>
 
@@ -120,10 +119,10 @@ git push origin fix/god-mode</code></pre>
       color: #777;
       margin-bottom: 20px;
     }
-    a {
-  color: #ffa500;
-  text-decoration: underline;
-}
 
+    a {
+      color: #ffa500;
+      text-decoration: underline;
+    }
   </style>
 </Layout>

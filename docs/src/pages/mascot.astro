@@ -1,8 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const title = "🐾 Meet Wloth – The W++ Mascot";
+const description = "Wloth is the official W++ mascot. A sloth with attitude, sarcasm, and an eternal age of 69. He naps through bugs and feuds with Visual Basic.";
+const ogImage = "https://w-plus-plus.vercel.app/wloth.png"; // adjust if hosted elsewhere
 ---
 
-<Layout title="🐾 Meet Wloth - The W++ Mascot">
+
+<Layout title={title} description={description} ogImage={ogImage}>
   <section class="mascot">
     <img src="/wloth.png" alt="Wloth the Sloth Mascot" class="wloth-img" />
     <h1>🦥 Meet Wloth</h1>

@@ -1,15 +1,38 @@
 ---
 import Navbar from "../components/Navbar.astro";
 const { title = "W++ Language" } = Astro.props;
+const url = `https://w-plus-plus.vercel.app${Astro.url.pathname}`;
 ---
 
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>{title}</title>
+    <meta name="description" content="W++ is a chaotic, Python-style scripting language for .NET, powered by sloths and meme energy." />
+    <meta name="keywords" content="W++, wpp, scripting language, dotnet, .NET, chaos language, sloth language, meme language, ingot, Visual Basic alternative" />
+    <meta name="author" content="Ofek Bickel" />
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href={url} />
+
+    <!-- Favicon -->
+    <link rel="icon" href="/favicon.ico" type="image/x-icon" />
+
+    <!-- Open Graph -->
     <meta property="og:title" content={title} />
     <meta property="og:description" content="Built for chaos, learning, and memes. Powered by sloths. Definitely not Visual Basic." />
-    <title>{title}</title>
+    <meta property="og:image" content="https://w-plus-plus.vercel.app/wpp-logo.png" />
+    <meta property="og:url" content={url} />
+    <meta property="og:type" content="website" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content="W++ is a chaotic, Python-style scripting language for .NET. Built for laughs, powered by sloths." />
+    <meta name="twitter:image" content="https://w-plus-plus.vercel.app/wpp-logo.png" />
+
     <style>
       body {
         font-family: "Segoe UI", sans-serif;
@@ -28,7 +51,7 @@ const { title = "W++ Language" } = Astro.props;
     </style>
   </head>
   <body>
-        <Navbar />
+    <Navbar />
     <slot />
   </body>
 </html>

@@ -1,8 +1,12 @@
 ---
 import Layout from "../layouts/Layout.astro";
+
+const title = "W++ Developer Docs";
+const description = "Deep dive into the chaotic internals of W++ — covering the interpreter, JIT compiler, and runtime behaviors.";
+const ogImage = "https://w-plus-plus.vercel.app/wpp-logo.png";
 ---
 
-<Layout title="W++ Developer Docs">
+<Layout title={title} description={description} ogImage={ogImage}>
   <header class="header">
     <h1>🧠 W++ Developer Guide</h1>
     <p class="slogan">For brave souls who dare to interpret chaos.</p>

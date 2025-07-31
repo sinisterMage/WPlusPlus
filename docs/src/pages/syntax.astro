@@ -1,8 +1,13 @@
 ---
 import Layout from '../layouts/Layout.astro';
+
+const title = "W++ Syntax Guide – Learn the Sloth Way";
+const description = "Explore the W++ programming language syntax: variables, entities, async lambdas, OOPSIE-style OOP, HTTP APIs, and more. Sanity optional.";
+const ogImage = "https://w-plus-plus.vercel.app/wloth.png"; // Or use a more relevant code-based OG image later
 ---
 
-<Layout title="W++ Syntax Guide">
+
+<Layout title={title} description={description} ogImage={ogImage}>
   <header class="header">
     <h1>📘 W++ Syntax Guide</h1>
     <p class="slogan">Because sanity is optional.</p>

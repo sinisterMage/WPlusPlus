@@ -1,3 +1,4 @@
+export const prerender = true;
 const BASE_URL = "https://wplusplus.org";
 
 const pages = [

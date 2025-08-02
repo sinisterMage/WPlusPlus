@@ -8,6 +8,7 @@ const pages = [
   "contribute",
   "dev",
   "mascot",
+  "contact",
 ];
 
 export async function GET() {

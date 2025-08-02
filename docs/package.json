@@ -9,6 +9,11 @@
     "astro": "astro"
   },
   "dependencies": {
-    "astro": "^5.12.6"
+    "@astrojs/react": "^4.3.0",
+    "astro": "^5.12.6",
+    "firebase": "^12.0.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "sweetalert2": "^11.22.2"
   }
 }

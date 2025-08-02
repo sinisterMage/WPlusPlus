@@ -15,5 +15,8 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "sweetalert2": "^11.22.2"
+  },
+  "devDependencies": {
+    "@astrojs/vercel": "^8.2.5"
   }
 }

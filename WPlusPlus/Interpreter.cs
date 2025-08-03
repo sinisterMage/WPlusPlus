@@ -872,7 +872,81 @@ for (int i = 0; i < method.Parameters.Count; i++)
                         ["body"] = response.Body,
                         ["headers"] = response.Headers
                     };
-                })
+                }),
+                ["put"] = new AsyncFunctionObject(async (args) =>
+{
+    if (args.Count < 2 || args.Count > 3)
+        throw new Exception("http.put(url, body, [headers]) expects 2 or 3 arguments");
+
+    var url = args[0]?.ToString() ?? throw new Exception("URL is null");
+    var body = args[1]?.ToString() ?? throw new Exception("Body is null");
+
+    Dictionary<string, string> headers = new();
+    if (args.Count == 3 && args[2] is Dictionary<string, object> obj)
+    {
+        foreach (var kv in obj)
+            headers[kv.Key] = kv.Value?.ToString() ?? "";
+    }
+
+    var response = await HttpLib.Put(url, body, headers);
+
+    return new Dictionary<string, object>
+    {
+        ["status"] = response.Status,
+        ["body"] = response.Body,
+        ["headers"] = response.Headers
+    };
+}),
+
+["patch"] = new AsyncFunctionObject(async (args) =>
+{
+    if (args.Count < 2 || args.Count > 3)
+        throw new Exception("http.patch(url, body, [headers]) expects 2 or 3 arguments");
+
+    var url = args[0]?.ToString() ?? throw new Exception("URL is null");
+    var body = args[1]?.ToString() ?? throw new Exception("Body is null");
+
+    Dictionary<string, string> headers = new();
+    if (args.Count == 3 && args[2] is Dictionary<string, object> obj)
+    {
+        foreach (var kv in obj)
+            headers[kv.Key] = kv.Value?.ToString() ?? "";
+    }
+
+    var response = await HttpLib.Patch(url, body, headers);
+
+    return new Dictionary<string, object>
+    {
+        ["status"] = response.Status,
+        ["body"] = response.Body,
+        ["headers"] = response.Headers
+    };
+}),
+
+["delete"] = new AsyncFunctionObject(async (args) =>
+{
+    if (args.Count < 1 || args.Count > 2)
+        throw new Exception("http.delete(url, [headers]) expects 1 or 2 arguments");
+
+    var url = args[0]?.ToString() ?? throw new Exception("URL is null");
+
+    Dictionary<string, string> headers = new();
+    if (args.Count == 2 && args[1] is Dictionary<string, object> obj)
+    {
+        foreach (var kv in obj)
+            headers[kv.Key] = kv.Value?.ToString() ?? "";
+    }
+
+    var response = await HttpLib.Delete(url, headers);
+
+    return new Dictionary<string, object>
+    {
+        ["status"] = response.Status,
+        ["body"] = response.Body,
+        ["headers"] = response.Headers
+    };
+}),
+
             }, isConst: true);
 
             variables["json"] = (new Dictionary<string, object>

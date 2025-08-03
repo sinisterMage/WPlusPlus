@@ -11,10 +11,48 @@ class Program
     static async Task Main(string[] args)
     {
         var code = @"
-       let res = await http.get(""https://jsonplaceholder.typicode.com/todos/1"");
-       text(res.body);
-let obj = json.parse(res.body);
-text(obj.title);
+       // Prepare request bodies and headers
+let putBody = json.stringify({
+  name: ""Wloth""
+});
+
+let patchBody = json.stringify({
+  mood: ""chaotic""
+});
+
+let jsonHeaders = {
+  ""Content-Type"": ""application/json""
+};
+
+let deleteHeaders = {
+  ""X-Delete-By"": ""W++""
+};
+
+// PUT
+let putRes = await http.put(""https://httpbin.org/put"", putBody, jsonHeaders);
+print(""PUT status: "");
+print(putRes.status);
+print(""\nPUT body: "");
+print(putRes.body);
+print(""\n"");
+
+// PATCH
+let patchRes = await http.patch(""https://httpbin.org/patch"", patchBody, jsonHeaders);
+print(""PATCH status: "");
+print(patchRes.status);
+print(""\nPATCH body: "");
+print(patchRes.body);
+print(""\n"");
+
+// DELETE
+let deleteRes = await http.delete(""https://httpbin.org/delete"", deleteHeaders);
+print(""DELETE status: "");
+print(deleteRes.status);
+print(""\nDELETE body: "");
+print(deleteRes.body);
+print(""\n"");
+
+
 
 
 

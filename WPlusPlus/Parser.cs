@@ -995,14 +995,23 @@ if (Match(TokenType.Symbol) && Peek().Value == "{")
 
     while (!Check("}"))
     {
-        if (!Match(TokenType.String))
-            throw new Exception("Expected string key in object literal");
+        string key;
 
-        var keyToken = Advance();
-        var key = keyToken.Value;
-
-        if (key.StartsWith("\"") && key.EndsWith("\""))
-            key = key.Substring(1, key.Length - 2); // strip quotes
+        if (Match(TokenType.String))
+        {
+            var keyToken = Advance();
+            key = keyToken.Value;
+            if (key.StartsWith("\"") && key.EndsWith("\""))
+                key = key.Substring(1, key.Length - 2); // strip quotes
+        }
+        else if (Match(TokenType.Identifier))
+        {
+            key = Advance().Value;
+        }
+        else
+        {
+            throw new Exception("Expected string or identifier as key in object literal");
+        }
 
         Expect(":");
 
@@ -1018,6 +1027,7 @@ if (Match(TokenType.Symbol) && Peek().Value == "{")
     Expect("}");
     return new ObjectLiteralNode(properties);
 }
+
 
             throw new Exception("Unexpected token: " + Peek()?.Value);
         }

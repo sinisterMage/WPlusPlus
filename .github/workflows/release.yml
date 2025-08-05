@@ -36,7 +36,7 @@ jobs:
       - name: Rename binary to 'ingot'
         run: |
           cd output/${{ matrix.os }}
-          if [[ "${{ matrix.os }}" == win-x64 ]]; then
+          if [[ "${{ matrix.os }}" == "win-x64" ]]; then
             mv IngotCLI.exe ingot.exe
           else
             mv IngotCLI ingot
@@ -47,9 +47,11 @@ jobs:
           cd output/${{ matrix.os }}
           zip -r ../../ingot-${{ matrix.os }}.zip .
 
-      - name: Upload to GitHub Release
+      - name: Upload to GitHub Release (ignore duplicates)
         uses: softprops/action-gh-release@v2
+        continue-on-error: true  # ⚠️ Prevents failure if asset already exists
         with:
           files: ingot-${{ matrix.os }}.zip
+          fail_on_unmatched_files: false  # Just in case
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

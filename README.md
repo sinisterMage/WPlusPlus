@@ -41,6 +41,32 @@ greet("world");
 
 ---
 
+## 🆕 NEW!! Homebrew Support 🍺
+
+You can now install the W++ CLI tool (`ingot`) directly on macOS using Homebrew!
+
+### ✅ Quick Install
+
+```bash
+brew tap sinistermage/wpp
+brew install wpp
+```
+
+This installs the `ingot` CLI globally — ready to run `.wpp` scripts from anywhere.
+
+### 🔄 Updates
+
+To upgrade in the future:
+
+```bash
+brew upgrade wpp
+```
+
+> Powered by ✨ sloths, GitHub Actions, and definitely *not* Visual Basic.
+
+
+---
+
 ## 📁 Project Structure
 
 WPlusPlus/ — Core C# interpreter and AST

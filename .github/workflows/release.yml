@@ -44,6 +44,9 @@ jobs:
             -r ${{ matrix.os }} \
             --self-contained true \
             /p:PublishSingleFile=true \
+            /p:EnableCompressionInSingleFile=false \
+            /p:DebugType=None \
+            /p:DebugSymbols=false \
             -o output/${{ matrix.os }}
 
       - name: Rename binary to 'ingot'

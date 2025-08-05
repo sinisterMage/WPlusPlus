@@ -1,0 +1,43 @@
+name: Build and Release Ingot CLI
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        os: [win-x64, linux-x64, osx-x64]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.x'
+
+      - name: Publish CLI for ${{ matrix.os }}
+        run: |
+          dotnet publish IngotCLI/IngotCLI.csproj \
+            -c Release \
+            -r ${{ matrix.os }} \
+            --self-contained true \
+            /p:PublishSingleFile=true \
+            -o output/${{ matrix.os }}
+
+      - name: Archive binaries
+        run: |
+          cd output/${{ matrix.os }}
+          zip -r ../../ingot-${{ matrix.os }}.zip .
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ingot-${{ matrix.os }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

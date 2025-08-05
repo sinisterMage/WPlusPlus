@@ -9,7 +9,20 @@ permissions:
   contents: write
 
 jobs:
-  build-and-release:
+  # 👇 This creates the GitHub release exactly once
+  create-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release (empty)
+        uses: softprops/action-gh-release@v2
+        with:
+          files: "" # No files, just the release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 👇 This builds binaries for each OS and uploads
+  build-and-upload:
+    needs: create-release
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -47,11 +60,10 @@ jobs:
           cd output/${{ matrix.os }}
           zip -r ../../ingot-${{ matrix.os }}.zip .
 
-      - name: Upload to GitHub Release (ignore duplicates)
+      - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v2
-        continue-on-error: true  # ⚠️ Prevents failure if asset already exists
         with:
           files: ingot-${{ matrix.os }}.zip
-          fail_on_unmatched_files: false  # Just in case
+          fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

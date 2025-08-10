@@ -6,6 +6,8 @@ using System.Reflection;
 using System.Net.Http;
 using System.IO;
 using System.Threading;
+using System.Runtime.InteropServices;
+using System.Diagnostics;
 
 
 class Program
@@ -67,7 +69,7 @@ class Program
                 await BuildProject();
                 break;
             case "publish":
-                PublishProject();
+                await PublishProject(args);
                 break;
             case "import":
                 if (args.Length < 2)
@@ -193,23 +195,174 @@ class Program
         Console.WriteLine("📦 Build complete → build/bundle.wpp");
     }
 
-    static void PublishProject()
-    {
-        string source = Path.Combine("build", "bundle.wpp");
-        string targetDir = "dist";
-        string target = Path.Combine(targetDir, "bundle.wppack");
+    static async Task PublishProject(string[] args)
+{
+    // Detect platform from argument or default to current OS
+    string platformArg = args.Length >= 2 ? args[1].ToLower() : null;
+    string runtimeId;
 
-        if (!File.Exists(source))
+    if (string.IsNullOrEmpty(platformArg))
+    {
+        if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            runtimeId = "win-x64";
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+            runtimeId = "linux-x64";
+        else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+            runtimeId = "osx-x64";
+        else
         {
-            Console.WriteLine("❌ No bundle to publish. Run 'ingot build' first.");
+            Console.WriteLine("❌ Unsupported OS.");
             return;
         }
-
-        Directory.CreateDirectory(targetDir);
-        File.Copy(source, target, overwrite: true);
-
-        Console.WriteLine($"🚀 Published to {target}");
     }
+    else
+    {
+        switch (platformArg)
+        {
+            case "win":
+                runtimeId = "win-x64";
+                break;
+            case "linux":
+                runtimeId = "linux-x64";
+                break;
+            case "mac":
+                runtimeId = "osx-x64";
+                break;
+            default:
+                Console.WriteLine("❌ Unknown platform. Use win, linux, or mac.");
+                return;
+        }
+    }
+
+    // Read project name from wpp.json
+    if (!File.Exists("wpp.json"))
+    {
+        Console.WriteLine("❌ wpp.json not found in the current directory.");
+        return;
+    }
+    string projectName;
+    try
+    {
+        var json = JsonDocument.Parse(File.ReadAllText("wpp.json"));
+        projectName = json.RootElement.GetProperty("name").GetString();
+        if (string.IsNullOrWhiteSpace(projectName))
+        {
+            Console.WriteLine("❌ Invalid or missing 'name' property in wpp.json.");
+            return;
+        }
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"❌ Failed to parse wpp.json: {ex.Message}");
+        return;
+    }
+
+    // Look for WppRunner in the parent directory of IngotCLI
+    string baseDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), ".."));
+    string wppRunnerPath = Path.Combine(baseDir, "WppRunner");
+
+    if (!Directory.Exists(wppRunnerPath))
+    {
+        Console.WriteLine($"❌ WppRunner project not found in {wppRunnerPath}");
+        Console.WriteLine("   Create it with:");
+        Console.WriteLine("   dotnet new console -n WppRunner");
+        return;
+    }
+
+    // Build project to get bundle.wpp
+    await BuildProject();
+
+    string bundlePath = Path.Combine(Directory.GetCurrentDirectory(), "build", "bundle.wpp");
+    if (!File.Exists(bundlePath))
+    {
+        Console.WriteLine("❌ bundle.wpp not found. Build failed?");
+        return;
+    }
+
+    // Copy bundle.wpp into WppRunner as EmbeddedScript.wpp
+    string embeddedPath = Path.Combine(wppRunnerPath, "EmbeddedScript.wpp");
+    File.Copy(bundlePath, embeddedPath, true);
+
+    // Ensure EmbeddedScript.wpp is embedded in WppRunner.csproj
+    string csprojPath = Path.Combine(wppRunnerPath, "WppRunner.csproj");
+    var csprojContent = File.ReadAllText(csprojPath);
+    if (!csprojContent.Contains("<EmbeddedResource Include=\"EmbeddedScript.wpp\""))
+    {
+        csprojContent = csprojContent.Replace("</Project>",
+            "  <ItemGroup>\n    <EmbeddedResource Include=\"EmbeddedScript.wpp\" />\n  </ItemGroup>\n</Project>");
+        File.WriteAllText(csprojPath, csprojContent);
+    }
+
+    // Output directory (inside IngotCLI/dist)
+    string outputDir = Path.Combine(Directory.GetCurrentDirectory(), "dist", runtimeId);
+    Directory.CreateDirectory(outputDir);
+
+    // Build & publish command
+    string publishCmd = $"dotnet publish \"{Path.Combine(wppRunnerPath, "WppRunner.csproj")}\" -r {runtimeId} --self-contained true -p:PublishSingleFile=true -o \"{outputDir}\"";
+
+    Console.WriteLine($"🚀 Publishing for {runtimeId}...");
+    Console.WriteLine($"📦 Output → {outputDir}");
+
+    var process = new Process
+    {
+        StartInfo = new ProcessStartInfo
+        {
+            FileName = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? "cmd.exe" : "bash",
+            Arguments = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? $"/C {publishCmd}" : $"-c \"{publishCmd}\"",
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            UseShellExecute = false,
+            CreateNoWindow = true
+        }
+    };
+
+    process.OutputDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine(e.Data); };
+    process.ErrorDataReceived += (s, e) => { if (!string.IsNullOrEmpty(e.Data)) Console.WriteLine("❌ " + e.Data); };
+
+    process.Start();
+    process.BeginOutputReadLine();
+    process.BeginErrorReadLine();
+    process.WaitForExit();
+
+    if (process.ExitCode == 0)
+    {
+        Console.WriteLine("✅ Publish complete!");
+
+        // Rename published executable to projectName
+        try
+        {
+            string ext = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? ".exe" : "";
+            string oldPath = Path.Combine(outputDir, "WppRunner" + ext);
+            string newPath = Path.Combine(outputDir, projectName + ext);
+
+            if (File.Exists(oldPath))
+            {
+                if (File.Exists(newPath))
+                    File.Delete(newPath);
+
+                File.Move(oldPath, newPath);
+                Console.WriteLine($"📦 Renamed output to {projectName}{ext}");
+            }
+            else
+            {
+                Console.WriteLine("⚠ Could not find the compiled runner to rename.");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"⚠ Failed to rename output: {ex.Message}");
+        }
+    }
+    else
+    {
+        Console.WriteLine("❌ Publish failed.");
+    }
+}
+
+
+
+
+
     static void RunTrollNpmInstall()
 {
     Console.WriteLine("ok, installing 69,000 packages into node_modules...");

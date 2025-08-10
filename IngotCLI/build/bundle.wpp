@@ -1,2 +1,1 @@
-import "lib.wpp";
-print "This is the main file.";
+print "hello world"

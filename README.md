@@ -9,6 +9,20 @@ This repo contains the full source code of W++ after it reached over **33,000 do
 
 ---
 
+
+
+## 📰 Extension Reinstated After Legal Pushback
+
+After some back-and-forth with Microsoft — and thanks to **external pressure** and the help of a **very persistent lawyer (hi mom!)** — the W++ VS Code extension is **officially back on the Marketplace**!
+
+Despite being mysteriously flagged and removed after reaching **33,000+ downloads**, the extension was eventually re-approved under a new publisher account.
+
+👉 [View W++ on the VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=wlothIndustries.wplusplus)
+
+We’re grateful to the community for the support, memes, and chaos — and we’re more determined than ever to keep W++ alive, weird, and sloth-powered 🦥.
+
+---
+
 ## ✨ Features
 
 - ✅ Full tokenizer, parser, and interpreter written in C#
@@ -85,7 +99,7 @@ Icon & metadata
 
 ## 🤔 Is W++ a Python dialect?
 
-Nope. W++ borrows Python’s readability and indentation style, but it is **not** Python or a Python runtime.
+Nope. W++ borrows Python’s readability style, but it is **not** Python or a Python runtime.
 
 - It’s not compatible with Python libraries
 - It has a custom syntax, runtime, and execution model
@@ -106,11 +120,8 @@ Think of it as:
 This project is licensed under the MIT License.
 Sloth-powered and chaos-approved.
 
----
 
-## 🙏 A Note to Reviewers
-This source code is now public and fully open.
-If there were any issues leading to its takedown, feel free to open a GitHub issue or contact the author. We're happy to clarify and work toward reinstatement.
+
 
 
 

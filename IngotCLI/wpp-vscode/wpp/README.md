@@ -1,68 +1,89 @@
-# W++ Language Support
+# 🦥 W++ Language Support for VS Code
 
-Add syntax highlighting and basic language features for the **W++** programming language in Visual Studio Code.
+Add syntax highlighting and language support for the **W++** programming language in Visual Studio Code.
+
+> Powered by chaos. Driven by sloths. Built with the OOPSIE™ Framework.
 
 ---
 
 ## ✨ Features
 
 - ✅ Syntax highlighting for `.wpp` files
-- ✅ Comment toggling (line comments: `#`)
-- ✅ Bracket and auto-indentation support
-- ✅ Lightweight and easy to use
-
-Perfect for educational use, hobby projects, and experimenting with a custom language!
+- ✅ Snippets and clean file icons
+- ✅ Lightweight and beginner-friendly
 
 ---
+
 ## ⚙️ Requirements
 
-To run `.wpp` files, you need to install the **Ingot CLI**.
+To run W++ files, install the **Ingot CLI** — the official W++ toolchain.
 
-### 🔽 Download Ingot CLI
+### 🛠️ Installing W++ (v0.2.6)
 
-1. Go to the [latest release](https://github.com/sinisterMage/wplusplus-ingot-cli/releases/tag/v0.1.1) of the CLI.
-2. Download `ingot.exe`.
-3. Move it to a folder like `C:\WPlusPlus\` or somewhere convenient.
-4. Add that folder to your **Windows PATH**.
+1. Go to the official repo: [github.com/sinisterMage/WPlusPlus](https://github.com/sinisterMage/WPlusPlus)
+2. Click the ⏬ **Releases** tab
+3. Choose your path:
+   - 🅰️ Download the installer for your OS *(FreeBSD support coming soon™)*
+   - 🅱️ Download `ingot` directly and add it to your `PATH`
+   - 🆎 Build from source — if you enjoy pain
 
-> Now you can use the `ingot` command from any terminal.
-
----
-## ▶️ Run W++ Code
-You can run W++ files directly:
-
-Open any .wpp file
-
-Press Ctrl+Shift+P → choose Run W++ File with Ingot
-
-Output will appear in a terminal
+4. Run these commands:
+   ```bash
+   ingot init   # Create a new W++ project
+   ingot run    # Run it
+   ingot help   # Behold the divine scroll of commands
+    ```
 
 ---
 
-## 🧠 Language Overview
+## ▶️ Running W++ Code in VS Code
 
-Example W++ code:
+1. Open any `.wpp` file
+2. Press `Ctrl+Shift+P`
+3. Select **“Run W++ File with Ingot”**
+4. Output will appear in the terminal
 
+---
+
+## 🧠 Sample W++ Code
+
+```wpp
 let x = 10
 if x > 5 {
     print "x is big"
 } else {
     print "x is small"
 }
+```
 
 ---
 
-## 📁 File Extension
-.wpp — Recognized automatically by this extension.
+## 📁 File Association
+
+* Files with `.wpp` extension are automatically recognized
+
+---
+
+## 🔗 Links
+
+* 🌐 Official Website: [wplusplus.org](https://wplusplus.org)
+* 📦 GitHub Repo: [sinisterMage/WPlusPlus](https://github.com/sinisterMage/WPlusPlus)
 
 ---
 
 ## 🤝 Contributing
-Want to improve W++ support or extend its functionality?
-feel free to contact me at ofek.bickel@gmail.com
+
+Want to improve this extension or add new features?
+
+Email me: **[ofek@wplusplus.org](mailto:ofek@wplusplus.org)**
+
+PRs, issues, and chaotic ideas are welcome.
+
+---
 
 ## 📜 License
-This extension is licensed under the MIT License.
 
-Built with ❤️ for creative coders, students, and language designers.
+MIT License
+Built with ❤️ for creative coders, language tinkerers, and curious minds.
+
 

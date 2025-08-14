@@ -1,10 +1,10 @@
 {
-  "name": "wpp",
+  "name": "wplusplus",
   "displayName": "W++",
   "description": "A VS Code extension for the W++ language",
-  "version": "0.0.4",
-  "publisher": "OfekBickel",
-  "icon": "icon.png",
+  "version": "0.0.6",
+  "publisher": "wlothIndustries",
+  "icon": "icon.jpg",
   "engines": {
     "vscode": "^1.100.0"
   },
@@ -56,5 +56,26 @@
     "onLanguage:wpp",
     "onCommand:wpp.run"
   ],
-  "main": "./extension.js"
+  "main": "./extension.js",
+
+  
+  "author": "Ofek Bickel",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sinisterMage/WPlusPlus"
+  },
+  "homepage": "https://wplusplus.org",
+  "bugs": {
+    "url": "https://github.com/sinisterMage/WPlusPlus/issues"
+  },
+  "keywords": [
+    "wplusplus",
+    "wpp",
+    "language",
+    "custom",
+    "syntax",
+    "highlighting",
+    "experimental"
+  ]
 }

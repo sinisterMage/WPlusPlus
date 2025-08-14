@@ -1,4 +1,5 @@
 # W++ 🦥  ![image](https://github.com/user-attachments/assets/e55dc88e-7ef0-4aa6-8d3e-fbb77c9aac08)
+![W++ Extension: Resurrected](https://img.shields.io/badge/W%2B%2B%20Extension-Resurrected-informational?style=flat-square&color=purple&logo=github&logoColor=white)
 
 > *At least we’re better than Visual Basic.*
 

@@ -8,12 +8,15 @@ using System.IO;
 using System.Threading;
 using System.Runtime.InteropServices;
 using System.Diagnostics;
+using System.Text;
 
 
 class Program
 {
     static async Task Main(string[] args)
     {
+        Console.OutputEncoding = Encoding.UTF8;
+        Console.InputEncoding = Encoding.UTF8;
         if (args.Length == 0)
         {
             Console.WriteLine("Usage: ingot <command> [--jit]");
@@ -65,6 +68,14 @@ class Program
                 bool forceJit = args.Contains("--jit");
                 await RunProject(forceJit);
                 break;
+                case "run-file": // <-- NEW
+        if (args.Length < 2)
+        {
+            Console.WriteLine("❌ Please provide a .wpp file to run.");
+            return;
+        }
+        await RunSingleFile(args[1], args.Contains("--jit"));
+        break;
             case "build":
                 await BuildProject();
                 break;
@@ -465,5 +476,43 @@ static void DrawProgressBar(double progress, int width)
     Console.Write($"\r[{new string('=', filled)}{new string(' ', empty)}] {progress:P0}");
 }
 
+static async Task RunSingleFile(string filePath, bool useJit)
+{
+    if (!File.Exists(filePath))
+    {
+        Console.WriteLine($"❌ File '{filePath}' not found.");
+        return;
+    }
+
+    string code = File.ReadAllText(filePath);
+    var tokens = Lexer.Tokenize(code);
+    var parser = new Parser(tokens);
+
+    if (useJit)
+    {
+        Console.ForegroundColor = ConsoleColor.Yellow;
+        Console.WriteLine("🚀 Running JIT compiled W++ code (single file)...");
+        Console.ResetColor();
+
+        var jit = new JitCompiler();
+        var ast = parser.Parse();
+        jit.Compile(ast);
+    }
+    else
+    {
+        Console.WriteLine("🌀 Running W++ with interpreter (single file)...");
+        var runtimeLinker = new RuntimeLinker();
+        RuntimeLinker.RegisterAssembly(typeof(string).Assembly);
+        var interpreter = new Interpreter(runtimeLinker);
+
+        while (parser.HasMore())
+        {
+            var node = parser.Parse();
+            await interpreter.Evaluate(node);
+        }
+
+        Console.WriteLine("✅ Execution finished.");
+    }
+}
 
 }

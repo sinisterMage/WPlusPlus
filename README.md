@@ -82,6 +82,21 @@ brew upgrade wpp
 
 ---
 
+
+## 🐳 New! Official Docker Image
+
+W++ now has an official Docker image!
+Run `.wpp` files instantly without installing anything:
+
+```bash
+docker run --rm -v "$(pwd)":/wpp sinistermage/wpp myscript.wpp
+```
+
+It auto-fetches the latest `ingot` release, works great in CI, and is sloth-approved.
+👉 [View on Docker Hub](https://hub.docker.com/r/sinistermage/wpp)
+
+---
+
 ## 📁 Project Structure
 
 WPlusPlus/ — Core C# interpreter and AST

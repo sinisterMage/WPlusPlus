@@ -42,8 +42,6 @@ docker run --platform=linux/amd64 --rm -v "$(pwd)":/wpp sinistermage/wpp myscrip
 ## 🤯 Features
 
 * 🧠 Full support for HTTP requests
-* 🗃️ Built-in GC
-* ⚔️ Multiple dispatch
 * 🔥 Interpreter + JIT
 * 🐧 Works on Linux/macOS via Docker (no .NET install needed!)
 

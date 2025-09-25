@@ -1,0 +1,109 @@
+.repl-container {
+  display: flex;
+  height: 70vh;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+/* Toolbar */
+.repl-toolbar-wpp {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: #1e293b;
+  color: white;
+  flex-wrap: wrap; /* allow buttons to wrap on small screens */
+}
+
+.repl-editor-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0; /* prevent overflow */
+}
+
+.repl-tabs {
+  display: flex;
+  background: #0f172a;
+  color: white;
+  font-size: 0.9rem;
+  overflow-x: auto; /* allow horizontal scroll if too many tabs */
+}
+
+.repl-tab {
+  padding: 0.5rem 1rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.repl-tab.active {
+  background: #334155;
+}
+
+.repl-tab-close {
+  margin-left: 0.5rem;
+  cursor: pointer;
+  color: #f87171;
+}
+
+.repl-add-tab {
+  margin-left: auto;
+  padding: 0.5rem;
+  background: #0ea5e9;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+.repl-divider {
+  width: 4px;
+  cursor: col-resize;
+  background: #94a3b8;
+}
+
+.repl-output {
+  background: #111;
+  color: #0f0;
+  overflow: auto;
+  min-width: 200px;
+}
+
+.repl-output-header {
+  padding: 0.5rem;
+  background: #1e293b;
+  font-weight: bold;
+  color: #0f0;
+}
+
+/* 📱 Mobile Responsiveness */
+@media (max-width: 768px) {
+  .repl-container {
+    flex-direction: column;
+    height: auto;
+  }
+
+  .repl-divider {
+    display: none; /* no drag divider on mobile */
+  }
+
+  .repl-output {
+    width: 100% !important;
+    min-height: 180px;
+    border-top: 1px solid #333;
+  }
+
+  .repl-editor-panel {
+    width: 100%;
+    min-height: 250px;
+  }
+
+  .repl-tabs {
+    font-size: 0.8rem;
+  }
+
+  .repl-toolbar-wpp {
+    justify-content: space-between;
+  }
+}

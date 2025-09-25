@@ -1,0 +1,36 @@
+---
+import Layout from "../layouts/Layout.astro";
+import WppRepl from "../components/WppRepl.tsx";
+---
+
+<Layout title="W++ REPL">
+  <head slot="head">
+    <meta name="description" content="Try out W++ online in your browser with the official interactive REPL. Write, run, and share W++ code instantly." />
+    <meta property="og:title" content="W++ Online REPL" />
+    <meta property="og:description" content="Write and run W++ code in your browser with syntax highlighting and live output." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://wplusplus.org/repl" />
+  </head>
+
+  <section style="max-width: 100%; margin: 2rem auto; padding: 1rem;">
+    <h1>⚡ W++ Online REPL</h1>
+    <p>Write and run <strong>W++</strong> code directly in your browser.</p>
+
+    <WppRepl client:only="react" />
+  </section>
+
+  <!-- Scripts -->
+  <script
+    src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.js"
+    is:inline
+  ></script>
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/codemirror.min.css"
+  />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.5/theme/material.min.css"
+  />
+  <script src="/codemirror-wpp.js" is:inline></script>
+</Layout>

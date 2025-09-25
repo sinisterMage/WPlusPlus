@@ -10,9 +10,11 @@ const currentPath = Astro.url.pathname;
     <a href="/dev" class={currentPath === '/dev' ? 'active' : ''}>🧪 Internals</a>
     <a href="/faq" class={currentPath === '/faq' ? 'active' : ''}>❓ FAQ</a>
     <a href="/mascot" class={currentPath === '/mascot' ? 'active' : ''}>🦥 Mascot</a>
-    <a href="/contact" class={currentPath === '/contact' ? 'active' : ''}>📨 Contact</a> <!-- ✅ added -->
+    <a href="/contact" class={currentPath === '/contact' ? 'active' : ''}>📨 Contact</a>
+    <a href="/repl" class={currentPath === '/repl' ? 'active' : ''}>⚡ REPL</a> <!-- 🆕 added -->
   </div>
 </nav>
+
 
 <style>
   .navbar {

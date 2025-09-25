@@ -6,8 +6,21 @@ import ContactFormLoader from "../components/ContactFormLoader.tsx";
 <Layout title="Contact W++" description="Contact the W++ team for questions, support, and sloth memes. Built for chaos, learning, and love.">
   <div class="contact-page">
     <h1>📨 Contact the W++ Team</h1>
-    <p class="page-subtitle">We're happy to hear your thoughts, bugs, memes, or existential crises 🦥</p>
+    <p class="page-subtitle">
+      We're happy to hear your thoughts, bugs, memes, or existential crises 🦥
+    </p>
 
+    <!-- Links Section -->
+    <div class="contact-links">
+      <p>💬 <a href="https://discord.gg/a37hQPPDrp" target="_blank" rel="noopener noreferrer">Join the Discord</a></p>
+      <p>🐙 <a href="https://github.com/sinisterMage/WPlusPlus" target="_blank" rel="noopener noreferrer">Visit GitHub</a></p>
+      <p>✉️ <a href="mailto:ofek@wplusplus.org">Email Me</a></p>
+    </div>
+
+    <!-- Divider -->
+    <hr class="divider" />
+
+    <!-- Contact Form -->
     <form id="contact-form">
       <label for="name">Name</label>
       <input type="text" id="name" name="name" placeholder="Jane Developer" required />
@@ -28,6 +41,7 @@ import ContactFormLoader from "../components/ContactFormLoader.tsx";
 
   <ContactFormLoader client:only="react" />
 </Layout>
+
 
 <style>
   .contact-page {
@@ -142,5 +156,22 @@ import ContactFormLoader from "../components/ContactFormLoader.tsx";
       transform: scale(0.85);
       transform-origin: 0 0;
     }
+  }
+  .contact-links {
+    margin-bottom: 1.5rem;
+    font-size: 1.05rem;
+  }
+  .contact-links a {
+    color: #ffa500;
+    font-weight: bold;
+    text-decoration: none;
+  }
+  .contact-links a:hover {
+    text-decoration: underline;
+  }
+  .divider {
+    margin: 2rem 0;
+    border: none;
+    border-top: 1px solid #444;
   }
 </style>

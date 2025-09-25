@@ -242,6 +242,17 @@ public class ObjectLiteralNode : Node
     }
 }
 
+public class FunctionExpressionNode : Node
+{
+    public List<string> Parameters { get; }
+    public Node Body { get; }
+
+    public FunctionExpressionNode(List<string> parameters, Node body)
+    {
+        Parameters = parameters;
+        Body = body;
+    }
+}
 
 
 }

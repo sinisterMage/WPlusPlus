@@ -744,6 +744,51 @@ if (Match(TokenType.Identifier) && Peek().Value == "typeof")
 }
 
 
+// Inline function expression: func (param1, param2) { ... }
+if (Match(TokenType.Identifier) && Peek().Value == "func")
+{
+    Advance(); // consume 'func'
+    
+    Expect("(");
+    var parameters = new List<string>();
+
+    while (!Match(TokenType.Symbol) || Peek().Value != ")")
+    {
+        if (!Match(TokenType.Identifier))
+            throw new Exception("Expected parameter name in function expression");
+
+        parameters.Add(Advance().Value);
+
+        if (Match(TokenType.Symbol) && Peek().Value == ",")
+        {
+            Advance(); // consume comma
+            continue;
+        }
+        else if (Match(TokenType.Symbol) && Peek().Value == ")")
+        {
+            break;
+        }
+        else
+        {
+            throw new Exception($"Expected ',' or ')' in parameter list but found: {Peek()?.Value}");
+        }
+    }
+
+    Expect(")");
+
+    // Parse body
+    Node body;
+    if (Match(TokenType.Symbol) && Peek().Value == "{")
+    {
+        body = ParseBlock();
+    }
+    else
+    {
+        body = ParseStatement();
+    }
+
+    return new FunctionExpressionNode(parameters, body);
+}
 
 
 

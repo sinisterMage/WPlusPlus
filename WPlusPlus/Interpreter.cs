@@ -7,6 +7,7 @@ using IngotCLI;
 using WPlusPlus;
 using WPlusPlus.Shared;
 using System.Text.Json;
+using System.Text;
 
 
 namespace WPlusPlus
@@ -609,25 +610,60 @@ for (int i = 0; i < method.Parameters.Count; i++)
 {
     var targetObj = await Evaluate(memberAccess.Target);
 
-    if (targetObj is Dictionary<string, object> objDict)
-    {
-        if (!objDict.TryGetValue(memberAccess.Member, out var value))
-            throw new Exception($"Property or method '{memberAccess.Member}' not found");
+    // Debugging info to see exactly what's coming in
+    Console.WriteLine($"[DEBUG] MemberAccess target type: {targetObj?.GetType().FullName ?? "null"}");
+    Console.WriteLine($"[DEBUG] Requested member: {memberAccess.Member}");
 
+    if (targetObj == null)
+        throw new Exception("Cannot access member of null");
+
+    // 1. Normal dictionary case
+    if (targetObj is Dictionary<string, object> dict)
+    {
+        if (!dict.TryGetValue(memberAccess.Member, out var value))
+            throw new Exception($"Property or method '{memberAccess.Member}' not found");
         return value;
     }
 
-    // 🔧 Support raw JsonElement from json.parse
-    if (targetObj is JsonElement jsonEl)
+    // 2. Any generic dictionary case (IDictionary)
+    if (targetObj is IDictionary<string, object> genDict)
     {
-        if (jsonEl.ValueKind == JsonValueKind.Object && jsonEl.TryGetProperty(memberAccess.Member, out var prop))
-            return prop;
-
-        throw new Exception($"Property '{memberAccess.Member}' not found in JSON object.");
+        if (!genDict.TryGetValue(memberAccess.Member, out var value))
+            throw new Exception($"Property or method '{memberAccess.Member}' not found");
+        return value;
     }
 
-    throw new Exception("Cannot access member of non-object");
+    // 3. If the object is actually a Task<object>, unwrap it
+if (targetObj is Task<object> taskValue)
+{
+    var unwrapped = await taskValue;
+
+    // Re-run member access directly on the unwrapped object
+    // without creating a new AST node
+    targetObj = unwrapped;
 }
+
+// 4. Fallback: try reflection for .NET objects
+var type = targetObj?.GetType();
+var prop = type?.GetProperty(memberAccess.Member);
+
+if (prop != null)
+{
+    return prop.GetValue(targetObj);
+}
+
+// 5. Try methods if property not found
+var method = type?.GetMethod(memberAccess.Member);
+if (method != null)
+{
+    return method.Invoke(targetObj, null);
+}
+
+// 6. If still nothing, throw error
+throw new Exception($"Cannot access member '{memberAccess.Member}' on non-object");
+
+}
+
 
                 case ExternCallNode ext:
                     {
@@ -670,6 +706,32 @@ for (int i = 0; i < method.Parameters.Count; i++)
 
 
 
+
+case FunctionExpressionNode funcExpr:
+{
+    AsyncFunctionObject funcExprDelegate = async (args) =>
+    {
+        var local = new Interpreter(this.variables, runtimeLinker);
+
+        for (int i = 0; i < funcExpr.Parameters.Count; i++)
+        {
+            object paramValue = i < args.Count ? args[i] : null;
+            local.variables[funcExpr.Parameters[i]] = (paramValue, false);
+        }
+
+        try
+        {
+            var result = await local.Evaluate(funcExpr.Body);
+            return result;
+        }
+        catch (ReturnException retEx)
+        {
+            return retEx.Value;
+        }
+    };
+
+    return funcExprDelegate;
+}
 
 
 
@@ -817,6 +879,7 @@ for (int i = 0; i < method.Parameters.Count; i++)
             }
         }
 
+private ApiServer _apiServer = new ApiServer();
 
 
         private void InjectBuiltins()
@@ -990,6 +1053,68 @@ variables["text"] = (new FunctionObject(async (args) =>
     }
     return null;
 }), isConst: true);
+
+variables["api"] = (new Dictionary<string, object>
+{
+    ["start"] = new FunctionObject(args =>
+    {
+        if (args.Count != 1 || args[0] is not double portNum)
+            throw new Exception("api.start(port) expects 1 numeric port argument");
+
+        _apiServer.Start((int)portNum);
+        return Task.FromResult<object>(null);
+    }),
+
+    ["endpoint"] = new FunctionObject(args =>
+    {
+        if (args.Count != 3 || args[0] is not string path || args[1] is not string method)
+            throw new Exception("api.endpoint(path, method, handler) expects (string, string, function)");
+
+        var handlerFn = args[2];
+
+        _apiServer.AddRoute(path, method.ToUpper(), async (req, res) =>
+        {
+            var reqObj = new Dictionary<string, object>
+            {
+                ["method"] = req.HttpMethod,
+                ["path"] = req.Url.AbsolutePath,
+                ["query"] = req.QueryString.ToString(),
+                ["body"] = await new System.IO.StreamReader(req.InputStream).ReadToEndAsync(),
+                ["headers"] = req.Headers
+            };
+
+            var resObj = new Dictionary<string, object>
+            {
+                ["json"] = new FunctionObject(a =>
+                {
+                    var json = JsonSerializer.Serialize(a[0]);
+                    var buffer = Encoding.UTF8.GetBytes(json);
+                    res.ContentType = "application/json";
+                    res.OutputStream.Write(buffer, 0, buffer.Length);
+                    res.Close();
+                    return Task.FromResult<object>(null);
+                }),
+                ["text"] = new FunctionObject(a =>
+                {
+                    var buffer = Encoding.UTF8.GetBytes(a[0]?.ToString() ?? "");
+                    res.OutputStream.Write(buffer, 0, buffer.Length);
+                    res.Close();
+                    return Task.FromResult<object>(null);
+                }),
+                ["status"] = new FunctionObject(a =>
+                {
+                    res.StatusCode = Convert.ToInt32(a[0]);
+                    return Task.FromResult<object>(null);
+                })
+            };
+
+            await ((AsyncFunctionObject)handlerFn)(new List<object> { reqObj, resObj });
+        });
+
+        return Task.FromResult<object>(null);
+    })
+}, isConst: true);
+
 
 
         }

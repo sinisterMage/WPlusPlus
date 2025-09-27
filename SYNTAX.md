@@ -267,6 +267,121 @@ dev.work();
 
 ---
 
+## 🧠 Built-in Objects (a.k.a. “Stuff that magically works somehow”)
+
+W++ includes several built-in objects that make it feel like a fullstack language —  
+yes, you can literally make HTTP requests, JSON operations, or even spin up an API server.  
+Because why not?
+
+---
+
+### 🌐 `http` — The Chaos Web Client
+
+All HTTP methods are async, so don’t forget to use `await`.
+
+```wpp
+let response = await http.get("https://example.com");
+print response.status;  // → 200
+print response.body;
+
+await http.post("https://api.example.com", "{ \"msg\": \"Hello\" }");
+````
+
+#### Available Methods:
+
+| Method                             | Parameters                      | Description                  |
+| ---------------------------------- | ------------------------------- | ---------------------------- |
+| `http.get(url, [headers])`         | string, optional object         | Sends a GET request          |
+| `http.post(url, body, [headers])`  | string, string, optional object | Sends a POST request         |
+| `http.put(url, body, [headers])`   | string, string, optional object | Updates a resource           |
+| `http.patch(url, body, [headers])` | string, string, optional object | Partially updates a resource |
+| `http.delete(url, [headers])`      | string, optional object         | Deletes a resource           |
+
+All methods return an object:
+
+```wpp
+{
+  "status": 200,
+  "body": "response body here",
+  "headers": { "Content-Type": "application/json" }
+}
+```
+
+---
+
+### 🧩 `json` — JSON Without the Tears
+
+For working with structured data, you get two helpers:
+
+| Method                   | Description                        |
+| ------------------------ | ---------------------------------- |
+| `json.parse(string)`     | Converts JSON text to a W++ object |
+| `json.stringify(object)` | Converts an object to JSON text    |
+
+```wpp
+let data = await json.parse("{\"hello\": \"world\"}");
+print data.hello; // world
+
+let str = await json.stringify({ "ping": "pong" });
+print str; // {"ping":"pong"}
+```
+
+---
+
+### ⚡ `api` — Make Servers Like a Madman
+
+Yes, you can host a local HTTP API *from inside W++*.
+Because who needs sanity anyway?
+
+#### Example:
+
+```wpp
+api.start(8080);
+
+api.endpoint("/hello", "GET", async (req, res) => {
+  res.status(200);
+  res.json({ message: "Hello from W++!" });
+});
+```
+
+#### Available Methods:
+
+| Method                                | Description                     |
+| ------------------------------------- | ------------------------------- |
+| `api.start(port)`                     | Starts the built-in HTTP server |
+| `api.endpoint(path, method, handler)` | Registers a new API route       |
+
+Handler functions receive `(req, res)` objects.
+
+#### `req` (Request)
+
+* `req.method` → HTTP method (GET, POST, etc.)
+* `req.path` → The request path
+* `req.query` → Query string
+* `req.body` → Request body
+* `req.headers` → Headers dictionary
+
+#### `res` (Response)
+
+* `res.status(code)` → Set response status
+* `res.text(string)` → Send plain text response
+* `res.json(object)` → Send JSON response
+
+---
+
+### 📝 `text` — A Debug Function That Does… Something
+
+```wpp
+text("Hello, sloths!");
+```
+
+Technically it prints stuff to the console.
+Realistically, it’s just there because Ofek said so.
+
+---
+
+
+
 ## ☕ Fun Fact
 
 W++ might be powered by chaos, memes, and coffee,  

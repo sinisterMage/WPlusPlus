@@ -1,57 +1,19 @@
-# 📘 W++ Language Syntax Guide
+# ⚡ W++ Syntax Guide (updated edtion)
 
-Welcome to the official **W++ Language Syntax Guide**! W++ is a dynamic, C#-powered scripting language with first-class support for async functions, entities (OOP-style), and powerful control flow — all embedded in a clean syntax inspired by JavaScript and C-like languages.
-> 🧠 **W++ Syntax Philosophy**
-
-W++ blends influences from multiple languages:
-
-- **Python-style indentation** and minimal boilerplate for readability  
-- **JavaScript-style expressions and lambdas** for familiarity  
-- **C-like control flow and operators** for power and precision  
-
-It’s not meant to clone any one language — just to feel simple, familiar, and expressive for everyday scripting.
+> *Built with the OOPSIE™ Framework. Fueled by chaos, memes, and questionable design choices.*
 
 ---
 
-## 🧠 Variables
+## 📦 Variables
+W++ supports `let` and `const` for declaring variables.
 
 ```wpp
-let x = 5;
-const y = "Hello";
-x = 7;
-```
+let name = "Wloth";
+const chaos = 9001;
+````
 
-* Use `let` for mutable variables
-* Use `const` for immutable values
-
----
-
-## 🔢 Values and Types
-
-* **Numbers**: `42`, `3.14`
-* **Strings**: `"Hello, world"`
-* **Booleans**: `true`, `false`
-* **Null**: `null`
-
----
-
-## 📏 Expressions
-
-```wpp
-let a = 1 + 2 * 3;
-let b = a < 10;
-let c = x ?? y; // null-coalescing
-```
-
-### Operators:
-
-| Type          | Operators                        |   |         |
-| ------------- | -------------------------------- | - | ------- |
-| Arithmetic    | `+`, `-`, `*`, `/`               |   |         |
-| Comparison    | `<`, `>`, `<=`, `>=`, `==`, `!=` |   |         |
-| Logical       | `&&`, \`                         |   | `, `!\` |
-| Null-Coalesce | `??`                             |   |         |
-| Assignment    | `=`                              |   |         |
+* `let` = reassignable
+* `const` = no take-backs
 
 ---
 
@@ -60,39 +22,43 @@ let c = x ?? y; // null-coalescing
 ### If / Else
 
 ```wpp
-if (x > 0) {
-  print "positive";
+if (hungry) {
+  print("Eat.");
 } else {
-  print "non-positive";
+  print("Keep coding.");
 }
 ```
 
 ### While Loop
 
 ```wpp
-while (x < 5) {
-  x = x + 1;
+let i = 0;
+while (i < 3) {
+  print("W++ is weird");
+  i = i + 1;
 }
 ```
 
 ### For Loop
 
 ```wpp
-for (let i = 0; i < 3; i = i + 1) {
-  print i;
+for (let i = 0; i < 5; i = i + 1) {
+  print(i);
 }
 ```
 
-### Switch Statement
+### Switch
 
 ```wpp
-switch (val) {
-  case 1:
-    print "one";
-  case 2:
-    print "two";
+switch (mood) {
+  case "happy":
+    print("yay!");
+    break;
+  case "chaotic":
+    print("oh no...");
+    break;
   default:
-    print "other";
+    print("neutral sloth");
 }
 ```
 
@@ -100,107 +66,138 @@ switch (val) {
 
 ```wpp
 while (true) {
-  if (x > 10) break;
-  if (x == 5) {
-    x = x + 1;
-    continue;
-  }
-  x = x + 1;
+  if (chaos > 10) break;
+  if (chaos < 0) continue;
+  chaos = chaos + 1;
 }
 ```
 
----
-
-## 📤 Functions and Lambdas
+### Return
 
 ```wpp
-let add = (x, y) => x + y;
-let result = add(2, 3); // 5
-```
-
-### Async Lambda
-
-```wpp
-let fetch = async (url) => {
-  return await http.get(url);
+let add = (x, y) => {
+  return x + y;
 };
 ```
 
 ---
 
-## 📦 Error Handling
+## 🖨️ Print
 
-### Try / Catch / Throw
+`print` can be used with or without parentheses:
 
 ```wpp
-try {
-  throw "oops";
-} catch (e) {
-  print "caught!";
-}
+print("Hello chaos!");
+print "multiple", "args", 123;
 ```
 
 ---
 
-## 🧬 Entities (OOP)
+## ⏳ Async & Await
 
-### Basic Entity
+Asynchronous code is fully supported.
 
 ```wpp
-entity Dog {
-  speak => {
-    print "Bark!";
+let res = await http.get("https://slothapi.dev");
+print(res.status);
+```
+
+Async lambdas work too:
+
+```wpp
+let fetch = async (url) => await http.get(url);
+```
+
+---
+
+## 🧱 Entities (OOPSIE Framework™)
+
+Entities are W++’s version of classes — but cursed.
+
+```wpp
+entity Human {
+  alters {
+    speak => { print("Hello, I'm " + me.name); }
   }
 }
-
-let myDog = new(Dog);
-myDog.speak();
 ```
+
+* `alters` = defines methods
+* `disown` = breaks inheritance
+* `me` = like `this`
+* `ancestor` = like `super`
 
 ### Inheritance
 
 ```wpp
-entity Husky inherits Dog {
-  speak => {
-    print "Woo!";
+entity Dog inherits Human {
+  alters {
+    speak => { ancestor.speak(); print("woof!"); }
   }
 }
 ```
 
-### Disowning Inheritance
+### Alters Outside an Entity
 
 ```wpp
-entity Cat disown {
-  speak => {
-    print "Meow";
-  }
+Dog alters Human {
+  bark => { print("woof!"); }
 }
 ```
 
 ---
 
-## 🔄 Method Altering
+## 🧩 Object Literals
+
+Objects can be created inline.
 
 ```wpp
-alters Husky alters Dog {
-  speak => {
-    print "Override";
-  }
-}
+let obj = {
+  name: "Sloth",
+  energy: 100,
+  cute: true
+};
 ```
 
 ---
 
-## 📞 Special Keywords
+## 🧪 Expressions
 
-* `me` – refers to current entity instance
-* `ancestor.methodName()` – calls method from base entity
-* `new(Entity)` – create new instance
-* `await` – await an async lambda/function
+Dot-chaining and calls are supported:
+
+```wpp
+dev.work().sleep().repeat();
+```
+
+Assignment works too:
+
+```wpp
+me.energy = 42;
+```
 
 ---
 
-## 🛠 Imports
+## 🛠️ Error Handling
+
+```wpp
+try {
+  risky();
+} catch (err) {
+  print("Something broke:", err);
+}
+```
+
+Throwing errors:
+
+```wpp
+throw "No coffee left!";
+```
+
+---
+
+## 🌍 Imports
+
+Code can be split into files and imported.
 
 ```wpp
 import "utils.wpp";
@@ -208,38 +205,70 @@ import "utils.wpp";
 
 ---
 
-## ✅ Printing & Returning
+## 🔌 Interop
+
+Call external methods using `externcall`.
 
 ```wpp
-print "Hello";
-return 42;
+externcall("System.Console", "WriteLine", ["Hello from W++"]);
+```
+
+Get type info with `typeof`.
+
+```wpp
+let t = typeof("System.String");
 ```
 
 ---
 
-## 📘 Comments
+## 🔢 Operators
+
+| Category   | Operators                        |   |         |
+| ---------- | -------------------------------- | - | ------- |
+| Arithmetic | `+`, `-`, `*`, `/`               |   |         |
+| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=` |   |         |
+| Logical    | `&&`, `                          |   | `, `??` |
+| Assignment | `=`                              |   |         |
+| Unary      | `!`                              |   |         |
+| Special    | `=>` (for methods/lambdas)       |   |         |
+
+---
+
+## 💀 Literals
 
 ```wpp
-// This is a comment
+let yes = true;
+let no = false;
+let nothing = null;
+let number = 123;
+let text = "sloth powered";
 ```
 
 ---
 
-## 🧪 Example Program
+## 🧃 Example Program
 
 ```wpp
-entity Helloer {
-  greet => {
-    print "Hello from entity!";
+entity Developer {
+  alters {
+    work => {
+      me.energy = me.energy - 10;
+      if (me.energy <= 0) {
+        return "Out of energy!";
+      }
+      print("Energy left:", me.energy);
+    }
   }
 }
 
-let h = new(Helloer);
-h.greet();
+let dev = new Developer();
+dev.work();
 ```
 
 ---
 
-Made with ❤️ using C# and `System.Reflection.Emit`.
+## ☕ Fun Fact
 
-> W++: at least we are better then visual basic.
+W++ might be powered by chaos, memes, and coffee,  
+but it *mostly* works.  
+Wait— JERRY!!! Did you actually test this build?!

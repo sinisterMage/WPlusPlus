@@ -2,12 +2,12 @@
   "name": "wplusplus",
   "displayName": "W++",
   "description": "A VS Code extension for the W++ language",
-  "version": "0.0.6",
+  "version": "0.0.7",
   "publisher": "wlothIndustries",
   "icon": "icon.jpg",
   "engines": {
-    "vscode": "^1.100.0"
-  },
+  "vscode": ">=1.70.0"
+},
   "categories": [
     "Programming Languages"
   ],

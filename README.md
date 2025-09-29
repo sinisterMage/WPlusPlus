@@ -97,6 +97,33 @@ It auto-fetches the latest `ingot` release, works great in CI, and is sloth-appr
 
 ---
 
+## 🦥 New!! The *Actually Functional* W++ Website
+
+So… funny story.
+The old W++ website was cute, but let’s be honest — it was held together with duct tape, coffee, and regret.
+So I did what any chaotic developer would do: **I built a new one.**
+
+This shiny new site runs on **React**, **Radix UI**, and enough Tailwind to make a CSS purist cry.
+It’s faster, prettier, and actually mobile-friendly! (shocking, I know)
+
+### 🌈 What’s New
+
+* 📚 **W++ School** – learn the art of chaotic programming
+* ⚙️ **Interactive Docs** – now with scrollbars that actually behave
+* 🧠 **Live Playground** – break W++ in real time
+* 💬 **Community Hub** – yes, we still have sloth memes
+* 💻 **100% React** – no Astro glue this time
+
+🚀 **Check it out here:** [https://wplusplus.org](https://wplusplus.org)
+
+Built for chaos.
+Powered by sloths.
+**Definitely not Visual Basic.**
+
+(disclaimer: the new site's source code is still not yet avalible, but i will release it soon)
+
+---
+
 ## 📁 Project Structure
 
 WPlusPlus/ — Core C# interpreter and AST

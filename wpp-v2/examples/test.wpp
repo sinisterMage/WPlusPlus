@@ -1,0 +1,10 @@
+let x = 4
+let y = 10
+if x < 5 {
+    print("small")
+    if y == 10 {
+        print("nested")
+    }
+} else {
+    print("big")
+}

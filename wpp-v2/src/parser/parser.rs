@@ -55,20 +55,39 @@ impl Parser {
         }
         false
     }
+    fn matches_symbol(&mut self, sym: &str) -> bool {
+    if let TokenKind::Symbol(s) = self.peek() {
+        if s == sym {
+            self.advance();
+            return true;
+        }
+    }
+    false
+}
+
 }
 impl Parser {
     fn parse_stmt(&mut self) -> Option<Node> {
-        match self.peek() {
-            TokenKind::Keyword(k) if k == "let" => {
-                self.advance(); // consume 'let'
-                self.parse_let()
+    match self.peek() {
+        TokenKind::Keyword(k) if k == "let" => {
+            self.advance(); // consume 'let'
+            self.parse_let()
+        }
+
+        // Handle expression statements (like print(a); or a = 5;)
+        _ => {
+            let expr = self.parse_expr();
+            // Optional semicolon
+            if let TokenKind::Symbol(semi) = self.peek() {
+                if semi == ";" {
+                    self.advance();
+                }
             }
-            _ => {
-                // Later we’ll add Expr statements here
-                None
-            }
+            Some(Node::Expr(expr))
         }
     }
+}
+
 
     fn parse_let(&mut self) -> Option<Node> {
         if let TokenKind::Identifier(name) = self.advance().clone() {
@@ -92,8 +111,29 @@ impl Parser {
 impl Parser {
     /// Entry point for expression parsing
     pub fn parse_expr(&mut self) -> Expr {
-        self.parse_equality()
+    self.parse_assignment()
+}
+
+fn parse_assignment(&mut self) -> Expr {
+    let left = self.parse_equality();
+
+    if self.matches(&[TokenKind::Symbol("=".into())]) {
+        let op = if let TokenKind::Symbol(op) = self.tokens[self.pos - 1].kind.clone() {
+            op
+        } else {
+            unreachable!()
+        };
+        let right = self.parse_assignment(); // allow chaining
+        return Expr::BinaryOp {
+            left: Box::new(left),
+            op,
+            right: Box::new(right),
+        };
     }
+
+    left
+}
+
 }
 impl Parser {
     fn parse_equality(&mut self) -> Expr {

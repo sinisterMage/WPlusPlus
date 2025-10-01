@@ -1,4 +1,5 @@
 let a = 10;
-let b = 20;
-let msg = "hello";
-let c = a + b;
+let b = 5 + a * 2;
+a = a + b;
+print(a);
+print("hello");

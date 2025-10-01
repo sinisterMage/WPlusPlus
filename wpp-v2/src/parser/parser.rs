@@ -69,23 +69,44 @@ impl Parser {
 impl Parser {
     fn parse_stmt(&mut self) -> Option<Node> {
     match self.peek() {
+        // --- Variable Declaration ---
         TokenKind::Keyword(k) if k == "let" => {
             self.advance(); // consume 'let'
             self.parse_let()
         }
 
+        // --- If Statement ---
         TokenKind::Keyword(k) if k == "if" => {
             self.advance(); // consume 'if'
             Some(self.parse_if())
         }
 
+        // --- While Loop ---
         TokenKind::Keyword(k) if k == "while" => {
             self.advance(); // consume 'while'
             Some(Node::Expr(self.parse_while()))
         }
 
+        // --- Break ---
+        TokenKind::Keyword(k) if k == "break" => {
+            self.advance(); // consume 'break'
+            if self.check(TokenKind::Symbol(";".into())) {
+                self.advance();
+            }
+            Some(Node::Expr(Expr::Break))
+        }
+
+        // --- Continue ---
+        TokenKind::Keyword(k) if k == "continue" => {
+            self.advance(); // consume 'continue'
+            if self.check(TokenKind::Symbol(";".into())) {
+                self.advance();
+            }
+            Some(Node::Expr(Expr::Continue))
+        }
+
+        // --- Expression Statement ---
         _ => {
-            // Expression statement (like print(...); or a = 5;)
             let expr = self.parse_expr();
             if self.check(TokenKind::Symbol(";".into())) {
                 self.advance();
@@ -94,6 +115,7 @@ impl Parser {
         }
     }
 }
+
 
 
 
@@ -144,20 +166,25 @@ impl Parser {
         })
     }
     fn parse_while(&mut self) -> Expr {
-    // Expect '(' condition ')'
+    // Expect '('
     self.expect(TokenKind::Symbol("(".into()), "Expected '(' after 'while'");
     let cond = self.parse_expr();
     self.expect(TokenKind::Symbol(")".into()), "Expected ')' after while condition");
 
-    // ✅ Expect '{' here, but don't consume again in parse_block()
-    self.expect(TokenKind::Symbol("{".into()), "Expected '{' before while body");
-    let body = self.parse_block(); // now parse_block consumes until matching '}'
+    // Expect block start '{'
+    if !self.check(TokenKind::Symbol("{".into())) {
+        panic!("Expected '{{' to start while block");
+    }
+
+    // Parse body
+    let body = self.parse_block();
 
     Expr::While {
         cond: Box::new(cond),
         body,
     }
 }
+
 
 
 }
@@ -302,7 +329,11 @@ impl Parser {
                 expr
             }
 
-            _ => panic!("Unexpected token in expression"),
+            unexpected => {
+    println!("⚠️ Unexpected token in expression: {:?}", unexpected);
+    Expr::Literal(0)
+}
+
         }
     }
 
@@ -316,6 +347,8 @@ impl Parser {
 }
 impl Parser {
     fn parse_block(&mut self) -> Vec<Node> {
+    self.expect(TokenKind::Symbol("{".into()), "Expected '{' to start block");
+
     let mut nodes = Vec::new();
 
     while !self.check(TokenKind::Symbol("}".into())) && !self.check(TokenKind::EOF) {
@@ -326,13 +359,10 @@ impl Parser {
         }
     }
 
-    // ✅ Consume the closing '}'
-    if self.check(TokenKind::Symbol("}".into())) {
-        self.advance();
-    }
-
+    self.expect(TokenKind::Symbol("}".into()), "Expected '}' to end block");
     nodes
 }
+
 
 }
 

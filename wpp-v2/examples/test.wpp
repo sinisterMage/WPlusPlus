@@ -1,8 +1,15 @@
 let i = 0;
 
-while (i < 5) {
+while (i < 10) {
+    if (i == 2) {
+        i = i + 1;
+        continue;
+    }
+    if (i == 5) {
+        break;
+    }
     print(i);
     i = i + 1;
 }
 
-print("done");
+print("loop ended");

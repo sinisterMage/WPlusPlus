@@ -24,32 +24,43 @@ pub struct Codegen <'ctx> {
     pub vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)>,
         pub loop_stack: Vec<(inkwell::basic_block::BasicBlock<'ctx>, inkwell::basic_block::BasicBlock<'ctx>)>,
     pub switch_stack: Vec<inkwell::basic_block::BasicBlock<'ctx>>,
+    exception_flag: Option<PointerValue<'ctx>>,
+    exception_value_i32: Option<PointerValue<'ctx>>,
+    exception_value_str: Option<PointerValue<'ctx>>,
 }
 
 impl<'ctx> Codegen<'ctx> {
     pub fn new(context: &'ctx Context, name: &str) -> Self {
-        let module = context.create_module(name);
-        let builder = context.create_builder();
-        let i32_type = context.i32_type();
-        let exc_flag = context.bool_type().const_int(0, false);
-let exc_value = context.i32_type().const_int(0, false);
-let flag = module.add_global(context.bool_type(), None, "__exception_flag");
-flag.set_initializer(&exc_flag);
-let val = module.add_global(context.i32_type(), None, "__exception_value");
-val.set_initializer(&exc_value);
+    let module = context.create_module(name);
+    let builder = context.create_builder();
+    let i32_type = context.i32_type();
+    let bool_type = context.bool_type();
+    let i8_ptr_type = context.i8_type().ptr_type(AddressSpace::default());
 
+    // Create global flags and exception storage
+    let flag = module.add_global(bool_type, None, "_exception_flag");
+    flag.set_initializer(&bool_type.const_int(0, false));
 
-        Self {
-            context,
-            module,
-            builder,
-            i32_type,
-            vars: HashMap::new(),
-            loop_stack: Vec::new(),
-            switch_stack: Vec::new(),
+    let exc_i32 = module.add_global(i32_type, None, "_exception_value_i32");
+    exc_i32.set_initializer(&i32_type.const_int(0, false));
 
-        }
+    let exc_str = module.add_global(i8_ptr_type, None, "_exception_value_str");
+    exc_str.set_initializer(&i8_ptr_type.const_null());
+
+    Self {
+        context,
+        module,
+        builder,
+        i32_type,
+        vars: HashMap::new(),
+        loop_stack: Vec::new(),
+        switch_stack: Vec::new(),
+        exception_flag: Some(flag.as_pointer_value()),
+        exception_value_i32: Some(exc_i32.as_pointer_value()),
+        exception_value_str: Some(exc_str.as_pointer_value()),
     }
+}
+
 
     pub fn create_engine(&self) -> ExecutionEngine<'ctx> {
         self.module
@@ -467,59 +478,151 @@ Expr::Switch { expr, cases, default } => {
     self.compile_switch(expr, cases, default)
 }
 Expr::Throw { expr } => {
-    let val = self.compile_expr(expr).into_int_value();
+    // Evaluate the thrown expression
+    let value = self.compile_expr(expr);
 
-    // set global flag/value
-    let flag = self.module.get_global("__exception_flag").unwrap();
-    let val_global = self.module.get_global("__exception_value").unwrap();
-    self.builder.build_store(flag.as_pointer_value(), self.context.bool_type().const_int(1, false)).unwrap();
-    self.builder.build_store(val_global.as_pointer_value(), val).unwrap();
+    // Determine if it’s a string (pointer) or integer
+    match value {
+        BasicValueEnum::PointerValue(pv) => {
+            // Throwing a string: store string in exception_value_str
+            if let Some(val_str) = self.exception_value_str {
+                self.builder.build_store(val_str, pv).unwrap();
+            } else {
+                panic!("throw: no active string exception slot");
+            }
 
-    // jump to dummy end (simulate unwinding)
+            // Set flag to 1 (string-type exception)
+            if let Some(flag) = self.exception_flag {
+                self.builder.build_store(flag, self.i32_type.const_int(2, false)).unwrap();
+            }
+        }
+
+        BasicValueEnum::IntValue(iv) => {
+            // Throwing an integer: store in exception_value_i32
+            if let Some(val_i32) = self.exception_value_i32 {
+                self.builder.build_store(val_i32, iv).unwrap();
+            } else {
+                panic!("throw: no active int exception slot");
+            }
+
+            // Set flag to 1 (integer-type exception)
+            if let Some(flag) = self.exception_flag {
+                self.builder.build_store(flag, self.i32_type.const_int(1, false)).unwrap();
+            }
+        }
+
+        _ => panic!("Unsupported throw type"),
+    }
+
+    // Jump directly to end of try block — we’ll let TryCatch handle propagation
     let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
     let end_bb = self.context.append_basic_block(func, "throw_exit");
     self.builder.build_unconditional_branch(end_bb).unwrap();
     self.builder.position_at_end(end_bb);
 
+    // Return dummy value
     self.i32_type.const_int(0, false).into()
 }
 
-Expr::TryCatch { try_block, catch_var, catch_block } => {
-    // backup initial exception flag
-    let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
-    let after_bb = self.context.append_basic_block(func, "try_after");
-    let catch_bb = self.context.append_basic_block(func, "try_catch");
 
-    // start try
+
+
+Expr::TryCatch { try_block, catch_var, catch_block, finally_block } => {
+    let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+
+    // === Create blocks ===
+    let try_bb = self.context.append_basic_block(func, "try_block");
+    let catch_bb = self.context.append_basic_block(func, "catch_block");
+    let finally_bb = self.context.append_basic_block(func, "finally_block");
+    let end_bb = self.context.append_basic_block(func, "try_end");
+
+    // === Preserve old exception state ===
+    let old_flag = self.exception_flag;
+    let old_val_i32 = self.exception_value_i32;
+    let old_val_str = self.exception_value_str;
+
+    // === Allocate local exception slots ===
+    let flag_ptr = self.builder.build_alloca(self.i32_type, "exc_flag_local").unwrap();
+    self.builder.build_store(flag_ptr, self.i32_type.const_int(0, false)).unwrap();
+
+    let val_i32_ptr = self.builder.build_alloca(self.i32_type, "exc_val_i32_local").unwrap();
+    self.builder.build_store(val_i32_ptr, self.i32_type.const_int(0, false)).unwrap();
+
+    let str_ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+    let val_str_ptr = self.builder.build_alloca(str_ptr_ty, "exc_val_str_local").unwrap();
+    self.builder.build_store(val_str_ptr, str_ptr_ty.const_null()).unwrap();
+
+    self.exception_flag = Some(flag_ptr);
+    self.exception_value_i32 = Some(val_i32_ptr);
+    self.exception_value_str = Some(val_str_ptr);
+
+    // === Jump into try ===
+    self.builder.build_unconditional_branch(try_bb).unwrap();
+
+    // --- TRY block ---
+    self.builder.position_at_end(try_bb);
     for node in try_block {
         self.compile_node(node);
     }
 
-    // check flag
-    let flag_ptr = self.module.get_global("__exception_flag").unwrap().as_pointer_value();
-    let flag_val = self.builder.build_load(self.context.bool_type(), flag_ptr, "flag_load").unwrap();
-    self.builder.build_conditional_branch(flag_val.into_int_value(), catch_bb, after_bb).unwrap();
+    // Read flag
+    let flag_val = self.builder.build_load(self.i32_type, flag_ptr, "flag").unwrap().into_int_value();
+    let cond = self.builder.build_int_compare(
+        inkwell::IntPredicate::EQ,
+        flag_val,
+        self.i32_type.const_int(1, false),
+        "is_throw",
+    ).unwrap();
 
-    // catch block
-    self.builder.position_at_end(catch_bb);
-    if let Some(var_name) = catch_var {
-        let val_ptr = self.module.get_global("__exception_value").unwrap().as_pointer_value();
-        let val = self.builder.build_load(self.i32_type, val_ptr, "caught_val").unwrap();
-        let local = self.builder.build_alloca(self.i32_type, var_name).unwrap();
-        self.builder.build_store(local, val).unwrap();
-        self.vars.insert(var_name.clone(), (local, self.i32_type.as_basic_type_enum()));
-    }
-    for node in catch_block {
+    self.builder.build_conditional_branch(cond, catch_bb, finally_bb).unwrap();
+
+    // --- CATCH block ---
+self.builder.position_at_end(catch_bb);
+if let Some(var) = catch_var {
+    let str_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+    let alloca = self.builder.build_alloca(str_ty, var).unwrap();
+    let val_str = self.builder.build_load(str_ty, val_str_ptr, "ex_str").unwrap();
+    self.builder.build_store(alloca, val_str).unwrap();
+    self.vars.insert(var.clone(), (alloca, str_ty.as_basic_type_enum()));
+}
+for node in catch_block {
+    self.compile_node(node);
+}
+// reset flag after catch
+self.builder.build_store(flag_ptr, self.i32_type.const_int(0, false)).unwrap();
+
+// 🔹 instead of jumping directly to finally, go to a neutral after_catch block
+let after_catch_bb = self.context.append_basic_block(func, "after_catch");
+self.builder.build_unconditional_branch(after_catch_bb).unwrap();
+
+// --- AFTER_CATCH -> FINALLY ---
+self.builder.position_at_end(after_catch_bb);
+self.builder.build_unconditional_branch(finally_bb).unwrap();
+
+// --- FINALLY block ---
+self.builder.position_at_end(finally_bb);
+if let Some(fb) = finally_block {
+    for node in fb {
         self.compile_node(node);
     }
-    // reset flag
-    self.builder.build_store(flag_ptr, self.context.bool_type().const_int(0, false)).unwrap();
-    self.builder.build_unconditional_branch(after_bb).unwrap();
-
-    // continue
-    self.builder.position_at_end(after_bb);
-    self.i32_type.const_int(0, false).into()
 }
+// always branch to end, but only if block not already terminated
+self.safe_branch(end_bb);
+
+// --- END ---
+self.builder.position_at_end(end_bb);
+
+// === Restore previous exception pointers ===
+self.exception_flag = old_flag;
+self.exception_value_i32 = old_val_i32;
+self.exception_value_str = old_val_str;
+
+self.i32_type.const_int(0, false).into()
+
+}
+
+
+
 
 
 
@@ -595,27 +698,48 @@ Expr::TryCatch { try_block, catch_var, catch_block } => {
 
     /// Create main(), compile nodes, and return i32.
     pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
-        let fn_type = self.i32_type.fn_type(&[], false);
-        let function = self.module.add_function("main", fn_type, None);
-        let entry = self.context.append_basic_block(function, "entry");
-        self.builder.position_at_end(entry);
+    let fn_type = self.i32_type.fn_type(&[], false);
+    let function = self.module.add_function("main", fn_type, None);
+    let entry = self.context.append_basic_block(function, "entry");
+    self.builder.position_at_end(entry);
 
-        // Track last *int* expression (so main can return it). Otherwise return 0.
-        let mut last_int: Option<IntValue> = None;
+    // === Allocate local exception slots ===
+    // (these override the globals during main execution)
+    let flag_ptr = self.builder.build_alloca(self.i32_type, "exc_flag").unwrap();
+    self.builder.build_store(flag_ptr, self.i32_type.const_int(0, false)).unwrap();
 
-        for node in nodes {
-            if let Some(v) = self.compile_node(node) {
-                if let BasicValueEnum::IntValue(iv) = v {
-                    last_int = Some(iv);
-                }
+    let val_i32_ptr = self.builder.build_alloca(self.i32_type, "exc_val_i32").unwrap();
+    self.builder.build_store(val_i32_ptr, self.i32_type.const_int(0, false)).unwrap();
+
+    let str_ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+    let val_str_ptr = self.builder.build_alloca(str_ptr_ty, "exc_val_str").unwrap();
+    let null_str = str_ptr_ty.const_null();
+    self.builder.build_store(val_str_ptr, null_str).unwrap();
+
+    // === Register them in the Codegen ===
+    self.exception_flag = Some(flag_ptr);
+    self.exception_value_i32 = Some(val_i32_ptr);
+    self.exception_value_str = Some(val_str_ptr);
+
+    // === Compile program body ===
+    let mut last_int: Option<IntValue> = None;
+
+    for node in nodes {
+        if let Some(v) = self.compile_node(node) {
+            if let BasicValueEnum::IntValue(iv) = v {
+                last_int = Some(iv);
             }
         }
-        self.ensure_builder_position();
-        let ret = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
-        let _ = self.builder.build_return(Some(&ret));
-
-        function
     }
+
+    // === Return handling ===
+    self.ensure_builder_position();
+    let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
+    let _ = self.builder.build_return(Some(&ret_val));
+
+    function
+}
+
 
     pub fn run_jit(&self) {
     let engine = self.create_engine();

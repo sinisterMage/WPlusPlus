@@ -60,7 +60,7 @@ impl<'a> Lexer<'a> {
                     let kind = match ident.as_str() {
     "let" | "if" | "else" | "while" | "for"
     | "break" | "continue" | "true" | "false"
-    | "switch" | "case" | "default" | "try" | "catch" | "throw" => {
+    | "switch" | "case" | "default" | "try" | "catch" | "throw" | "finally" => {
         TokenKind::Keyword(ident)
     }
     _ => TokenKind::Identifier(ident),

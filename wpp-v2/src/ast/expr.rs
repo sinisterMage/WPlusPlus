@@ -41,6 +41,7 @@ pub enum Expr {
         try_block: Vec<Node>,
         catch_var: Option<String>,
         catch_block: Vec<Node>,
+        finally_block: Option<Vec<Node>>, // ✅ NEW
     },
     Throw {
         expr: Box<Expr>,

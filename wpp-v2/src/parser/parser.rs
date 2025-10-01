@@ -60,25 +60,38 @@ while let Some(line) = lines.next() {
 
     // ✅ String literal
     if expr.starts_with('"') && expr.ends_with('"') {
-        return Expr::StringLiteral(expr[1..expr.len()-1].to_string());
+        return Expr::StringLiteral(expr[1..expr.len() - 1].to_string());
     }
 
-    // ✅ Function call
+    // ✅ Handle parentheses wrapping only (grouping)
+    if expr.starts_with('(') && expr.ends_with(')') {
+        return self.parse_expr(&expr[1..expr.len() - 1]);
+    }
+
+    // ✅ Arithmetic chaining (our new feature!)
+    if expr.contains('+') || expr.contains('-') || expr.contains('*') || expr.contains('/') {
+        return self.parse_chained_arithmetic(expr);
+    }
+
+    // ✅ Function call (only if name before '(')
     if let Some(idx) = expr.find('(') {
-        let name = expr[..idx].trim().to_string();
-        let args_str = expr[idx + 1..]
-            .trim_end_matches(')')
-            .trim_end_matches(';')
-            .trim();
-        let args = if args_str.is_empty() {
-            vec![]
-        } else {
-            args_str
-                .split(',')
-                .map(|a| self.parse_expr(a.trim()))
-                .collect()
-        };
-        return Expr::Call { name, args };
+        let name_part = expr[..idx].trim();
+        if !name_part.is_empty() {
+            let name = name_part.to_string();
+            let args_str = expr[idx + 1..]
+                .trim_end_matches(')')
+                .trim_end_matches(';')
+                .trim();
+            let args = if args_str.is_empty() {
+                vec![]
+            } else {
+                args_str
+                    .split(',')
+                    .map(|a| self.parse_expr(a.trim()))
+                    .collect()
+            };
+            return Expr::Call { name, args };
+        }
     }
 
     // ✅ Comparison operators
@@ -96,27 +109,170 @@ while let Some(line) = lines.next() {
         }
     }
 
-    // ✅ Arithmetic
-    let tokens: Vec<&str> = expr.split_whitespace().collect();
-    if tokens.len() == 1 {
-        if let Ok(num) = tokens[0].parse::<i32>() {
-            Expr::Literal(num)
-        } else {
-            Expr::Variable(tokens[0].to_string())
-        }
-    } else if tokens.len() == 3 {
-        let left = self.parse_expr(tokens[0]);
-        let right = self.parse_expr(tokens[2]);
-        Expr::BinaryOp {
-            left: Box::new(left),
-            op: tokens[1].to_string(),
-            right: Box::new(right),
-        }
+    // ✅ Single token: number or variable
+    if let Ok(num) = expr.parse::<i32>() {
+        Expr::Literal(num)
     } else {
-        panic!("Unsupported expression: {}", expr);
+        Expr::Variable(expr.to_string())
     }
 }
 
+
+fn parse_chained_arithmetic(&self, expr: &str) -> Expr {
+    let tokens = Self::tokenize(expr);
+
+    if tokens.is_empty() {
+        panic!("Empty arithmetic expression");
+    }
+
+    fn precedence(op: &str) -> i32 {
+        match op {
+            "*" | "/" => 3,
+            "+" | "-" => 2,
+            _ => 0,
+        }
+    }
+
+    let mut output: Vec<Expr> = Vec::new();
+    let mut ops: Vec<String> = Vec::new();
+
+    let mut prev_token_was_op = true; // For unary minus detection
+
+    for token in tokens {
+        match token.as_str() {
+            "(" => {
+                ops.push(token);
+                prev_token_was_op = true;
+            }
+            ")" => {
+                while let Some(top) = ops.pop() {
+                    if top == "(" {
+                        break;
+                    }
+                    let right = Box::new(output.pop().expect("Missing RHS"));
+                    let left = Box::new(output.pop().expect("Missing LHS"));
+                    output.push(Expr::BinaryOp { left, op: top, right });
+                }
+                prev_token_was_op = false;
+            }
+            "+" | "-" | "*" | "/" => {
+                // Detect unary minus
+                if token == "-" && prev_token_was_op {
+                    // Unary minus → treat as (0 - expr)
+                    ops.push("u-".to_string());
+                    prev_token_was_op = true;
+                    continue;
+                }
+
+                while let Some(top) = ops.last() {
+                    if top != "(" && precedence(top) >= precedence(&token) {
+                        let right = Box::new(output.pop().expect("Missing RHS"));
+                        let left = Box::new(output.pop().expect("Missing LHS"));
+                        let op = ops.pop().unwrap();
+                        output.push(Expr::BinaryOp { left, op, right });
+                    } else {
+                        break;
+                    }
+                }
+                ops.push(token);
+                prev_token_was_op = true;
+            }
+            _ => {
+                // number or variable
+                let expr_node = if let Ok(num) = token.parse::<i32>() {
+                    Expr::Literal(num)
+                } else {
+                    Expr::Variable(token)
+                };
+
+                // Check if unary minus is pending
+                if let Some(last_op) = ops.last() {
+                    if last_op == "u-" {
+                        ops.pop();
+                        let left = Box::new(Expr::Literal(0));
+                        let right = Box::new(expr_node);
+                        output.push(Expr::BinaryOp {
+                            left,
+                            op: "-".to_string(),
+                            right,
+                        });
+                        prev_token_was_op = false;
+                        continue;
+                    }
+                }
+
+                output.push(expr_node);
+                prev_token_was_op = false;
+            }
+        }
+    }
+
+    // Final unwinding
+    while let Some(op) = ops.pop() {
+        if op == "(" {
+            panic!("Unmatched '(' in expression: {}", expr);
+        }
+
+        let right = Box::new(output.pop().expect("Missing RHS"));
+        let left = Box::new(output.pop().expect("Missing LHS"));
+        output.push(Expr::BinaryOp { left, op, right });
+    }
+
+    output.pop().unwrap()
+}
+
+fn tokenize(expr: &str) -> Vec<String> {
+    let mut tokens = Vec::new();
+    let mut current = String::new();
+
+    for (i, ch) in expr.chars().enumerate() {
+    match ch {
+        ' ' => {
+            if !current.is_empty() {
+                tokens.push(current.clone());
+                current.clear();
+            }
+        }
+
+        '+' | '-' | '*' | '/' | '(' | ')' => {
+            if !current.is_empty() {
+                tokens.push(current.clone());
+                current.clear();
+            }
+
+            // ✅ Special case:
+            // Only treat '(' as a *token* if it is NOT part of a function call (like print(...))
+            if ch == '(' {
+                // Peek previous non-space character (if any)
+                if i > 0 {
+                    let prev = expr[..i].chars().rev().find(|c| !c.is_whitespace());
+                    if let Some(p) = prev {
+                        if p.is_alphabetic() {
+                            // previous char is part of an identifier, e.g. "print("
+                            // → skip pushing "(" here; let function call parser handle it
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            tokens.push(ch.to_string());
+        }
+
+        _ => current.push(ch),
+    }
+}
+
+// Push any trailing token
+if !current.is_empty() {
+    tokens.push(current.clone());
+    current.clear();
+}
+
+
+
+    tokens
+}
 
 
 

@@ -1,10 +1,11 @@
-let x = 4
-let y = 10
-if x < 5 {
-    print("small")
-    if y == 10 {
-        print("nested")
-    }
-} else {
-    print("big")
-}
+let a = 5 + 3 * 2;
+let b = (5 + 3) * 2;
+let c = -5 + 2;
+let d = a * -b + (c - 1);
+let e = (a + b) * (c - d) / 2;
+
+print(a);
+print(b);
+print(c);
+print(d);
+print(e);

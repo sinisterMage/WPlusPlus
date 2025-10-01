@@ -68,25 +68,27 @@ impl Parser {
 }
 impl Parser {
     fn parse_stmt(&mut self) -> Option<Node> {
-    match self.peek() {
-        TokenKind::Keyword(k) if k == "let" => {
-            self.advance(); // consume 'let'
-            self.parse_let()
-        }
+        match self.peek() {
+            TokenKind::Keyword(k) if k == "let" => {
+                self.advance();
+                self.parse_let()
+            }
 
-        // Handle expression statements (like print(a); or a = 5;)
-        _ => {
-            let expr = self.parse_expr();
-            // Optional semicolon
-            if let TokenKind::Symbol(semi) = self.peek() {
-                if semi == ";" {
+            TokenKind::Keyword(k) if k == "if" => {
+                self.advance();
+                Some(self.parse_if())
+            }
+
+            _ => {
+                // expression statement (like print(...); or a = 5;)
+                let expr = self.parse_expr();
+                if self.check(TokenKind::Symbol(";".into())) {
                     self.advance();
                 }
+                Some(Node::Expr(expr))
             }
-            Some(Node::Expr(expr))
         }
     }
-}
 
 
     fn parse_let(&mut self) -> Option<Node> {
@@ -106,6 +108,34 @@ impl Parser {
             }
         }
         None
+    }
+    fn parse_if(&mut self) -> Node {
+        // parse condition (must start with "(")
+        self.expect(TokenKind::Symbol("(".into()), "Expected '(' after 'if'");
+        let condition = self.parse_expr();
+        self.expect(TokenKind::Symbol(")".into()), "Expected ')' after condition");
+
+        // parse body block
+        let then_block = self.parse_block();
+
+        // optional else
+        let else_block = if self.matches(&[TokenKind::Keyword("else".into())]) {
+            if self.check(TokenKind::Keyword("if".into())) {
+                // else if chaining (we can support this later)
+                let else_if = self.parse_if();
+                Some(vec![else_if])
+            } else {
+                Some(self.parse_block())
+            }
+        } else {
+            None
+        };
+
+        Node::Expr(Expr::If {
+            cond: Box::new(condition),
+            then_branch: then_block,
+            else_branch: else_block,
+        })
     }
 }
 impl Parser {
@@ -259,6 +289,24 @@ impl Parser {
         } else {
             panic!("{}", msg);
         }
+    }
+}
+impl Parser {
+    fn parse_block(&mut self) -> Vec<Node> {
+        let mut nodes = Vec::new();
+
+        self.expect(TokenKind::Symbol("{".into()), "Expected '{' to start block");
+
+        while !self.check(TokenKind::Symbol("}".into())) && !self.check(TokenKind::EOF) {
+            if let Some(stmt) = self.parse_stmt() {
+                nodes.push(stmt);
+            } else {
+                self.advance(); // skip unknown tokens gracefully
+            }
+        }
+
+        self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close block");
+        nodes
     }
 }
 

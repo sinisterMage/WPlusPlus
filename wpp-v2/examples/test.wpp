@@ -1,5 +1,11 @@
-let a = 10;
-let b = 5 + a * 2;
-a = a + b;
+let a = 5;
+let b = 10;
+
+if (a < b) {
+    print("a is less");
+    a = a + 1;
+} else {
+    print("b is smaller?");
+}
+
 print(a);
-print("hello");

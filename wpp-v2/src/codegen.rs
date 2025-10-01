@@ -244,9 +244,6 @@ impl<'ctx> Codegen<'ctx> {
     // Conditional branch
     self.builder.build_conditional_branch(cond_i1, then_bb, else_bb).unwrap();
 
-    // Save where to continue after if
-    let current_block = self.builder.get_insert_block().unwrap();
-
     // THEN branch
     self.builder.position_at_end(then_bb);
     for node in then_branch {
@@ -267,18 +264,13 @@ impl<'ctx> Codegen<'ctx> {
         self.builder.build_unconditional_branch(end_bb).unwrap();
     }
 
-    // MERGE
+    // MERGE block
     self.builder.position_at_end(end_bb);
-    self.ensure_builder_position();
 
-
-    // ✅ restore builder position to continue original flow
-    if let Some(block) = current_block.get_next_basic_block() {
-        self.builder.position_at_end(block);
-    }
-
+    // ✅ No restoring — builder now correctly positioned
     self.i32_type.const_int(0, false).into()
 }
+
 
 
 

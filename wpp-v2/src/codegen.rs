@@ -71,14 +71,24 @@ impl<'ctx> Codegen<'ctx> {
         Expr::BinaryOp { left, op, right } => {
     if op == "=" {
         if let Expr::Variable(var_name) = left.as_ref() {
-            // Compute right-hand side
+            // Compute RHS
             let value = self.compile_expr(right.as_ref());
 
-            // Look up variable
+            // Lookup variable and store
             if let Some((ptr, _)) = self.vars.get(var_name) {
-                // ✅ Actually store the result in memory
-                let _ = self.builder.build_store(*ptr, value);
-                return value; // return the assigned value
+                self.builder.build_store(*ptr, value).unwrap();
+
+                // ✅ Ensure the result is always an i32 (if not already)
+                let result = match value {
+                    BasicValueEnum::IntValue(iv) => iv,
+                    BasicValueEnum::PointerValue(_) => {
+                        // Assigning pointer types not supported yet
+                        self.i32_type.const_int(0, false)
+                    }
+                    _ => self.i32_type.const_int(0, false),
+                };
+
+                return result.into();
             } else {
                 panic!("Unknown variable in assignment: {}", var_name);
             }
@@ -87,11 +97,11 @@ impl<'ctx> Codegen<'ctx> {
         }
     }
 
-    // All other binary operators (+, -, *, /, etc.)
+    // === Arithmetic and comparison ===
     let left_val = self.compile_expr(left.as_ref()).into_int_value();
     let right_val = self.compile_expr(right.as_ref()).into_int_value();
 
-    match op.as_str() {
+    let result = match op.as_str() {
         "+" => self.builder.build_int_add(left_val, right_val, "addtmp").unwrap().into(),
         "-" => self.builder.build_int_sub(left_val, right_val, "subtmp").unwrap().into(),
         "*" => self.builder.build_int_mul(left_val, right_val, "multmp").unwrap().into(),
@@ -103,8 +113,17 @@ impl<'ctx> Codegen<'ctx> {
         ">"  => self.builder.build_int_compare(inkwell::IntPredicate::SGT, left_val, right_val, "gttmp").unwrap().into(),
         ">=" => self.builder.build_int_compare(inkwell::IntPredicate::SGE, left_val, right_val, "getmp").unwrap().into(),
         _ => panic!("Unsupported binary operator: {}", op),
+    };
+
+    // ✅ Auto-convert i1 → i32 for arithmetic safety
+    match result {
+        BasicValueEnum::IntValue(iv) if iv.get_type().get_bit_width() == 1 => {
+            self.builder.build_int_z_extend(iv, self.i32_type, "bool_to_i32").unwrap().into()
+        }
+        _ => result,
     }
 }
+
 
 
 
@@ -251,21 +270,44 @@ impl<'ctx> Codegen<'ctx> {
     let body_bb = self.context.append_basic_block(func, "while_body");
     let end_bb  = self.context.append_basic_block(func, "while_end");
 
-    self.builder.build_unconditional_branch(cond_bb);
+    // Jump to condition
+    self.builder.build_unconditional_branch(cond_bb).unwrap();
     self.builder.position_at_end(cond_bb);
 
-    let cond_val = self.compile_expr(cond);
-    self.builder.build_conditional_branch(cond_val.into_int_value(), body_bb, end_bb);
+    // Compile condition expr
+    let raw_cond = self.compile_expr(cond);
+    let cond_i1 = match raw_cond {
+        BasicValueEnum::IntValue(iv) => {
+            if iv.get_type().get_bit_width() == 1 {
+                iv // already a bool
+            } else {
+                // treat nonzero i32 as true
+                self.builder.build_int_compare(
+                    inkwell::IntPredicate::NE,
+                    iv,
+                    self.i32_type.const_int(0, false),
+                    "while_cond"
+                ).unwrap()
+            }
+        }
+        _ => panic!("while condition must be int or bool"),
+    };
 
+    self.builder.build_conditional_branch(cond_i1, body_bb, end_bb).unwrap();
+
+    // Body
     self.builder.position_at_end(body_bb);
     for stmt in body {
         self.compile_node(stmt);
     }
-    self.builder.build_unconditional_branch(cond_bb);
+    self.builder.build_unconditional_branch(cond_bb).unwrap();
 
+    // End
     self.builder.position_at_end(end_bb);
-    self.context.i32_type().const_int(0, false).into()
+    self.i32_type.const_int(0, false).into()
 }
+
+
 Expr::For { init, cond, post, body } => {
     if let Some(init_node) = init {
         self.compile_node(init_node);

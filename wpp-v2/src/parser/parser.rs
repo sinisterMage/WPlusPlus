@@ -41,38 +41,52 @@ while let Some(line) = lines.next() {
         nodes.push(node);
     }
     else if line.starts_with("while ") {
-    let cond_start = line.find("while").unwrap() + 5;
-    let cond_str = line[cond_start..].trim();
+    // Extract condition (everything after "while" until '{')
+    let after_while = &line["while".len()..].trim();
 
-    let mut full_block = String::new();
+    let mut cond_part = String::new();
+    let mut body_part = String::new();
     let mut brace_count = 0;
-    let mut started = false;
 
-    // Collect full block until matching '}'
-    full_block.push_str(cond_str);
-    for next_line in self.source.lines().skip_while(|l| !l.trim_start().starts_with("while ")) {
-        let trimmed = next_line.trim();
-        for ch in trimmed.chars() {
-            if ch == '{' { brace_count += 1; started = true; }
-            else if ch == '}' { brace_count -= 1; }
+    if let Some(idx) = after_while.find('{') {
+        // Inline body start
+        cond_part = after_while[..idx].trim().to_string();
+        body_part.push_str(&after_while[idx + 1..]);
+        brace_count += 1;
+    } else {
+        // Only condition on this line
+        cond_part = after_while.trim().to_string();
+    }
+
+    // Collect following lines until matching braces close
+    while brace_count > 0 {
+        if let Some(next_line) = lines.next() {
+            for ch in next_line.chars() {
+                if ch == '{' {
+                    brace_count += 1;
+                } else if ch == '}' {
+                    brace_count -= 1;
+                }
+            }
+            if brace_count > 0 {
+                body_part.push('\n');
+                body_part.push_str(next_line);
+            }
+        } else {
+            break;
         }
-        full_block.push(' ');
-        full_block.push_str(trimmed);
-        if started && brace_count == 0 { break; }
     }
 
-    // Extract condition and body
-    if let Some(idx) = full_block.find('{') {
-        let (cond_raw, rest_raw) = full_block.split_at(idx);
-        let cond_expr = self.parse_expr(cond_raw.trim());
-        let body_str = rest_raw.trim_start_matches('{').trim_end_matches('}').trim();
-        let body_nodes = self.parse_block(body_str);
-        nodes.push(Node::Expr(Expr::While {
-            cond: Box::new(cond_expr),
-            body: body_nodes,
-        }));
-    }
+    // Parse condition and body
+    let cond_expr = self.parse_expr(&cond_part);
+    let body_nodes = self.parse_block(&body_part);
+
+    nodes.push(Node::Expr(Expr::While {
+        cond: Box::new(cond_expr),
+        body: body_nodes,
+    }));
 }
+
 else if line.starts_with("for ") {
     let mut full_block = String::new();
     full_block.push_str(line);

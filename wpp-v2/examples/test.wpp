@@ -1,11 +1,6 @@
-let a = 5 + 3 * 2;
-let b = (5 + 3) * 2;
-let c = -5 + 2;
-let d = a * -b + (c - 1);
-let e = (a + b) * (c - d) / 2;
+let i = 0;
 
-print(a);
-print(b);
-print(c);
-print(d);
-print(e);
+while i < 5 {
+    print(i);
+    i = i + 1;
+}

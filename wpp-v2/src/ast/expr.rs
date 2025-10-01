@@ -3,8 +3,8 @@ use super::node::Node; // 👈 to use Node inside Expr
 #[derive(Debug, Clone)]
 pub enum Expr {
     Literal(i32),
-    StringLiteral(String),
     BoolLiteral(bool),
+    StringLiteral(String),
     Variable(String),
     BinaryOp {
         left: Box<Expr>,
@@ -20,4 +20,15 @@ pub enum Expr {
         then_branch: Vec<Node>,
         else_branch: Option<Vec<Node>>,
     },
+    While {
+        cond: Box<Expr>,
+        body: Vec<Node>,
+    },
+    For {
+        init: Option<Box<Node>>,
+        cond: Option<Box<Expr>>,
+        post: Option<Box<Node>>,
+        body: Vec<Node>,
+    },
 }
+

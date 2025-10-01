@@ -39,7 +39,125 @@ while let Some(line) = lines.next() {
     } else if line.starts_with("if ") {
         let node = self.collect_if_block(line, &mut lines);
         nodes.push(node);
+    }
+    else if line.starts_with("while ") {
+    let cond_start = line.find("while").unwrap() + 5;
+    let cond_str = line[cond_start..].trim();
+
+    let mut full_block = String::new();
+    let mut brace_count = 0;
+    let mut started = false;
+
+    // Collect full block until matching '}'
+    full_block.push_str(cond_str);
+    for next_line in self.source.lines().skip_while(|l| !l.trim_start().starts_with("while ")) {
+        let trimmed = next_line.trim();
+        for ch in trimmed.chars() {
+            if ch == '{' { brace_count += 1; started = true; }
+            else if ch == '}' { brace_count -= 1; }
+        }
+        full_block.push(' ');
+        full_block.push_str(trimmed);
+        if started && brace_count == 0 { break; }
+    }
+
+    // Extract condition and body
+    if let Some(idx) = full_block.find('{') {
+        let (cond_raw, rest_raw) = full_block.split_at(idx);
+        let cond_expr = self.parse_expr(cond_raw.trim());
+        let body_str = rest_raw.trim_start_matches('{').trim_end_matches('}').trim();
+        let body_nodes = self.parse_block(body_str);
+        nodes.push(Node::Expr(Expr::While {
+            cond: Box::new(cond_expr),
+            body: body_nodes,
+        }));
+    }
+}
+else if line.starts_with("for ") {
+    let mut full_block = String::new();
+    full_block.push_str(line);
+
+    let mut brace_count = line.chars().filter(|&c| c == '{').count()
+        - line.chars().filter(|&c| c == '}').count();
+
+    // ✅ Collect lines until matching closing brace
+    while brace_count > 0 {
+        if let Some(next_line) = lines.next() {
+            full_block.push('\n');
+            full_block.push_str(next_line);
+            for ch in next_line.chars() {
+                if ch == '{' {
+                    brace_count += 1;
+                } else if ch == '}' {
+                    brace_count -= 1;
+                }
+            }
+        } else {
+            break;
+        }
+    }
+
+    // Now we have the *entire* for loop (header + body)
+    let header_start = full_block.find("for").unwrap() + 3;
+    let rest = full_block[header_start..].trim();
+
+    // Split header and body
+    let header_end = rest.find('{').expect("Missing '{' in for loop");
+    let header = rest[..header_end].trim();
+    let body_str = rest[header_end + 1..]
+        .trim_end_matches('}')
+        .trim();
+
+    let parts: Vec<&str> = header.split(';').map(|s| s.trim()).collect();
+
+    // --- Handle init ---
+    let init = if !parts.is_empty() && !parts[0].is_empty() {
+        let init_str = parts[0];
+        if init_str.starts_with("let ") {
+            let sub = Parser::new(init_str).parse();
+            Some(Box::new(sub.into_iter().next().unwrap()))
+        } else {
+            Some(Box::new(Node::Expr(self.parse_expr(init_str))))
+        }
     } else {
+        None
+    };
+
+    // --- Handle cond ---
+    let cond = if parts.len() > 1 && !parts[1].is_empty() {
+        Some(Box::new(self.parse_expr(parts[1])))
+    } else {
+        None
+    };
+
+    // --- Handle post ---
+    let post = if parts.len() > 2 && !parts[2].is_empty() {
+        let post_str = parts[2];
+        if post_str.starts_with("let ") {
+            let sub = Parser::new(post_str).parse();
+            Some(Box::new(sub.into_iter().next().unwrap()))
+        } else {
+            Some(Box::new(Node::Expr(self.parse_expr(post_str))))
+        }
+    } else {
+        None
+    };
+
+    // --- Body ---
+    let body = self.parse_block(body_str);
+
+    nodes.push(Node::Expr(Expr::For {
+        init,
+        cond,
+        post,
+        body,
+    }));
+}
+
+
+
+
+     else {
         nodes.push(Node::Expr(self.parse_expr(line)));
     }
 }
@@ -51,7 +169,7 @@ while let Some(line) = lines.next() {
     fn parse_expr(&self, expr: &str) -> Expr {
     let expr = expr.trim().trim_end_matches(';').trim();
 
-    // ✅ Booleans
+    // ✅ Boolean literals
     if expr == "true" {
         return Expr::BoolLiteral(true);
     } else if expr == "false" {
@@ -63,59 +181,61 @@ while let Some(line) = lines.next() {
         return Expr::StringLiteral(expr[1..expr.len() - 1].to_string());
     }
 
-    // ✅ Handle parentheses wrapping only (grouping)
+    // ✅ Parentheses
     if expr.starts_with('(') && expr.ends_with(')') {
         return self.parse_expr(&expr[1..expr.len() - 1]);
     }
 
-    // ✅ Arithmetic chaining (our new feature!)
+    // ✅ Assignment (=), but not ==, <=, >=
+    if let Some(eq_idx) = expr.find('=') {
+        let after = &expr[eq_idx..];
+        if !after.starts_with("==") && !after.starts_with("<=") && !after.starts_with(">=") {
+            let (l, r) = expr.split_at(eq_idx);
+            return Expr::BinaryOp {
+                left: Box::new(self.parse_expr(l.trim())),
+                op: "=".to_string(),
+                right: Box::new(self.parse_expr(r[1..].trim())),
+            };
+        }
+    }
+
+    // ✅ Comparison operators (<, >, <=, >=, ==, !=)
+    for op in ["==", "!=", "<=", ">=", "<", ">"] {
+        if let Some(idx) = expr.find(op) {
+            let (l, r) = expr.split_at(idx);
+            return Expr::BinaryOp {
+                left: Box::new(self.parse_expr(l.trim())),
+                op: op.to_string(),
+                right: Box::new(self.parse_expr(r[op.len()..].trim())),
+            };
+        }
+    }
+
+    // ✅ Arithmetic (+, -, *, /)
     if expr.contains('+') || expr.contains('-') || expr.contains('*') || expr.contains('/') {
         return self.parse_chained_arithmetic(expr);
     }
 
-    // ✅ Function call (only if name before '(')
+    // ✅ Function call
     if let Some(idx) = expr.find('(') {
-        let name_part = expr[..idx].trim();
-        if !name_part.is_empty() {
-            let name = name_part.to_string();
-            let args_str = expr[idx + 1..]
-                .trim_end_matches(')')
-                .trim_end_matches(';')
-                .trim();
-            let args = if args_str.is_empty() {
-                vec![]
-            } else {
-                args_str
-                    .split(',')
-                    .map(|a| self.parse_expr(a.trim()))
-                    .collect()
-            };
-            return Expr::Call { name, args };
-        }
+        let name = expr[..idx].trim().to_string();
+        let args_str = expr[idx + 1..].trim_end_matches(')').trim();
+        let args = if args_str.is_empty() {
+            vec![]
+        } else {
+            args_str.split(',').map(|a| self.parse_expr(a.trim())).collect()
+        };
+        return Expr::Call { name, args };
     }
 
-    // ✅ Comparison operators
-    let cmp_ops = ["==", "!=", "<=", ">=", "<", ">"];
-    for op in cmp_ops {
-        if let Some(idx) = expr.find(op) {
-            let (l, r) = expr.split_at(idx);
-            let left = self.parse_expr(l.trim());
-            let right = self.parse_expr(r[op.len()..].trim());
-            return Expr::BinaryOp {
-                left: Box::new(left),
-                op: op.to_string(),
-                right: Box::new(right),
-            };
-        }
-    }
-
-    // ✅ Single token: number or variable
+    // ✅ Literal or variable
     if let Ok(num) = expr.parse::<i32>() {
         Expr::Literal(num)
     } else {
         Expr::Variable(expr.to_string())
     }
 }
+
 
 
 fn parse_chained_arithmetic(&self, expr: &str) -> Expr {

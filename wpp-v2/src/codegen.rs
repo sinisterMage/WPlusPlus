@@ -69,26 +69,44 @@ impl<'ctx> Codegen<'ctx> {
 
         // === Binary operation ===
         Expr::BinaryOp { left, op, right } => {
-            let l = self.compile_expr(left);
-            let r = self.compile_expr(right);
+    if op == "=" {
+        if let Expr::Variable(var_name) = left.as_ref() {
+            // Compute right-hand side
+            let value = self.compile_expr(right.as_ref());
 
-            match (l, r) {
-                (BasicValueEnum::IntValue(li), BasicValueEnum::IntValue(ri)) => match op.as_str() {
-                    "+" => self.builder.build_int_add(li, ri, "addtmp").unwrap().into(),
-                    "-" => self.builder.build_int_sub(li, ri, "subtmp").unwrap().into(),
-                    "*" => self.builder.build_int_mul(li, ri, "multmp").unwrap().into(),
-                    "/" => self.builder.build_int_signed_div(li, ri, "divtmp").unwrap().into(),
-                    "==" => self.builder.build_int_compare(inkwell::IntPredicate::EQ, li, ri, "eqtmp").unwrap().into(),
-                    "!=" => self.builder.build_int_compare(inkwell::IntPredicate::NE, li, ri, "netmp").unwrap().into(),
-                    "<"  => self.builder.build_int_compare(inkwell::IntPredicate::SLT, li, ri, "lttmp").unwrap().into(),
-                    ">"  => self.builder.build_int_compare(inkwell::IntPredicate::SGT, li, ri, "gttmp").unwrap().into(),
-                    "<=" => self.builder.build_int_compare(inkwell::IntPredicate::SLE, li, ri, "letmp").unwrap().into(),
-                    ">=" => self.builder.build_int_compare(inkwell::IntPredicate::SGE, li, ri, "getmp").unwrap().into(),
-                    _ => panic!("Unsupported operator: {}", op),
-                },
-                _ => panic!("Binary operator '{}' requires integer operands", op),
+            // Look up variable
+            if let Some((ptr, _)) = self.vars.get(var_name) {
+                // ✅ Actually store the result in memory
+                let _ = self.builder.build_store(*ptr, value);
+                return value; // return the assigned value
+            } else {
+                panic!("Unknown variable in assignment: {}", var_name);
             }
+        } else {
+            panic!("Left-hand side of assignment must be a variable");
         }
+    }
+
+    // All other binary operators (+, -, *, /, etc.)
+    let left_val = self.compile_expr(left.as_ref()).into_int_value();
+    let right_val = self.compile_expr(right.as_ref()).into_int_value();
+
+    match op.as_str() {
+        "+" => self.builder.build_int_add(left_val, right_val, "addtmp").unwrap().into(),
+        "-" => self.builder.build_int_sub(left_val, right_val, "subtmp").unwrap().into(),
+        "*" => self.builder.build_int_mul(left_val, right_val, "multmp").unwrap().into(),
+        "/" => self.builder.build_int_signed_div(left_val, right_val, "divtmp").unwrap().into(),
+        "==" => self.builder.build_int_compare(inkwell::IntPredicate::EQ, left_val, right_val, "eqtmp").unwrap().into(),
+        "!=" => self.builder.build_int_compare(inkwell::IntPredicate::NE, left_val, right_val, "netmp").unwrap().into(),
+        "<"  => self.builder.build_int_compare(inkwell::IntPredicate::SLT, left_val, right_val, "lttmp").unwrap().into(),
+        "<=" => self.builder.build_int_compare(inkwell::IntPredicate::SLE, left_val, right_val, "letmp").unwrap().into(),
+        ">"  => self.builder.build_int_compare(inkwell::IntPredicate::SGT, left_val, right_val, "gttmp").unwrap().into(),
+        ">=" => self.builder.build_int_compare(inkwell::IntPredicate::SGE, left_val, right_val, "getmp").unwrap().into(),
+        _ => panic!("Unsupported binary operator: {}", op),
+    }
+}
+
+
 
         // === Boolean literal ===
         Expr::BoolLiteral(value) => self.context.bool_type().const_int(*value as u64, false).into(),
@@ -226,6 +244,92 @@ impl<'ctx> Codegen<'ctx> {
             // Return dummy int 0 for if-statement
             self.i32_type.const_int(0, false).into()
         }
+        Expr::While { cond, body } => {
+    let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+
+    let cond_bb = self.context.append_basic_block(func, "while_cond");
+    let body_bb = self.context.append_basic_block(func, "while_body");
+    let end_bb  = self.context.append_basic_block(func, "while_end");
+
+    self.builder.build_unconditional_branch(cond_bb);
+    self.builder.position_at_end(cond_bb);
+
+    let cond_val = self.compile_expr(cond);
+    self.builder.build_conditional_branch(cond_val.into_int_value(), body_bb, end_bb);
+
+    self.builder.position_at_end(body_bb);
+    for stmt in body {
+        self.compile_node(stmt);
+    }
+    self.builder.build_unconditional_branch(cond_bb);
+
+    self.builder.position_at_end(end_bb);
+    self.context.i32_type().const_int(0, false).into()
+}
+Expr::For { init, cond, post, body } => {
+    if let Some(init_node) = init {
+        self.compile_node(init_node);
+    }
+
+    let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+    let cond_bb = self.context.append_basic_block(func, "for_cond");
+    let body_bb = self.context.append_basic_block(func, "for_body");
+    let post_bb = self.context.append_basic_block(func, "for_post");
+    let end_bb  = self.context.append_basic_block(func, "for_end");
+
+    // Jump to condition
+    self.builder.build_unconditional_branch(cond_bb).unwrap();
+
+    // --- Condition block ---
+    self.builder.position_at_end(cond_bb);
+    let cond_val = if let Some(c) = cond {
+        self.compile_expr(c).into_int_value()
+    } else {
+        self.context.bool_type().const_int(1, false)
+    };
+    self.builder.build_conditional_branch(cond_val, body_bb, end_bb).unwrap();
+
+    // --- Body block ---
+    self.builder.position_at_end(body_bb);
+    for stmt in body {
+        self.compile_node(stmt);
+    }
+    self.builder.build_unconditional_branch(post_bb).unwrap();
+
+    // --- Post block ---
+    self.builder.position_at_end(post_bb);
+    if let Some(post_node) = post {
+        match &**post_node {
+            Node::Expr(Expr::BinaryOp { left, op, right }) if op == "=" => {
+                if let Expr::Variable(var_name) = left.as_ref() {
+                    let value = self.compile_expr(right.as_ref());
+                    if let Some((ptr, _)) = self.vars.get(var_name) {
+                        self.builder.build_store(*ptr, value).unwrap();
+                    } else {
+                        panic!("Unknown variable in for-loop post: {}", var_name);
+                    }
+                }
+            }
+            _ => {
+                self.compile_node(post_node);
+            }
+        }
+    }
+    // ✅ Re-evaluate condition every iteration
+    self.builder.build_unconditional_branch(cond_bb).unwrap();
+
+    // --- End block ---
+    self.builder.position_at_end(end_bb);
+    self.context.i32_type().const_int(0, false).into()
+}
+
+
+
+
+
+
+
+
 
         // === Fallback ===
         _ => panic!("Unhandled expression: {:?}", expr),

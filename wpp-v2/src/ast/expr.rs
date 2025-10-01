@@ -27,7 +27,7 @@ pub enum Expr {
     For {
         init: Option<Box<Node>>,
         cond: Option<Box<Expr>>,
-        post: Option<Box<Node>>,
+        post: Option<Box<Expr>>,
         body: Vec<Node>,
     },
     Break,

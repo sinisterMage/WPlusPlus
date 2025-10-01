@@ -375,23 +375,25 @@ Expr::For { init, cond, post, body } => {
 
     // === Post block
     self.builder.position_at_end(post_bb);
-    if let Some(post_node) = post {
-        match &**post_node {
-            Node::Expr(Expr::BinaryOp { left, op, right }) if op == "=" => {
-                if let Expr::Variable(var_name) = left.as_ref() {
-                    let value = self.compile_expr(right.as_ref());
-                    if let Some((ptr, _)) = self.vars.get(var_name) {
-                        self.builder.build_store(*ptr, value).unwrap();
-                    } else {
-                        panic!("Unknown variable in for-loop post: {}", var_name);
-                    }
+    if let Some(post_expr) = post {
+    match post_expr.as_ref() {
+        Expr::BinaryOp { left, op, right } if op == "=" => {
+            if let Expr::Variable(var_name) = left.as_ref() {
+                let value = self.compile_expr(right.as_ref());
+                if let Some((ptr, _)) = self.vars.get(var_name) {
+                    self.builder.build_store(*ptr, value).unwrap();
+                } else {
+                    panic!("Unknown variable in for-loop post: {}", var_name);
                 }
             }
-            _ => {
-                self.compile_node(post_node);
-            }
+        }
+        _ => {
+            // ✅ Wrap Expr in Node::Expr to reuse compile_node
+            self.compile_node(&Node::Expr(post_expr.as_ref().clone()));
         }
     }
+}
+
 
     // Jump back to condition if not terminated
     if self.builder.get_insert_block().unwrap().get_terminator().is_none() {

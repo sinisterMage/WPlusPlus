@@ -69,43 +69,38 @@ impl Parser {
 impl Parser {
     fn parse_stmt(&mut self) -> Option<Node> {
     match self.peek() {
-        // --- Variable Declaration ---
         TokenKind::Keyword(k) if k == "let" => {
-            self.advance(); // consume 'let'
+            self.advance();
             self.parse_let()
         }
 
-        // --- If Statement ---
         TokenKind::Keyword(k) if k == "if" => {
-            self.advance(); // consume 'if'
+            self.advance();
             Some(self.parse_if())
         }
 
-        // --- While Loop ---
         TokenKind::Keyword(k) if k == "while" => {
-            self.advance(); // consume 'while'
+            self.advance();
             Some(Node::Expr(self.parse_while()))
         }
 
-        // --- Break ---
+        TokenKind::Keyword(k) if k == "for" => {
+            self.advance();
+            Some(Node::Expr(self.parse_for()))
+        }
+
         TokenKind::Keyword(k) if k == "break" => {
-            self.advance(); // consume 'break'
-            if self.check(TokenKind::Symbol(";".into())) {
-                self.advance();
-            }
+            self.advance();
+            if self.check(TokenKind::Symbol(";".into())) { self.advance(); }
             Some(Node::Expr(Expr::Break))
         }
 
-        // --- Continue ---
         TokenKind::Keyword(k) if k == "continue" => {
-            self.advance(); // consume 'continue'
-            if self.check(TokenKind::Symbol(";".into())) {
-                self.advance();
-            }
+            self.advance();
+            if self.check(TokenKind::Symbol(";".into())) { self.advance(); }
             Some(Node::Expr(Expr::Continue))
         }
 
-        // --- Expression Statement ---
         _ => {
             let expr = self.parse_expr();
             if self.check(TokenKind::Symbol(";".into())) {
@@ -115,6 +110,7 @@ impl Parser {
         }
     }
 }
+
 
 
 
@@ -184,6 +180,74 @@ impl Parser {
         body,
     }
 }
+fn parse_for(&mut self) -> Expr {
+    self.expect(TokenKind::Symbol("(".into()), "Expected '(' after 'for'");
+
+    // --- Parse initializer ---
+    let mut init: Option<Node> = None;
+
+    if !self.check(TokenKind::Symbol(";".into())) {
+        if self.check(TokenKind::Keyword("let".into())) {
+            // 👇 parse_let() already consumes its trailing ';'
+            self.advance(); // consume 'let'
+            if let Some(node) = self.parse_let() {
+                init = Some(node);
+            }
+        } else {
+            // parse expression initializer
+            let expr = self.parse_expr();
+            init = Some(Node::Expr(expr));
+
+            // explicitly consume ';' here
+            self.expect(TokenKind::Symbol(";".into()), "Expected ';' after for-init expression");
+        }
+    } else {
+        // skip empty initializer
+        self.advance();
+    }
+
+    // ✅ if we had a `let`, parse_let() already handled its ';'
+    // so we skip this check entirely — DO NOT double-expect
+
+    // --- Parse condition ---
+    let mut cond: Option<Expr> = None;
+    if !self.check(TokenKind::Symbol(";".into())) {
+        cond = Some(self.parse_expr());
+    }
+    self.expect(TokenKind::Symbol(";".into()), "Expected ';' after for-condition");
+
+    // --- Parse post expression ---
+let mut post: Option<Expr> = None;
+if !self.check(TokenKind::Symbol(")".into())) {
+    post = Some(self.parse_expr());
+}
+
+// ✅ Instead of self.expect(), do a conditional advance:
+if self.check(TokenKind::Symbol(")".into())) {
+    self.advance(); // consume ')'
+} else {
+    panic!("Expected ')' after for-header");
+}
+
+// --- Parse body ---
+// --- Parse body ---
+if !self.check(TokenKind::Symbol("{".into())) {
+    panic!("Expected '{{' to start for-body");
+}
+let body: Vec<Node> = self.parse_block();
+
+Expr::For {
+    init: init.map(Box::new),
+    cond: cond.map(Box::new),
+    post: post.map(Box::new),
+    body,
+}
+
+}
+
+
+
+
 
 
 

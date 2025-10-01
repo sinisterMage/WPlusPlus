@@ -1,19 +1,10 @@
-try {
-    print("try level 1");
-    try {
-        throw "inner oops";
-    } catch (e) {
-        print("inner caught:");
-        print(e);
-    } finally {
-        print("inner cleanup");
-    }
-    print("after inner");
-} catch (e) {
-    print("outer caught:");
-    print(e);
-} finally {
-    print("outer cleanup");
+funcy add(a, b) {
+    a + b;
 }
 
-print("after all");
+funcy greet(x) {
+    print(x);
+}
+
+print(add(5, 7));
+greet("Hello from funcy!");

@@ -2,7 +2,7 @@ use inkwell::{
     builder::Builder,
     context::Context,
     execution_engine::ExecutionEngine,
-    module::Module,
+    module::{Linkage, Module},
     types::BasicTypeEnum,
     values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, IntValue, PointerValue},
     AddressSpace,
@@ -10,6 +10,8 @@ use inkwell::{
 };
 use std::collections::HashMap;
 use inkwell::types::BasicType;
+use inkwell::types::BasicMetadataTypeEnum;
+
 
 use crate::ast::{Expr, Node};
 
@@ -27,6 +29,7 @@ pub struct Codegen <'ctx> {
     exception_flag: Option<PointerValue<'ctx>>,
     exception_value_i32: Option<PointerValue<'ctx>>,
     exception_value_str: Option<PointerValue<'ctx>>,
+        pub functions: HashMap<String, FunctionValue<'ctx>>,
 }
 
 impl<'ctx> Codegen<'ctx> {
@@ -58,6 +61,7 @@ impl<'ctx> Codegen<'ctx> {
         exception_flag: Some(flag.as_pointer_value()),
         exception_value_i32: Some(exc_i32.as_pointer_value()),
         exception_value_str: Some(exc_str.as_pointer_value()),
+            functions: HashMap::new(), // ✅
     }
 }
 
@@ -75,11 +79,29 @@ impl<'ctx> Codegen<'ctx> {
         Expr::Literal(value) => self.i32_type.const_int(*value as u64, false).into(),
 
         // === String literal ===
-        Expr::StringLiteral(s) => {
-            let str_bytes = format!("{}\0", s);
-            let gv = self.builder.build_global_string_ptr(&str_bytes, "strlit").unwrap();
-            gv.as_pointer_value().into()
-        }
+        // === String literal ===
+Expr::StringLiteral(s) => {
+    // Create a null-terminated string constant
+    let str_val = self.context.const_string(s.as_bytes(), true);
+
+    // Create a unique global name (optional but avoids collisions)
+    static mut STRING_ID: usize = 0;
+    let name = unsafe {
+        let id = STRING_ID;
+        STRING_ID += 1;
+        format!("strlit_{}", id)
+    };
+
+    // Add it as a global constant
+    let global = self.module.add_global(str_val.get_type(), None, &name);
+    global.set_initializer(&str_val);
+    global.set_constant(true);
+    global.set_linkage(inkwell::module::Linkage::Private);
+
+    global.as_pointer_value().into()
+}
+
+
 
         // === Variable lookup ===
         Expr::Variable(name) => {
@@ -156,79 +178,110 @@ impl<'ctx> Codegen<'ctx> {
         // === Function call (print, etc.) ===
         Expr::Call { name, args } => {
             if name == "print" {
-                // Declare printf if not yet defined
-                let printf = self.module.get_function("printf").unwrap_or_else(|| {
-                    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
-                    let ty = self.context.i32_type().fn_type(&[i8ptr.into()], true);
-                    self.module.add_function("printf", ty, None)
-                });
+    // === Declare printf and puts if not yet defined ===
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
 
-                // Compile argument
-                if args.is_empty() {
-                    panic!("print() expects 1 argument");
-                }
-                let val = self.compile_expr(&args[0]);
+    let printf = self.module.get_function("printf").unwrap_or_else(|| {
+        let ty = self.context.i32_type().fn_type(&[i8ptr.into()], true);
+        self.module.add_function("printf", ty, None)
+    });
 
-                match val {
-                    // === Print string ===
-                    BasicValueEnum::PointerValue(pv) => {
-                        let fmt = self.builder.build_global_string_ptr("%s\n", "fmt_s").unwrap();
-                        let call_args: Vec<BasicMetadataValueEnum> =
-                            vec![fmt.as_pointer_value().into(), pv.into()];
-                        self.builder.build_call(printf, &call_args, "call_printf").unwrap();
-                    }
+    let puts = self.module.get_function("puts").unwrap_or_else(|| {
+        let ty = self.context.i32_type().fn_type(&[i8ptr.into()], false);
+        self.module.add_function("puts", ty, None)
+    });
 
-                    // === Print int or bool ===
-                    BasicValueEnum::IntValue(iv) => {
-                        if iv.get_type().get_bit_width() == 1 {
-                            // ✅ Boolean print
-                            let cond = self.builder.build_int_compare(
-                                inkwell::IntPredicate::EQ,
-                                iv,
-                                self.context.bool_type().const_int(1, false),
-                                "is_true",
-                            ).unwrap();
+    // === Compile the argument ===
+    if args.is_empty() {
+        panic!("print() expects 1 argument");
+    }
+    let val = self.compile_expr(&args[0]);
 
-                            let true_str = self.builder.build_global_string_ptr("true\n", "true_str").unwrap();
-                            let false_str = self.builder.build_global_string_ptr("false\n", "false_str").unwrap();
+    match val {
+        // === Print string ===
+        BasicValueEnum::PointerValue(pv) => {
+            // Null-pointer check (optional safety)
+            let fmt = self.builder.build_global_string_ptr("%s\n", "fmt_s").unwrap();
+            let call_args: Vec<BasicMetadataValueEnum> =
+                vec![fmt.as_pointer_value().into(), pv.into()];
+            self.builder.build_call(printf, &call_args, "call_printf_str").unwrap();
+        }
 
-                            let parent_fn = self.builder.get_insert_block().unwrap().get_parent().unwrap();
-                            let then_block = self.context.append_basic_block(parent_fn, "then");
-                            let else_block = self.context.append_basic_block(parent_fn, "else");
-                            let merge_block = self.context.append_basic_block(parent_fn, "merge");
+        // === Print int or bool ===
+        BasicValueEnum::IntValue(iv) => {
+            if iv.get_type().get_bit_width() == 1 {
+                // ✅ Boolean print
+                let cond = self.builder.build_int_compare(
+                    inkwell::IntPredicate::EQ,
+                    iv,
+                    self.context.bool_type().const_int(1, false),
+                    "is_true",
+                ).unwrap();
 
-                            self.builder.build_conditional_branch(cond, then_block, else_block).unwrap();
+                let true_str = self.builder.build_global_string_ptr("true\n", "true_str").unwrap();
+                let false_str = self.builder.build_global_string_ptr("false\n", "false_str").unwrap();
 
-                            // THEN block
-                            self.builder.position_at_end(then_block);
-                            let fmt = self.builder.build_global_string_ptr("%s", "fmt_bool").unwrap();
-                            let true_args = vec![fmt.as_pointer_value().into(), true_str.as_pointer_value().into()];
-                            self.builder.build_call(printf, &true_args, "printf_true").unwrap();
-                            self.builder.build_unconditional_branch(merge_block).unwrap();
+                let parent_fn = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+                let then_block = self.context.append_basic_block(parent_fn, "then");
+                let else_block = self.context.append_basic_block(parent_fn, "else");
+                let merge_block = self.context.append_basic_block(parent_fn, "merge");
 
-                            // ELSE block
-                            self.builder.position_at_end(else_block);
-                            let fmt = self.builder.build_global_string_ptr("%s", "fmt_bool").unwrap();
-                            let false_args = vec![fmt.as_pointer_value().into(), false_str.as_pointer_value().into()];
-                            self.builder.build_call(printf, &false_args, "printf_false").unwrap();
-                            self.builder.build_unconditional_branch(merge_block).unwrap();
+                self.builder.build_conditional_branch(cond, then_block, else_block).unwrap();
 
-                            // MERGE block
-                            self.builder.position_at_end(merge_block);
-                        } else {
-                            // Normal int print
-                            let fmt = self.builder.build_global_string_ptr("%d\n", "fmt_d").unwrap();
-                            let args = vec![fmt.as_pointer_value().into(), iv.into()];
-                            self.builder.build_call(printf, &args, "call_printf").unwrap();
-                        }
-                    }
+                // THEN block
+                self.builder.position_at_end(then_block);
+                self.builder
+                    .build_call(puts, &[true_str.as_pointer_value().into()], "puts_true")
+                    .unwrap();
+                self.builder.build_unconditional_branch(merge_block).unwrap();
 
-                    other => panic!("print(..): unsupported value type {:?}", other),
-                }
+                // ELSE block
+                self.builder.position_at_end(else_block);
+                self.builder
+                    .build_call(puts, &[false_str.as_pointer_value().into()], "puts_false")
+                    .unwrap();
+                self.builder.build_unconditional_branch(merge_block).unwrap();
 
-                // Print returns dummy int (printf returns int)
-                self.i32_type.const_int(0, false).into()
+                // MERGE block
+                self.builder.position_at_end(merge_block);
             } else {
+                // === Normal integer print ===
+                let fmt = self.builder.build_global_string_ptr("%d\n", "fmt_d").unwrap();
+                let args = vec![fmt.as_pointer_value().into(), iv.into()];
+                self.builder.build_call(printf, &args, "call_printf_int").unwrap();
+            }
+        }
+
+        // === Unsupported type ===
+        other => panic!("print(..): unsupported value type {:?}", other),
+    }
+
+    // Print returns dummy int (printf returns int)
+    self.i32_type.const_int(0, false).into()
+}
+
+            else if let Some(func_val) = self.functions.get(name).cloned() {
+    let func = func_val; // owned copy (FunctionValue is Copy internally)
+
+    // Compile arguments
+    let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
+    for arg in args {
+        let val = self.compile_expr(arg);
+        compiled_args.push(val.into());
+    }
+
+    // Call the LLVM function
+    let call_site = self.builder
+        .build_call(func, &compiled_args, &format!("call_{}", name))
+        .unwrap();
+
+    // Return the result (functions return i32)
+    call_site.try_as_basic_value().left().unwrap_or_else(|| {
+        self.i32_type.const_int(0, false).into()
+    })
+}
+
+            else {
                 panic!("Unknown function: {}", name);
             }
         }
@@ -627,6 +680,10 @@ self.i32_type.const_int(0, false).into()
 
 
 
+Expr::Funcy { name, params, body } => {
+    self.compile_funcy(name, params, body);
+    self.i32_type.const_int(0, false).into()
+}
 
 
 
@@ -703,8 +760,7 @@ self.i32_type.const_int(0, false).into()
     let entry = self.context.append_basic_block(function, "entry");
     self.builder.position_at_end(entry);
 
-    // === Allocate local exception slots ===
-    // (these override the globals during main execution)
+    // === Allocate exception slots === (same as before)
     let flag_ptr = self.builder.build_alloca(self.i32_type, "exc_flag").unwrap();
     self.builder.build_store(flag_ptr, self.i32_type.const_int(0, false)).unwrap();
 
@@ -713,17 +769,21 @@ self.i32_type.const_int(0, false).into()
 
     let str_ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
     let val_str_ptr = self.builder.build_alloca(str_ptr_ty, "exc_val_str").unwrap();
-    let null_str = str_ptr_ty.const_null();
-    self.builder.build_store(val_str_ptr, null_str).unwrap();
+    self.builder.build_store(val_str_ptr, str_ptr_ty.const_null()).unwrap();
 
-    // === Register them in the Codegen ===
     self.exception_flag = Some(flag_ptr);
     self.exception_value_i32 = Some(val_i32_ptr);
     self.exception_value_str = Some(val_str_ptr);
 
-    // === Compile program body ===
-    let mut last_int: Option<IntValue> = None;
+    // ✅ NEW: Pre-compile all 'funcy' functions before main executes
+    for node in nodes {
+        if let Node::Expr(Expr::Funcy { name, params, body }) = node {
+            self.compile_funcy(name, params, body);
+        }
+    }
 
+    // === Now compile regular statements (calls, control flow, etc.)
+    let mut last_int: Option<IntValue> = None;
     for node in nodes {
         if let Some(v) = self.compile_node(node) {
             if let BasicValueEnum::IntValue(iv) = v {
@@ -732,13 +792,12 @@ self.i32_type.const_int(0, false).into()
         }
     }
 
-    // === Return handling ===
     self.ensure_builder_position();
     let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
-    let _ = self.builder.build_return(Some(&ret_val));
-
+    self.builder.build_return(Some(&ret_val)).unwrap();
     function
 }
+
 
 
     pub fn run_jit(&self) {
@@ -838,6 +897,115 @@ fn compile_switch(
     self.switch_stack.pop();
     self.context.i32_type().const_int(0, false).into()
 }
+pub fn compile_funcy(
+    &mut self,
+    name: &str,
+    params: &[String],
+    body: &[Node],
+) -> FunctionValue<'ctx> {
+    // 🧠 Infer which parameters are used in math (so they’re i32)
+    let mut int_params = std::collections::HashSet::new();
+
+    fn scan_for_ints(nodes: &[Node], int_params: &mut std::collections::HashSet<String>) {
+        for node in nodes {
+            match node {
+                Node::Expr(expr) => match expr {
+                    Expr::BinaryOp { left, right, .. } => {
+                        if let Expr::Variable(name) = left.as_ref() {
+                            int_params.insert(name.clone());
+                        }
+                        if let Expr::Variable(name) = right.as_ref() {
+                            int_params.insert(name.clone());
+                        }
+                    }
+                    Expr::If { cond, then_branch, else_branch } => {
+                        scan_for_ints(&then_branch, int_params);
+                        if let Some(e) = else_branch {
+                            scan_for_ints(e, int_params);
+                        }
+                        if let Expr::Variable(name) = cond.as_ref() {
+                            int_params.insert(name.clone());
+                        }
+                    }
+                    Expr::While { cond, body } => {
+                        if let Expr::Variable(name) = cond.as_ref() {
+                            int_params.insert(name.clone());
+                        }
+                        scan_for_ints(body, int_params);
+                    }
+                    _ => {}
+                },
+                _ => {}
+            }
+        }
+    }
+
+    scan_for_ints(body, &mut int_params);
+
+    // 🧩 Define parameter types intelligently
+    let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = params
+        .iter()
+        .map(|p| {
+            if int_params.contains(p) {
+                self.i32_type.into() // i32 for math variables
+            } else {
+                self.context.i8_type().ptr_type(AddressSpace::default()).into()
+            }
+        })
+        .collect();
+
+    // === Create the LLVM function ===
+    let fn_type = self.i32_type.fn_type(&param_types, false);
+    let function = self.module.add_function(name, fn_type, None);
+
+    // === Entry block ===
+    let entry = self.context.append_basic_block(function, "entry");
+    let saved_block = self.builder.get_insert_block();
+    self.builder.position_at_end(entry);
+
+    // === Local scope ===
+    let mut local_vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)> = HashMap::new();
+
+    for (i, param_name) in params.iter().enumerate() {
+        let param = function.get_nth_param(i as u32).unwrap();
+        let ty = param.get_type();
+        let alloca = self.builder.build_alloca(ty, param_name).unwrap();
+        self.builder.build_store(alloca, param).unwrap();
+        local_vars.insert(param_name.clone(), (alloca, ty));
+    }
+
+    // === Replace vars ===
+    let old_vars = std::mem::replace(&mut self.vars, local_vars);
+
+    // === Compile body ===
+    let mut last_val: Option<BasicValueEnum<'ctx>> = None;
+    for node in body {
+        last_val = self.compile_node(node);
+    }
+
+    // === Return handling ===
+    let ret_val = match last_val {
+        Some(BasicValueEnum::IntValue(iv)) => iv,
+        _ => self.i32_type.const_int(0, false),
+    };
+
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        self.builder.build_return(Some(&ret_val)).unwrap();
+    }
+
+    // === Restore ===
+    self.vars = old_vars;
+    if let Some(block) = saved_block {
+        self.builder.position_at_end(block);
+    }
+
+    self.functions.insert(name.to_string(), function);
+    function
+}
+
+
+
+
 
     
 }

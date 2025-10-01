@@ -46,6 +46,12 @@ pub enum Expr {
     Throw {
         expr: Box<Expr>,
     },
+    Funcy {
+        name: String,
+        params: Vec<String>,
+        body: Vec<Node>,
+    },
+    
 
 }
 

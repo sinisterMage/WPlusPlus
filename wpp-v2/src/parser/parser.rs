@@ -1,17 +1,21 @@
 use crate::ast::{Expr, Node};
 use std::mem;
 use crate::lexer::{Token, TokenKind};
+use std::collections::HashMap;
+
 
 /// Simple W++ parser that turns text into AST nodes.
 /// This can later be replaced with your real parser.
 pub struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+        pub functions: HashMap<String, Expr>, 
 }
 
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, pos: 0 }
+        Self { tokens, pos: 0, functions: HashMap::new(),
+ }
     }
 
     /// Main entrypoint: parse an entire program into AST nodes
@@ -64,6 +68,14 @@ impl Parser {
     }
     false
 }
+fn expect_symbol(&mut self, sym: &str) {
+    if self.check(TokenKind::Symbol(sym.to_string())) {
+        self.advance();
+    } else {
+        panic!("Expected symbol '{}'", sym);
+    }
+}
+
 
 }
 impl Parser {
@@ -112,6 +124,13 @@ TokenKind::Keyword(k) if k == "throw" => {
     self.advance();
     Some(Node::Expr(self.parse_throw()))
 }
+TokenKind::Keyword(k) if k == "funcy" => {
+    self.advance();
+    let expr = self.parse_funcy();
+    Some(Node::Expr(expr))
+}
+
+
 
 
 
@@ -350,6 +369,54 @@ fn parse_throw(&mut self) -> Expr {
     }
     Expr::Throw { expr: Box::new(expr) }
 }
+fn parse_funcy(&mut self) -> Expr {
+    // expect function name
+    let name = match self.advance().clone() {
+        TokenKind::Identifier(n) => n,
+        other => panic!("Expected function name after 'funcy', got {:?}", other),
+    };
+
+    // expect '('
+    self.expect(TokenKind::Symbol("(".into()), "Expected '(' after function name");
+
+    // parse parameters
+    let mut params = Vec::new();
+    if !self.check(TokenKind::Symbol(")".into())) {
+        loop {
+            match self.advance().clone() {
+                TokenKind::Identifier(p) => params.push(p),
+                other => panic!("Expected parameter name, got {:?}", other),
+            }
+            if self.check(TokenKind::Symbol(",".into())) {
+                self.advance();
+                continue;
+            } else {
+                break;
+            }
+        }
+    }
+
+    self.expect(TokenKind::Symbol(")".into()), "Expected ')' after parameters");
+
+    // expect '{'
+    self.expect(TokenKind::Symbol("{".into()), "Expected '{' to start function body");
+
+    // parse body until '}'
+    let mut body = Vec::new();
+    while !self.check(TokenKind::Symbol("}".into())) && !self.check(TokenKind::EOF) {
+        if let Some(stmt) = self.parse_stmt() {
+            body.push(stmt);
+        } else {
+            self.advance();
+        }
+    }
+
+    self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close function body");
+
+    Expr::Funcy { name, params, body }
+}
+
+
 
 
 

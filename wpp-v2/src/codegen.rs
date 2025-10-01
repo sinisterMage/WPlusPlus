@@ -31,6 +31,13 @@ impl<'ctx> Codegen<'ctx> {
         let module = context.create_module(name);
         let builder = context.create_builder();
         let i32_type = context.i32_type();
+        let exc_flag = context.bool_type().const_int(0, false);
+let exc_value = context.i32_type().const_int(0, false);
+let flag = module.add_global(context.bool_type(), None, "__exception_flag");
+flag.set_initializer(&exc_flag);
+let val = module.add_global(context.i32_type(), None, "__exception_value");
+val.set_initializer(&exc_value);
+
 
         Self {
             context,
@@ -458,6 +465,60 @@ Expr::Continue => {
 
 Expr::Switch { expr, cases, default } => {
     self.compile_switch(expr, cases, default)
+}
+Expr::Throw { expr } => {
+    let val = self.compile_expr(expr).into_int_value();
+
+    // set global flag/value
+    let flag = self.module.get_global("__exception_flag").unwrap();
+    let val_global = self.module.get_global("__exception_value").unwrap();
+    self.builder.build_store(flag.as_pointer_value(), self.context.bool_type().const_int(1, false)).unwrap();
+    self.builder.build_store(val_global.as_pointer_value(), val).unwrap();
+
+    // jump to dummy end (simulate unwinding)
+    let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+    let end_bb = self.context.append_basic_block(func, "throw_exit");
+    self.builder.build_unconditional_branch(end_bb).unwrap();
+    self.builder.position_at_end(end_bb);
+
+    self.i32_type.const_int(0, false).into()
+}
+
+Expr::TryCatch { try_block, catch_var, catch_block } => {
+    // backup initial exception flag
+    let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+    let after_bb = self.context.append_basic_block(func, "try_after");
+    let catch_bb = self.context.append_basic_block(func, "try_catch");
+
+    // start try
+    for node in try_block {
+        self.compile_node(node);
+    }
+
+    // check flag
+    let flag_ptr = self.module.get_global("__exception_flag").unwrap().as_pointer_value();
+    let flag_val = self.builder.build_load(self.context.bool_type(), flag_ptr, "flag_load").unwrap();
+    self.builder.build_conditional_branch(flag_val.into_int_value(), catch_bb, after_bb).unwrap();
+
+    // catch block
+    self.builder.position_at_end(catch_bb);
+    if let Some(var_name) = catch_var {
+        let val_ptr = self.module.get_global("__exception_value").unwrap().as_pointer_value();
+        let val = self.builder.build_load(self.i32_type, val_ptr, "caught_val").unwrap();
+        let local = self.builder.build_alloca(self.i32_type, var_name).unwrap();
+        self.builder.build_store(local, val).unwrap();
+        self.vars.insert(var_name.clone(), (local, self.i32_type.as_basic_type_enum()));
+    }
+    for node in catch_block {
+        self.compile_node(node);
+    }
+    // reset flag
+    self.builder.build_store(flag_ptr, self.context.bool_type().const_int(0, false)).unwrap();
+    self.builder.build_unconditional_branch(after_bb).unwrap();
+
+    // continue
+    self.builder.position_at_end(after_bb);
+    self.i32_type.const_int(0, false).into()
 }
 
 

@@ -104,6 +104,15 @@ impl Parser {
     self.advance();
     Some(Node::Expr(self.parse_switch()))
 }
+        TokenKind::Keyword(k) if k == "try" => {
+            self.advance();
+            Some(Node::Expr(self.parse_try_catch()))
+        }
+
+        TokenKind::Keyword(k) if k == "throw" => {
+            self.advance();
+            Some(Node::Expr(self.parse_throw()))
+        }
 
 
         _ => {
@@ -303,6 +312,41 @@ fn parse_case_body(&mut self) -> Vec<Node> {
         }
     }
     nodes
+}
+fn parse_try_catch(&mut self) -> Expr {
+    // parse try block
+    let try_block = self.parse_block();
+
+    // expect catch
+    self.expect(TokenKind::Keyword("catch".into()), "Expected 'catch' after try block");
+
+    // optional variable in parentheses: catch(e)
+    let mut catch_var = None;
+    if self.matches(&[TokenKind::Symbol("(".into())]) {
+        if let TokenKind::Identifier(name) = self.advance().clone() {
+            catch_var = Some(name);
+            self.expect(TokenKind::Symbol(")".into()), "Expected ')' after catch variable");
+        } else {
+            panic!("Expected identifier after 'catch('");
+        }
+    }
+
+    // catch block
+    let catch_block = self.parse_block();
+
+    Expr::TryCatch {
+        try_block,
+        catch_var,
+        catch_block,
+    }
+}
+
+fn parse_throw(&mut self) -> Expr {
+    let expr = self.parse_expr();
+    if self.check(TokenKind::Symbol(";".into())) {
+        self.advance();
+    }
+    Expr::Throw { expr: Box::new(expr) }
 }
 
 

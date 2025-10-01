@@ -1,14 +1,10 @@
-let x = 2;
-
-switch (x) {
-    case 1:
-        print("one");
-        break;
-    case 2:
-        print("two");
-        break;
-    default:
-        print("unknown");
+try {
+    print("before throw");
+    throw 404;
+    print("unreachable");
+} catch(e) {
+    print("caught:");
+    print(e);
 }
 
-print("done");
+print("after try");

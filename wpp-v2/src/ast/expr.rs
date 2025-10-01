@@ -37,5 +37,14 @@ pub enum Expr {
     cases: Vec<(Expr, Vec<Node>)>, // Each case: condition + block
     default: Option<Vec<Node>>,    // Optional default block
 },
+    TryCatch {
+        try_block: Vec<Node>,
+        catch_var: Option<String>,
+        catch_block: Vec<Node>,
+    },
+    Throw {
+        expr: Box<Expr>,
+    },
+
 }
 

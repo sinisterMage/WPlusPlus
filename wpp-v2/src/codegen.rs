@@ -23,7 +23,7 @@ pub struct Codegen <'ctx> {
     /// Symbol table: name -> (alloca ptr, type of the slot)
     pub vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)>,
         pub loop_stack: Vec<(inkwell::basic_block::BasicBlock<'ctx>, inkwell::basic_block::BasicBlock<'ctx>)>,
-
+    pub switch_stack: Vec<inkwell::basic_block::BasicBlock<'ctx>>,
 }
 
 impl<'ctx> Codegen<'ctx> {
@@ -39,6 +39,7 @@ impl<'ctx> Codegen<'ctx> {
             i32_type,
             vars: HashMap::new(),
             loop_stack: Vec::new(),
+            switch_stack: Vec::new(),
 
         }
     }
@@ -420,16 +421,23 @@ Expr::For { init, cond, post, body } => {
 
 Expr::Break => {
     if let Some((_, break_target)) = self.loop_stack.last() {
+        // Break inside loop
         self.safe_branch(*break_target);
-        // Move to dummy block after break
-        let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
-        let dummy = self.context.append_basic_block(func, "after_break");
-        self.builder.position_at_end(dummy);
+    } else if let Some(switch_end) = self.switch_stack.last() {
+        // ✅ Break inside switch
+        self.safe_branch(*switch_end);
     } else {
-        panic!("'break' used outside of loop");
+        panic!("'break' used outside of loop or switch");
     }
+
+    // Move to dummy block after break
+    let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+    let dummy = self.context.append_basic_block(func, "after_break");
+    self.builder.position_at_end(dummy);
+
     self.i32_type.const_int(0, false).into()
 }
+
 
 Expr::Continue => {
     if let Some((cont_target, _)) = self.loop_stack.last() {
@@ -447,6 +455,10 @@ Expr::Continue => {
     self.i32_type.const_int(0, false).into()
 }
 
+
+Expr::Switch { expr, cases, default } => {
+    self.compile_switch(expr, cases, default)
+}
 
 
 
@@ -581,6 +593,65 @@ Expr::Continue => {
         let result = main_fn();
         println!("✅ JIT result from main(): {}", result);
     }
+}
+fn compile_switch(
+    &mut self,
+    discr_expr: &Expr,
+    cases: &Vec<(Expr, Vec<Node>)>,
+    default: &Option<Vec<Node>>,
+) -> BasicValueEnum<'ctx> {
+    let discr_val = self.compile_expr(discr_expr).into_int_value();
+
+    let function = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+    let end_bb = self.context.append_basic_block(function, "switch.end");
+    self.switch_stack.push(end_bb);
+    let default_bb = self.context.append_basic_block(function, "switch.default");
+
+    // Prepare case blocks
+    let mut case_blocks = Vec::new();
+    for (case_expr, body) in cases {
+        let bb = self.context.append_basic_block(function, "switch.case");
+        case_blocks.push((case_expr.clone(), bb, body));
+    }
+
+    // Compile expressions before switch instruction
+    let mut case_values = Vec::new();
+    for (case_expr, bb, _) in &case_blocks {
+        let val = self.compile_expr(case_expr);
+        case_values.push((val.into_int_value(), *bb));
+    }
+
+    // Build switch instruction
+    self.builder
+        .build_switch(discr_val, default_bb, &case_values)
+        .unwrap();
+
+    // Compile each case body
+    for (_, bb, body) in &case_blocks {
+        self.builder.position_at_end(*bb);
+        for node in *body {
+            self.compile_node(node);
+        }
+        if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+            self.builder.build_unconditional_branch(end_bb).unwrap();
+        }
+    }
+
+    // Default body
+    self.builder.position_at_end(default_bb);
+    if let Some(body) = default {
+        for node in body {
+            self.compile_node(node);
+        }
+    }
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        self.builder.build_unconditional_branch(end_bb).unwrap();
+    }
+
+    // Return to end
+    self.builder.position_at_end(end_bb);
+    self.switch_stack.pop();
+    self.context.i32_type().const_int(0, false).into()
 }
 
     

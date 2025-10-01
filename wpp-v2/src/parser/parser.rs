@@ -100,6 +100,11 @@ impl Parser {
             if self.check(TokenKind::Symbol(";".into())) { self.advance(); }
             Some(Node::Expr(Expr::Continue))
         }
+        TokenKind::Keyword(k) if k == "switch" => {
+    self.advance();
+    Some(Node::Expr(self.parse_switch()))
+}
+
 
         _ => {
             let expr = self.parse_expr();
@@ -246,6 +251,59 @@ Expr::For {
 }
 
 
+fn parse_switch(&mut self) -> Expr {
+    self.expect(TokenKind::Symbol("(".into()), "Expected '(' after 'switch'");
+    let switch_expr = self.parse_expr();
+    self.expect(TokenKind::Symbol(")".into()), "Expected ')' after switch expression");
+
+    self.expect(TokenKind::Symbol("{".into()), "Expected '{' to start switch block");
+
+    let mut cases: Vec<(Expr, Vec<Node>)> = Vec::new();
+    let mut default: Option<Vec<Node>> = None;
+
+    while !self.check(TokenKind::Symbol("}".into())) && !self.check(TokenKind::EOF) {
+        match self.peek() {
+            TokenKind::Keyword(k) if k == "case" => {
+                self.advance(); // consume 'case'
+                let case_expr = self.parse_expr();
+                self.expect(TokenKind::Symbol(":".into()), "Expected ':' after case value");
+                let body = self.parse_case_body();
+                cases.push((case_expr, body));
+            }
+            TokenKind::Keyword(k) if k == "default" => {
+                self.advance();
+                self.expect(TokenKind::Symbol(":".into()), "Expected ':' after 'default'");
+                default = Some(self.parse_case_body());
+            }
+            _ => { self.advance(); }
+        }
+    }
+
+    self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close switch");
+
+    Expr::Switch {
+        expr: Box::new(switch_expr),
+        cases,
+        default,
+    }
+}
+
+/// helper to parse everything until next `case`, `default`, or `}`
+fn parse_case_body(&mut self) -> Vec<Node> {
+    let mut nodes = Vec::new();
+    while !self.check(TokenKind::Keyword("case".into()))
+        && !self.check(TokenKind::Keyword("default".into()))
+        && !self.check(TokenKind::Symbol("}".into()))
+        && !self.check(TokenKind::EOF)
+    {
+        if let Some(stmt) = self.parse_stmt() {
+            nodes.push(stmt);
+        } else {
+            self.advance();
+        }
+    }
+    nodes
+}
 
 
 

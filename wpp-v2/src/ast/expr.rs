@@ -32,5 +32,10 @@ pub enum Expr {
     },
     Break,
     Continue,
+    Switch {
+    expr: Box<Expr>,
+    cases: Vec<(Expr, Vec<Node>)>, // Each case: condition + block
+    default: Option<Vec<Node>>,    // Optional default block
+},
 }
 

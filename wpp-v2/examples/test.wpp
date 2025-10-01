@@ -1,7 +1,14 @@
-let sum = 0;
+let x = 2;
 
-for (let i = 0; i < 5; i = i + 1) {
-    sum = sum + i;
+switch (x) {
+    case 1:
+        print("one");
+        break;
+    case 2:
+        print("two");
+        break;
+    default:
+        print("unknown");
 }
 
-print(sum);
+print("done");

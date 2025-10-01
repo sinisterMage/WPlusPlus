@@ -58,12 +58,14 @@ impl<'a> Lexer<'a> {
                 c if c.is_alphabetic() || c == '_' => {
                     let ident = self.consume_identifier();
                     let kind = match ident.as_str() {
-                        "let" | "if" | "else" | "while" | "for"
-                        | "break" | "continue" | "true" | "false" => {
-                            TokenKind::Keyword(ident)
-                        }
-                        _ => TokenKind::Identifier(ident),
-                    };
+    "let" | "if" | "else" | "while" | "for"
+    | "break" | "continue" | "true" | "false"
+    | "switch" | "case" | "default" => {
+        TokenKind::Keyword(ident)
+    }
+    _ => TokenKind::Identifier(ident),
+};
+
                     tokens.push(Token {
                         kind,
                         line: self.line,

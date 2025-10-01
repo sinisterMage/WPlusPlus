@@ -22,6 +22,8 @@ pub struct Codegen <'ctx> {
 
     /// Symbol table: name -> (alloca ptr, type of the slot)
     pub vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)>,
+        pub loop_stack: Vec<(inkwell::basic_block::BasicBlock<'ctx>, inkwell::basic_block::BasicBlock<'ctx>)>,
+
 }
 
 impl<'ctx> Codegen<'ctx> {
@@ -36,6 +38,8 @@ impl<'ctx> Codegen<'ctx> {
             builder,
             i32_type,
             vars: HashMap::new(),
+            loop_stack: Vec::new(),
+
         }
     }
 
@@ -212,100 +216,132 @@ impl<'ctx> Codegen<'ctx> {
 
         // === If expression ===
         Expr::If { cond, then_branch, else_branch } => {
-            // === Compile condition ===
-            let cond_val = self.compile_expr(cond.as_ref());
-            let cond_i1 = match cond_val {
-                BasicValueEnum::IntValue(iv) => {
-                    if iv.get_type().get_bit_width() == 1 {
-                        iv
-                    } else {
-                        self.builder
-                            .build_int_compare(
-                                inkwell::IntPredicate::NE,
-                                iv,
-                                self.i32_type.const_int(0, false),
-                                "if_cond",
-                            )
-                            .unwrap()
-                    }
-                }
-                _ => panic!("Condition in if must be an integer or bool"),
-            };
-
-            // === Create blocks ===
-            let parent_fn = self.builder.get_insert_block().unwrap().get_parent().unwrap();
-            let then_bb = self.context.append_basic_block(parent_fn, "then");
-            let else_bb = self.context.append_basic_block(parent_fn, "else");
-            let merge_bb = self.context.append_basic_block(parent_fn, "merge");
-
-            // Conditional branch
-            self.builder.build_conditional_branch(cond_i1, then_bb, else_bb).unwrap();
-
-            // THEN branch
-            self.builder.position_at_end(then_bb);
-            for node in then_branch {
-                self.compile_node(node);
+    let cond_val = self.compile_expr(cond.as_ref());
+    let cond_i1 = match cond_val {
+        BasicValueEnum::IntValue(iv) => {
+            if iv.get_type().get_bit_width() == 1 {
+                iv
+            } else {
+                self.builder
+                    .build_int_compare(
+                        inkwell::IntPredicate::NE,
+                        iv,
+                        self.i32_type.const_int(0, false),
+                        "if_cond_cmp",
+                    )
+                    .unwrap()
             }
-            self.builder.build_unconditional_branch(merge_bb).unwrap();
-
-            // ELSE branch
-            self.builder.position_at_end(else_bb);
-            if let Some(else_nodes) = else_branch {
-                for node in else_nodes {
-                    self.compile_node(node);
-                }
-            }
-            self.builder.build_unconditional_branch(merge_bb).unwrap();
-
-            // MERGE block
-            self.builder.position_at_end(merge_bb);
-
-            // Return dummy int 0 for if-statement
-            self.i32_type.const_int(0, false).into()
         }
+        _ => panic!("Condition in if must be int or bool"),
+    };
+
+    // Create blocks
+    let parent_fn = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+    let then_bb = self.context.append_basic_block(parent_fn, "if_then");
+    let else_bb = self.context.append_basic_block(parent_fn, "if_else");
+    let end_bb  = self.context.append_basic_block(parent_fn, "if_end");
+
+    // Conditional branch
+    self.builder.build_conditional_branch(cond_i1, then_bb, else_bb).unwrap();
+
+    // Save where to continue after if
+    let current_block = self.builder.get_insert_block().unwrap();
+
+    // THEN branch
+    self.builder.position_at_end(then_bb);
+    for node in then_branch {
+        self.compile_node(node);
+    }
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        self.builder.build_unconditional_branch(end_bb).unwrap();
+    }
+
+    // ELSE branch
+    self.builder.position_at_end(else_bb);
+    if let Some(else_nodes) = else_branch {
+        for node in else_nodes {
+            self.compile_node(node);
+        }
+    }
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        self.builder.build_unconditional_branch(end_bb).unwrap();
+    }
+
+    // MERGE
+    self.builder.position_at_end(end_bb);
+    self.ensure_builder_position();
+
+
+    // ✅ restore builder position to continue original flow
+    if let Some(block) = current_block.get_next_basic_block() {
+        self.builder.position_at_end(block);
+    }
+
+    self.i32_type.const_int(0, false).into()
+}
+
+
+
         Expr::While { cond, body } => {
     let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
 
+    // === Define core blocks ===
     let cond_bb = self.context.append_basic_block(func, "while_cond");
     let body_bb = self.context.append_basic_block(func, "while_body");
     let end_bb  = self.context.append_basic_block(func, "while_end");
+    let after_bb = self.context.append_basic_block(func, "after_loop");
 
-    // Jump to condition
+    // Push (continue_target, break_target) → continue jumps to cond_bb directly
+    self.loop_stack.push((cond_bb, end_bb));
+
+    // Jump to condition first
     self.builder.build_unconditional_branch(cond_bb).unwrap();
-    self.builder.position_at_end(cond_bb);
 
-    // Compile condition expr
-    let raw_cond = self.compile_expr(cond);
-    let cond_i1 = match raw_cond {
-        BasicValueEnum::IntValue(iv) => {
-            if iv.get_type().get_bit_width() == 1 {
-                iv // already a bool
-            } else {
-                // treat nonzero i32 as true
-                self.builder.build_int_compare(
-                    inkwell::IntPredicate::NE,
-                    iv,
-                    self.i32_type.const_int(0, false),
-                    "while_cond"
-                ).unwrap()
-            }
-        }
-        _ => panic!("while condition must be int or bool"),
+    // === Condition ===
+    self.builder.position_at_end(cond_bb);
+    let cond_val = self.compile_expr(cond);
+    let cond_i1 = match cond_val {
+        BasicValueEnum::IntValue(iv) if iv.get_type().get_bit_width() == 1 => iv,
+        BasicValueEnum::IntValue(iv) => self.builder
+            .build_int_compare(
+                inkwell::IntPredicate::NE,
+                iv,
+                self.i32_type.const_int(0, false),
+                "while_cond_cmp"
+            )
+            .unwrap(),
+        _ => panic!("while condition must be int/bool"),
     };
 
+    // Branch to body or exit
     self.builder.build_conditional_branch(cond_i1, body_bb, end_bb).unwrap();
 
-    // Body
+    // === Body ===
     self.builder.position_at_end(body_bb);
     for stmt in body {
         self.compile_node(stmt);
     }
-    self.builder.build_unconditional_branch(cond_bb).unwrap();
 
-    // End
+    // If body didn’t end with a terminator (break/continue), loop back to condition
+    self.safe_branch(cond_bb);
+
+    // === End (break target) ===
     self.builder.position_at_end(end_bb);
+    self.loop_stack.pop();
+    self.safe_branch(after_bb);
+
+    // === After loop (execution continues here) ===
+    self.builder.position_at_end(after_bb);
     self.i32_type.const_int(0, false).into()
 }
+
+
+
+
+
+
+
+
 
 
 Expr::For { init, cond, post, body } => {
@@ -319,10 +355,13 @@ Expr::For { init, cond, post, body } => {
     let post_bb = self.context.append_basic_block(func, "for_post");
     let end_bb  = self.context.append_basic_block(func, "for_end");
 
-    // Jump to condition
+    // 🧩 Push loop context (for break/continue)
+    self.loop_stack.push((post_bb, end_bb));
+
+    // === Jump to condition
     self.builder.build_unconditional_branch(cond_bb).unwrap();
 
-    // --- Condition block ---
+    // === Condition block
     self.builder.position_at_end(cond_bb);
     let cond_val = if let Some(c) = cond {
         self.compile_expr(c).into_int_value()
@@ -331,14 +370,18 @@ Expr::For { init, cond, post, body } => {
     };
     self.builder.build_conditional_branch(cond_val, body_bb, end_bb).unwrap();
 
-    // --- Body block ---
+    // === Body block
     self.builder.position_at_end(body_bb);
     for stmt in body {
         self.compile_node(stmt);
     }
-    self.builder.build_unconditional_branch(post_bb).unwrap();
 
-    // --- Post block ---
+    // If body didn’t end with break/continue, jump to post
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        self.builder.build_unconditional_branch(post_bb).unwrap();
+    }
+
+    // === Post block
     self.builder.position_at_end(post_bb);
     if let Some(post_node) = post {
         match &**post_node {
@@ -357,13 +400,64 @@ Expr::For { init, cond, post, body } => {
             }
         }
     }
-    // ✅ Re-evaluate condition every iteration
-    self.builder.build_unconditional_branch(cond_bb).unwrap();
 
-    // --- End block ---
+    // Jump back to condition if not terminated
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        self.builder.build_unconditional_branch(cond_bb).unwrap();
+    }
+
+    // === End block
     self.builder.position_at_end(end_bb);
+
+    // 🧩 Pop loop context
+    self.loop_stack.pop();
+
+    // ✅ Finalize: ensure valid builder position after loop
+    let after_loop = self.context.append_basic_block(func, "after_loop");
+    self.builder.build_unconditional_branch(after_loop).ok();
+    self.builder.position_at_end(after_loop);
+
     self.context.i32_type().const_int(0, false).into()
 }
+
+
+
+
+
+Expr::Break => {
+    if let Some((_, break_target)) = self.loop_stack.last() {
+        self.safe_branch(*break_target);
+        // Move to dummy block after break
+        let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+        let dummy = self.context.append_basic_block(func, "after_break");
+        self.builder.position_at_end(dummy);
+    } else {
+        panic!("'break' used outside of loop");
+    }
+    self.i32_type.const_int(0, false).into()
+}
+
+Expr::Continue => {
+    if let Some((cont_target, _)) = self.loop_stack.last() {
+        // Jump to continue target
+        self.builder.build_unconditional_branch(*cont_target).unwrap();
+
+        // ✅ Move builder to a new dummy unreachable block (so codegen continues safely)
+        let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+        let unreachable_block = self.context.append_basic_block(func, "after_continue_unreachable");
+        self.builder.position_at_end(unreachable_block);
+    } else {
+        panic!("'continue' used outside of loop");
+    }
+
+    self.i32_type.const_int(0, false).into()
+}
+
+
+
+
+
+
 
 
 
@@ -380,33 +474,57 @@ Expr::For { init, cond, post, body } => {
 
     /// Compile a statement. Returns last expression value (if any).
     pub fn compile_node(&mut self, node: &Node) -> Option<BasicValueEnum<'ctx>> {
-        match node {
-            Node::Let { name, value } => {
-                let v = self.compile_expr(value);
-
-                // create an alloca of the matching type
-                let (alloca, ty): (PointerValue, BasicTypeEnum) = match v {
-                    BasicValueEnum::IntValue(_) => {
-                        let ty = self.i32_type.as_basic_type_enum();
-                        let p = self.builder.build_alloca(ty, name).unwrap();
-                        (p, ty)
-                    }
-                    BasicValueEnum::PointerValue(_) => {
-                        let ty = self.context.i8_type().ptr_type(AddressSpace::default()).as_basic_type_enum();
-                        let p = self.builder.build_alloca(ty, name).unwrap();
-                        (p, ty)
-                    }
-                    other => panic!("let {} = <unsupported type: {:?}>", name, other),
-                };
-
-                let _ = self.builder.build_store(alloca, v);
-                self.vars.insert(name.clone(), (alloca, ty));
-                None
-            }
-
-            Node::Expr(expr) => Some(self.compile_expr(expr)),
+    // Don’t compile if the current block already has a terminator
+    if let Some(block) = self.builder.get_insert_block() {
+        if block.get_terminator().is_some() {
+            return None;
         }
     }
+
+    match node {
+        Node::Let { name, value } => {
+            let v = self.compile_expr(value);
+
+            let (alloca, ty): (PointerValue, BasicTypeEnum) = match v {
+                BasicValueEnum::IntValue(_) => {
+                    let ty = self.i32_type.as_basic_type_enum();
+                    let p = self.builder.build_alloca(ty, name).unwrap();
+                    (p, ty)
+                }
+                BasicValueEnum::PointerValue(_) => {
+                    let ty = self
+                        .context
+                        .i8_type()
+                        .ptr_type(AddressSpace::default())
+                        .as_basic_type_enum();
+                    let p = self.builder.build_alloca(ty, name).unwrap();
+                    (p, ty)
+                }
+                other => panic!("let {} = <unsupported type: {:?}>", name, other),
+            };
+
+            self.builder.build_store(alloca, v).unwrap();
+            self.vars.insert(name.clone(), (alloca, ty));
+            None
+        }
+
+        Node::Expr(expr) => {
+            let v = self.compile_expr(expr);
+
+            // ✅ Stop if this expression emitted a terminator (e.g. break/continue)
+            if let Some(block) = self.builder.get_insert_block() {
+                if block.get_terminator().is_some() {
+                    return None;
+                }
+            }
+
+            Some(v)
+        }
+    }
+}
+
+
+
 
     /// Create main(), compile nodes, and return i32.
     pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
@@ -425,7 +543,7 @@ Expr::For { init, cond, post, body } => {
                 }
             }
         }
-
+        self.ensure_builder_position();
         let ret = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
         let _ = self.builder.build_return(Some(&ret));
 
@@ -433,12 +551,72 @@ Expr::For { init, cond, post, body } => {
     }
 
     pub fn run_jit(&self) {
-        let engine = self.create_engine();
-        unsafe {
-            let main_fn: unsafe extern "C" fn() -> i32 =
-                std::mem::transmute(engine.get_function_address("main").unwrap());
-            let result = main_fn();
-            println!("✅ JIT result from main(): {}", result);
+    let engine = self.create_engine();
+
+    unsafe {
+        // === Cross-platform printf registration ===
+        #[cfg(target_os = "linux")]
+        {
+            use libc::printf;
+            if let Some(func) = self.module.get_function("printf") {
+                engine.add_global_mapping(&func, printf as usize);
+            }
+        }
+
+        #[cfg(target_os = "macos")]
+        {
+            use libc::printf;
+            if let Some(func) = self.module.get_function("printf") {
+                engine.add_global_mapping(&func, printf as usize);
+            }
+        }
+
+        #[cfg(target_os = "windows")]
+        {
+            use libc::_printf;
+            if let Some(func) = self.module.get_function("printf") {
+                engine.add_global_mapping(&func, _printf as usize);
+            }
+        }
+
+        // === Execute main() ===
+        let addr = engine
+            .get_function_address("main")
+            .expect("Failed to get main() address");
+        let main_fn: unsafe extern "C" fn() -> i32 = std::mem::transmute(addr);
+        let result = main_fn();
+        println!("✅ JIT result from main(): {}", result);
+    }
+}
+
+    
+}
+impl<'ctx> Codegen<'ctx> {
+    fn ensure_builder_position(&self) {
+    if let Some(block) = self.builder.get_insert_block() {
+        if block.get_terminator().is_some() {
+            // Only reposition if the current block is part of an *active* function
+            if let Some(func) = block.get_parent() {
+                // Do NOT create multiple “fix_blocks” if already at an end block
+                if func.get_last_basic_block() != Some(block) {
+                    let fix_block = self.context.append_basic_block(func, "fix_block");
+                    self.builder.position_at_end(fix_block);
+                }
+            }
         }
     }
 }
+
+}
+impl<'ctx> Codegen<'ctx> {
+    /// Safely emit a branch only if the current block has no terminator.
+    fn safe_branch(&self, target: inkwell::basic_block::BasicBlock<'ctx>) {
+        if let Some(block) = self.builder.get_insert_block() {
+            if block.get_terminator().is_none() {
+                self.builder.build_unconditional_branch(target).unwrap();
+            }
+        }
+    }
+}
+
+

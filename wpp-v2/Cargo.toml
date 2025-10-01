@@ -5,3 +5,4 @@ edition = "2024"
 
 [dependencies]
 inkwell = { version = "0.4.0", features = ["llvm15-0"] }
+libc = "0.2.176"

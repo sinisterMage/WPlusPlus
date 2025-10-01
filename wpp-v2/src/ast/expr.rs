@@ -30,5 +30,7 @@ pub enum Expr {
         post: Option<Box<Node>>,
         body: Vec<Node>,
     },
+    Break,
+    Continue,
 }
 

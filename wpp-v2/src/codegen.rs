@@ -884,10 +884,7 @@ for node in nodes {
 
     unsafe {
         // === Cross-platform printf registration ===
-        #[cfg(target_os = "windows")]
-        use libc::_printf as c_printf;
-        #[cfg(not(target_os = "windows"))]
-        use libc::printf as c_printf;
+        use libc::printf as c_printf; // works on all OSes, including Windows
 
         if let Some(func) = self.module.get_function("printf") {
             engine.add_global_mapping(&func, c_printf as usize);
@@ -903,6 +900,7 @@ for node in nodes {
         println!("✅ JIT result from main(): {}", result);
     }
 }
+
 
 fn compile_switch(
     &mut self,

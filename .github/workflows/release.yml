@@ -1,125 +1,134 @@
-name: Build & Release Ingot (W++ LLVM CLI)
+name: 🚀 Build & Release W++ LLVM CLI
 
 on:
   push:
     tags:
-      - 'v*'        # Example: v2.0.0-beta
-  workflow_dispatch:
+      - "v*"
 
 jobs:
   build:
-    name: Build ${{ matrix.target }}
+    name: Build for ${{ matrix.os }} (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
-            llvm: "15"
           - os: macos-latest
             target: x86_64-apple-darwin
-            llvm: "15"
           - os: macos-latest
             target: aarch64-apple-darwin
-            llvm: "15"
           - os: windows-latest
             target: x86_64-pc-windows-msvc
-            llvm: "15"
           - os: windows-latest
             target: aarch64-pc-windows-msvc
-            llvm: "15"
-
-    runs-on: ${{ matrix.os }}
 
     steps:
-      - name: 🧹 Checkout repository
+      - name: 📥 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🦀 Install Rust toolchain
+      - name: 🦀 Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
-      # --- LLVM setup ---
-      - name: 🔧 Install LLVM on Ubuntu
-        if: matrix.os == 'ubuntu-latest'
+      # === LLVM setup per platform ===
+      - name: 🧰 Install LLVM (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
         run: |
           sudo apt-get update
-          sudo apt-get install -y llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }}
-          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
-          echo "LLVM_CONFIG_PATH=/usr/lib/llvm-${{ matrix.llvm }}/bin/llvm-config" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/usr/lib/llvm-${{ matrix.llvm }}/lib:$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          sudo apt-get install -y llvm-15-dev clang-15
+          echo "LLVM_SYS_150_PREFIX=/usr/lib/llvm-15" >> $GITHUB_ENV
+          echo "LLVM_CONFIG_PATH=/usr/bin/llvm-config-15" >> $GITHUB_ENV
 
-      - name: 🍎 Install LLVM on macOS
+      - name: 🍎 Install LLVM (macOS)
         if: startsWith(matrix.os, 'macos')
         run: |
-          brew install llvm@${{ matrix.llvm }}
-          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$(brew --prefix llvm@${{ matrix.llvm }})" >> $GITHUB_ENV
-          echo "LLVM_CONFIG_PATH=$(brew --prefix llvm@${{ matrix.llvm }})/bin/llvm-config" >> $GITHUB_ENV
-          echo "DYLD_LIBRARY_PATH=$(brew --prefix llvm@${{ matrix.llvm }})/lib:$DYLD_LIBRARY_PATH" >> $GITHUB_ENV
-          echo "PATH=$(brew --prefix llvm@${{ matrix.llvm }})/bin:$PATH" >> $GITHUB_ENV
+          brew install llvm@15
+          echo "LLVM_SYS_150_PREFIX=$(brew --prefix llvm@15)" >> $GITHUB_ENV
+          echo "LLVM_CONFIG_PATH=$(brew --prefix llvm@15)/bin/llvm-config" >> $GITHUB_ENV
+          echo "$(brew --prefix llvm@15)/bin" >> $GITHUB_PATH
 
-      - name: 🪟 Install LLVM on Windows
+      - name: 🪟 Configure LLVM on Windows
         if: startsWith(matrix.os, 'windows')
         run: |
-          choco install llvm --version=${{ matrix.llvm }} -y
-          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=C:\\Program Files\\LLVM" >> $env:GITHUB_ENV
+          echo "Using preinstalled LLVM on Windows..."
+          echo "LLVM_SYS_150_PREFIX=C:\\Program Files\\LLVM" >> $env:GITHUB_ENV
           echo "LLVM_CONFIG_PATH=C:\\Program Files\\LLVM\\bin\\llvm-config.exe" >> $env:GITHUB_ENV
 
-      # --- Build and package ---
-      - name: 🧱 Build project
-        env:
-          LLVM_SYS_150_PREFIX: ${{ env.LLVM_SYS_15_PREFIX }}
-          LLVM_CONFIG_PATH: ${{ env.LLVM_CONFIG_PATH }}
-          RUSTFLAGS: "-C link-args=-Wl,-rpath,${{ env.LLVM_SYS_15_PREFIX }}/lib"
-        run: cargo build --release --workspace
+      # === Build step ===
+      - name: 🏗️ Build release binary
+        run: cargo build --release --target ${{ matrix.target }}
 
-      - name: 📦 Package artifact
+      - name: 🧾 Verify build output
+        run: |
+          echo "=== Listing target/${{ matrix.target }}/release ==="
+          ls -la target/${{ matrix.target }}/release || true
+          echo "=== LLVM Version ==="
+          llvm-config --version || echo "llvm-config not found"
+
+      # === Package artifacts ===
+      - name: 📦 Package artifact (wpp-cli)
         run: |
           mkdir -p artifacts
-          cp target/release/ingot* artifacts/ || cp target/release/ingot.exe artifacts/
-          cd artifacts
-          zip ingot-${{ matrix.target }}.zip *
+          BIN_PATH="target/${{ matrix.target }}/release/wpp-cli"
+          if [ "${{ matrix.os }}" == "windows-latest" ]; then
+            BIN_PATH="target/${{ matrix.target }}/release/wpp-cli.exe"
+          fi
 
-      - name: 📤 Upload artifact
+          if [ ! -f "$BIN_PATH" ]; then
+            echo "❌ Binary not found at $BIN_PATH"
+            ls -la target/${{ matrix.target }}/release || true
+            exit 1
+          fi
+
+          cp "$BIN_PATH" artifacts/
+          cd artifacts
+          zip wpp-cli-${{ matrix.target }}.zip *
+
+      - name: ⬆️ Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ingot-${{ matrix.target }}
-          path: artifacts/ingot-${{ matrix.target }}.zip
+          name: wpp-cli-${{ matrix.target }}
+          path: artifacts/*
+          retention-days: 5
 
-  # --- Release publishing job ---
+  # === Release publishing job ===
   release:
-    name: 🚀 Publish GitHub Release
-    needs: build
+    name: 🪄 Publish GitHub Release
     runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
 
     steps:
-      - name: 🧾 Download all artifacts
+      - name: 📥 Download all artifacts
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          path: ./release-artifacts
 
-      - name: 🪄 Create GitHub Release
+      - name: 📦 List downloaded artifacts
+        run: ls -R ./release-artifacts
+
+      - name: 🚀 Publish Release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.ref_name }}
-          name: "Ingot ${{ github.ref_name }}"
+          name: "W++ LLVM CLI — ${{ github.ref_name }}"
           body: |
-            🎉 **W++ LLVM Compiler (Ingot) Beta Release**
-            
-            Includes prebuilt binaries for:
-            - 🐧 Linux (x86_64)
-            - 🍎 macOS (Intel & Apple Silicon)
-            - 🪟 Windows (x86_64 & ARM64)
-            
-            To install locally:
-            ```bash
-            # Linux/macOS
-            unzip ingot-<your-arch>.zip -d /usr/local/bin
-            chmod +x /usr/local/bin/ingot
-            ```
-            
+            🦥 **W++ LLVM CLI** — Chaos meets LLVM
             ---
-            💡 *Built automatically from commit:* `${{ github.sha }}`
-          files: |
-            artifacts/**/ingot-*.zip
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            ✅ Built for:
+            - Linux (x86_64)
+            - macOS Intel (x86_64)
+            - macOS ARM (aarch64)
+            - Windows (x86_64)
+            - Windows ARM (aarch64)
+            ---
+            Run with:
+            ```bash
+            ./wpp-cli run examples/hello.wpp
+            ```
+            Enjoy chaos responsibly 🌀
+          files: ./release-artifacts/**/*

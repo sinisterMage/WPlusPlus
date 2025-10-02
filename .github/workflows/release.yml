@@ -1,4 +1,4 @@
-name: Build and Release W++ LLVM CLI
+name: 🦥 Build and Release W++ LLVM CLI
 
 on:
   push:
@@ -38,14 +38,17 @@ jobs:
 
       - name: 🦀 Install Rust
         uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
 
       # === Linux LLVM ===
       - name: 🧩 Install LLVM on Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install -y llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }}
+          sudo apt install -y llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} libpolly-${{ matrix.llvm }}-dev
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
+          echo "✅ Installed LLVM ${{ matrix.llvm }} on Linux"
 
       # === macOS Intel LLVM ===
       - name: 🍎 Install LLVM on macOS (Intel)
@@ -54,8 +57,6 @@ jobs:
           brew install llvm@${{ matrix.llvm }}
           LLVM_DIR="/usr/local/opt/llvm@${{ matrix.llvm }}"
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
-          echo "LDFLAGS=-L$LLVM_DIR/lib" >> $GITHUB_ENV
-          echo "CPPFLAGS=-I$LLVM_DIR/include" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
           echo "✅ Configured LLVM for Intel macOS at $LLVM_DIR"
 
@@ -66,36 +67,43 @@ jobs:
           brew install llvm@${{ matrix.llvm }}
           LLVM_DIR="/opt/homebrew/opt/llvm@${{ matrix.llvm }}"
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
-          echo "LDFLAGS=-L$LLVM_DIR/lib" >> $GITHUB_ENV
-          echo "CPPFLAGS=-I$LLVM_DIR/include" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
           echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
       # === Windows LLVM ===
       - name: 🪟 Install LLVM on Windows
         if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          choco install llvm --force --version=${{ matrix.llvm }}.0
-          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=C:\\Program Files\\LLVM" >> $Env:GITHUB_ENV
-          echo "C:\\Program Files\\LLVM\\bin" >> $Env:Path
+          choco install llvm --version=${{ matrix.llvm }}.0 --allow-downgrade -y
+          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=C:\Program Files\LLVM" | Out-File -Append -FilePath $Env:GITHUB_ENV
+          echo "✅ LLVM installed successfully on Windows"
+          clang --version
 
       # === Build ===
       - name: ⚙️ Build release binary
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release -p wpp-cli --target ${{ matrix.target }}
 
-      # === Package binary ===
+      # === Package ===
       - name: 📦 Package binary
         shell: bash
         run: |
           mkdir -p dist
-          if [[ "${{ runner.os }}" == "Windows" ]]; then
-            cp target/${{ matrix.target }}/release/wpp-cli.exe dist/
-            zip -j dist/wpp-cli-${{ matrix.target }}.zip dist/wpp-cli.exe
+          cd target/${{ matrix.target }}/release
+
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            cp wpp-cli.exe ../../../dist/
+            cd ../../../dist
+            zip -r wpp-cli-${{ matrix.target }}.zip wpp-cli.exe
+            sha256sum wpp-cli-${{ matrix.target }}.zip > wpp-cli-${{ matrix.target }}.sha256
           else
-            cp target/${{ matrix.target }}/release/wpp-cli dist/
-            tar -czf dist/wpp-cli-${{ matrix.target }}.tar.gz -C dist wpp-cli
+            cp wpp-cli ../../../dist/
+            cd ../../../dist
+            tar -czf wpp-cli-${{ matrix.target }}.tar.gz wpp-cli
+            shasum -a 256 wpp-cli-${{ matrix.target }}.tar.gz > wpp-cli-${{ matrix.target }}.sha256
           fi
 
+      # === Upload artifact for release aggregation ===
       - name: 🆙 Upload build artifact
         uses: actions/upload-artifact@v4
         with:
@@ -106,16 +114,17 @@ jobs:
     name: ✨ Create GitHub Release
     needs: build
     runs-on: ubuntu-latest
+
     steps:
-      - name: 🧱 Checkout
+      - name: 🧱 Checkout repository
         uses: actions/checkout@v4
 
-      - name: ⬇️ Download all artifacts
+      - name: ⬇️ Download all build artifacts
         uses: actions/download-artifact@v4
         with:
           path: release-artifacts
 
-      - name: 📦 List release contents
+      - name: 📦 List downloaded files
         run: ls -R release-artifacts
 
       - name: 🚀 Create or update GitHub Release
@@ -125,6 +134,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           draft: false
           prerelease: true
-          files: release-artifacts/**/*
+          files: |
+            release-artifacts/**/*.{zip,tar.gz,sha256}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

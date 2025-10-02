@@ -1,0 +1,5 @@
+[workspace]
+members = [
+  "wpp-v2",
+  "wpp-cli"
+]

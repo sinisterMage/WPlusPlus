@@ -2,6 +2,8 @@ use crate::ast::{Expr, Node};
 use std::mem;
 use crate::lexer::{Token, TokenKind};
 use std::collections::HashMap;
+use crate::lexer::Lexer;
+
 
 
 /// Simple W++ parser that turns text into AST nodes.
@@ -11,7 +13,17 @@ pub struct Parser {
     pos: usize,
         pub functions: HashMap<String, Expr>, 
 }
+pub fn parse(source: &str) -> Result<Vec<crate::ast::Node>, String> {
+    // 1️⃣ Tokenize the input source
+    let mut lexer = Lexer::new(source);
+    let tokens = lexer.tokenize();
 
+    // 2️⃣ Parse the token stream
+    let mut parser = Parser::new(tokens);
+    let ast = parser.parse_program();
+
+    Ok(ast)
+}
 impl Parser {
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, pos: 0, functions: HashMap::new(),

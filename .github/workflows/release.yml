@@ -1,72 +1,85 @@
-name: Build and Release Ingot CLI
+name: 🦥 Ingot Release (Beta 1)
 
 on:
   push:
     tags:
-      - 'v*'
+      - "v*" # e.g. v2.0.0-beta.1
 
 permissions:
   contents: write
 
 jobs:
-  # 👇 This creates the GitHub release exactly once
-  create-release:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Create GitHub Release (empty)
-        uses: softprops/action-gh-release@v2
-        with:
-          files: "" # No files, just the release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  # 👇 This builds binaries for each OS and uploads
-  build-and-upload:
-    needs: create-release
-    runs-on: ubuntu-latest
+  build:
+    name: Build Ingot CLI
+    runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [win-x64, linux-x64, osx-x64]
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+          - os: macos-latest
+            target: x86_64-apple-darwin
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+          - os: windows-latest
+            target: aarch64-pc-windows-msvc
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - name: 🧩 Checkout source
+        uses: actions/checkout@v4
 
-      - name: Set up .NET
-        uses: actions/setup-dotnet@v4
+      - name: ⚙️ Install Rust
+        uses: actions-rs/toolchain@v1
         with:
-          dotnet-version: '8.x'
+          toolchain: stable
+          override: true
+          target: ${{ matrix.target }}
+          components: rustfmt, clippy
 
-      - name: Publish CLI for ${{ matrix.os }}
+      - name: 🧱 Build Ingot CLI
         run: |
-          dotnet publish IngotCLI/IngotCLI.csproj \
-            -c Release \
-            -r ${{ matrix.os }} \
-            --self-contained true \
-            /p:PublishSingleFile=true \
-            /p:EnableCompressionInSingleFile=false \
-            /p:DebugType=None \
-            /p:DebugSymbols=false \
-            -o output/${{ matrix.os }}
+          cd wpp-cli
+          cargo build --release --target ${{ matrix.target }}
+        shell: bash
 
-      - name: Rename binary to 'ingot'
+      - name: 📦 Package binary
         run: |
-          cd output/${{ matrix.os }}
-          if [[ "${{ matrix.os }}" == "win-x64" ]]; then
-            mv IngotCLI.exe ingot.exe
+          cd target/${{ matrix.target }}/release
+          if [ "${{ matrix.os }}" = "windows-latest" ]; then
+            7z a ingot-${{ matrix.target }}.zip ingot.exe
           else
-            mv IngotCLI ingot
+            tar -czvf ingot-${{ matrix.target }}.tar.gz ingot
           fi
+        shell: bash
 
-      - name: Archive binaries
-        run: |
-          cd output/${{ matrix.os }}
-          zip -r ../../ingot-${{ matrix.os }}.zip .
+      - name: 🚀 Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ingot-${{ matrix.target }}
+          path: |
+            target/${{ matrix.target }}/release/ingot*.zip
+            target/${{ matrix.target }}/release/ingot*.tar.gz
 
-      - name: Upload to GitHub Release
+  release:
+    name: Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧩 Checkout repo
+        uses: actions/checkout@v4
+
+      - name: 📥 Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist
+
+      - name: 🚀 Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          files: ingot-${{ matrix.os }}.zip
-          fail_on_unmatched_files: false
+          files: dist/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

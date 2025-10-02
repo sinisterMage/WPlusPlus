@@ -41,6 +41,10 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
+      - name: ⚙️ Install CMake and Ninja
+        if: runner.os == 'Windows'
+        run: choco install cmake ninja git -y
+
       # === Linux LLVM ===
       - name: 🧩 Install LLVM on Linux
         if: runner.os == 'Linux'
@@ -71,42 +75,53 @@ jobs:
           echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
       # === Windows LLVM ===
-      - name: 🪟 Install LLVM on Windows (with llvm-config)
+      - name: 🪟 Build LLVM from source on Windows
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Write-Host "⬇️ Downloading LLVM 15.0.7 (zip, includes llvm-config.exe)..."
-          $llvmZip = "LLVM-15.0.7-win64.zip"
-          Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/$llvmZip" -OutFile $llvmZip
-          
-          Write-Host "📦 Extracting to C:\LLVM..."
-          Expand-Archive -Path $llvmZip -DestinationPath "C:\LLVM" -Force
-          
-          # Detect subfolder (since LLVM zips contain a root dir)
-          $subdir = Get-ChildItem "C:\LLVM" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
-          if ($subdir) {
-            Move-Item -Path $subdir.FullName\* -Destination "C:\LLVM" -Force
-            Remove-Item -Path $subdir.FullName -Recurse -Force
-          }
+          $llvmVersion = "${{ matrix.llvm }}"
+          $srcDir = "C:\llvm-src"
+          $buildDir = "C:\llvm-build"
+          $installDir = "C:\LLVM"
 
-          $llvmPath = "C:\LLVM"
-          $llvmBin = "$llvmPath\bin"
+          Write-Host "⬇️ Cloning LLVM $llvmVersion source..."
+          git clone --depth 1 --branch "llvmorg-$llvmVersion.0" https://github.com/llvm/llvm-project.git $srcDir
 
-          # Export environment variables
-          "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$llvmPath" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          Write-Host "🛠️ Configuring LLVM build with CMake..."
+          cmake -S "$srcDir\llvm" -B $buildDir `
+            -G "Ninja" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_INSTALL_PREFIX=$installDir `
+            -DLLVM_ENABLE_PROJECTS="clang" `
+            -DLLVM_TARGETS_TO_BUILD="X86;AArch64" `
+            -DLLVM_BUILD_TOOLS=ON `
+            -DLLVM_INCLUDE_TESTS=OFF `
+            -DLLVM_INCLUDE_EXAMPLES=OFF `
+            -DLLVM_INCLUDE_DOCS=OFF `
+            -DLLVM_INCLUDE_BENCHMARKS=OFF
+
+          Write-Host "⚙️ Building LLVM (this may take a few minutes)..."
+          cmake --build $buildDir --target install --config Release
+
+          Write-Host "✅ LLVM installed to $installDir"
+
+          $llvmBin = "$installDir\bin"
+          "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$installDir" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           "LLVM_CONFIG_PATH=$llvmBin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           $llvmBin | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
 
-          Write-Host "✅ LLVM extracted to $llvmPath"
-          if (Test-Path "$llvmBin\llvm-config.exe") {
-            Write-Host "🔍 LLVM version check:"
-            & "$llvmBin\llvm-config.exe" --version
-          } else {
-            Write-Host "❌ llvm-config.exe still missing! Dumping contents:"
-            Get-ChildItem $llvmBin
-            exit 1
-          }
+          Write-Host "🔍 Checking llvm-config..."
+          & "$llvmBin\llvm-config.exe" --version
 
+
+      - name: 💾 Cache LLVM build
+        if: runner.os == 'Windows'
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\llvm-build
+            C:\LLVM
+          key: llvm-${{ matrix.llvm }}-${{ runner.os }}
 
 
 

@@ -884,28 +884,13 @@ for node in nodes {
 
     unsafe {
         // === Cross-platform printf registration ===
-        #[cfg(target_os = "linux")]
-        {
-            use libc::printf;
-            if let Some(func) = self.module.get_function("printf") {
-                engine.add_global_mapping(&func, printf as usize);
-            }
-        }
-
-        #[cfg(target_os = "macos")]
-        {
-            use libc::printf;
-            if let Some(func) = self.module.get_function("printf") {
-                engine.add_global_mapping(&func, printf as usize);
-            }
-        }
-
         #[cfg(target_os = "windows")]
-        {
-            use libc::_printf;
-            if let Some(func) = self.module.get_function("printf") {
-                engine.add_global_mapping(&func, _printf as usize);
-            }
+        use libc::_printf as c_printf;
+        #[cfg(not(target_os = "windows"))]
+        use libc::printf as c_printf;
+
+        if let Some(func) = self.module.get_function("printf") {
+            engine.add_global_mapping(&func, c_printf as usize);
         }
 
         // === Execute main() ===
@@ -914,9 +899,11 @@ for node in nodes {
             .expect("Failed to get main() address");
         let main_fn: unsafe extern "C" fn() -> i32 = std::mem::transmute(addr);
         let result = main_fn();
+
         println!("✅ JIT result from main(): {}", result);
     }
 }
+
 fn compile_switch(
     &mut self,
     discr_expr: &Expr,

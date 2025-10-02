@@ -76,20 +76,31 @@ jobs:
         shell: pwsh
         run: |
           Write-Host "⬇️ Downloading LLVM 15 prebuilt binaries..."
-          Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/LLVM-15.0.7-win64.exe" -OutFile "llvm-installer.exe"
-          Start-Process -FilePath "llvm-installer.exe" -ArgumentList "/S", "/D=C:\LLVM" -Wait
+          $llvmInstaller = "llvm-installer.exe"
+          Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/LLVM-15.0.7-win64.exe" -OutFile $llvmInstaller
+          
+          Write-Host "📦 Installing LLVM to C:\LLVM..."
+          Start-Process -FilePath $llvmInstaller -ArgumentList "/S", "/D=C:\LLVM" -Wait
+          
+          $llvmPath = "C:\LLVM"
+          $llvmBin = "$llvmPath\bin"
 
-          # Set up environment
-          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=C:\LLVM" | Out-File -Append -FilePath $Env:GITHUB_ENV
-          echo "LLVM_CONFIG_PATH=C:\LLVM\bin\llvm-config.exe" | Out-File -Append -FilePath $Env:GITHUB_ENV
-          echo "C:\LLVM\bin" | Out-File -Append -FilePath $Env:GITHUB_PATH
+          # Export environment variables (important for llvm-sys)
+          "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$llvmPath" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          "LLVM_CONFIG_PATH=$llvmBin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
 
-          Write-Host "✅ LLVM installed at C:\LLVM"
-          if (Test-Path "C:\LLVM\bin\llvm-config.exe") {
-            & "C:\LLVM\bin\llvm-config.exe" --version
+          # Add to PATH properly
+          $llvmBin | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
+
+          Write-Host "✅ LLVM installed at $llvmPath"
+          if (Test-Path "$llvmBin\llvm-config.exe") {
+            Write-Host "🔍 LLVM version check:"
+            & "$llvmBin\llvm-config.exe" --version
           } else {
-            Write-Host "⚠️ llvm-config.exe not found; using manual path setup."
+            Write-Host "⚠️ llvm-config.exe not found — build may fail."
+            Get-ChildItem $llvmBin
           }
+
 
 
       # === Build ===

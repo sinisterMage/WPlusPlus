@@ -133,8 +133,10 @@ jobs:
 
   release:
     name: ✨ Create GitHub Release
-    needs: [build, freebsd]
+    needs: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # ✅ Needed for uploading release assets
 
     steps:
       - name: 🧱 Checkout repository
@@ -145,8 +147,12 @@ jobs:
         with:
           path: release-artifacts
 
-      - name: 📦 List downloaded files
-        run: ls -R release-artifacts
+      - name: 📦 Move artifacts to flat structure
+        run: |
+          mkdir -p final-release
+          find release-artifacts -type f \( -name "*.zip" -o -name "*.tar.gz" -o -name "*.sha256" \) -exec mv {} final-release/ \;
+          echo "✅ Collected files:"
+          ls -lh final-release
 
       - name: 🚀 Create or update GitHub Release
         uses: softprops/action-gh-release@v2
@@ -156,6 +162,9 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            release-artifacts/**/*.{tar.gz,sha256}
+            final-release/*.zip
+            final-release/*.tar.gz
+            final-release/*.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+

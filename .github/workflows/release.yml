@@ -12,22 +12,30 @@ jobs:
       fail-fast: false
       matrix:
         include:
+          # Native Linux
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             llvm: 15
+
+          # macOS Intel
           - os: macos-13
             target: x86_64-apple-darwin
             llvm: 15
             arch: intel
+
+          # macOS ARM
           - os: macos-14
             target: aarch64-apple-darwin
             llvm: 15
             arch: arm
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
+
+          # Cross-compile Windows from Linux
+          - os: ubuntu-latest
+            target: x86_64-pc-windows-gnu
             llvm: 15
-          - os: windows-latest
-            target: aarch64-pc-windows-msvc
+
+          - os: ubuntu-latest
+            target: aarch64-pc-windows-gnu
             llvm: 15
 
     runs-on: ${{ matrix.os }}
@@ -41,18 +49,27 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      - name: ⚙️ Install CMake and Ninja
-        if: runner.os == 'Windows'
-        run: choco install cmake ninja git -y
+      # === Cache cargo for speed ===
+      - name: ⚡ Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
-      # === Linux LLVM ===
-      - name: 🧩 Install LLVM on Linux
+      # === Linux LLVM + cross compilers ===
+      - name: 🧩 Install LLVM and cross toolchains
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install -y llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} libpolly-${{ matrix.llvm }}-dev
+          sudo apt install -y \
+            llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} \
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
+            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
-          echo "✅ Installed LLVM ${{ matrix.llvm }} on Linux"
+          echo "✅ Installed LLVM ${{ matrix.llvm }} and cross-compilers"
 
       # === macOS Intel LLVM ===
       - name: 🍎 Install LLVM on macOS (Intel)
@@ -74,89 +91,18 @@ jobs:
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
           echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
-      # === Windows LLVM ===
-      - name: 🪟 Build LLVM from source on Windows
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          $llvmVersion = "${{ matrix.llvm }}"
-          $llvmTag = "llvmorg-${llvmVersion}.0"  # default
-          $srcDir = "C:\llvm-src"
-          $buildDir = "C:\llvm-build"
-          $installDir = "C:\LLVM"
-
-          # Try known release first, fallback to .7 if exists
-          Write-Host "⬇️ Cloning LLVM source..."
-          git clone https://github.com/llvm/llvm-project.git $srcDir --depth 1
-          Push-Location $srcDir
-          $tagFound = git tag --list "llvmorg-$llvmVersion*" | Sort-Object | Select-Object -Last 1
-          if ($tagFound) {
-            Write-Host "✅ Found LLVM tag: $tagFound"
-            git fetch origin tag $tagFound --depth 1
-            git checkout $tagFound
-          } else {
-            Write-Host "⚠️ No matching tag for $llvmVersion found — building main branch."
-          }
-          Pop-Location
-
-          if (!(Test-Path "$installDir\bin\llvm-config.exe")) {
-            Write-Host "🛠️ Configuring LLVM build with CMake..."
-            cmake -S "$srcDir\llvm" -B $buildDir `
-              -G "Ninja" `
-              -DCMAKE_BUILD_TYPE=Release `
-              -DCMAKE_INSTALL_PREFIX=$installDir `
-              -DLLVM_ENABLE_PROJECTS="clang" `
-              -DLLVM_TARGETS_TO_BUILD="X86;AArch64" `
-              -DLLVM_BUILD_TOOLS=ON `
-              -DLLVM_INCLUDE_TESTS=OFF `
-              -DLLVM_INCLUDE_EXAMPLES=OFF `
-              -DLLVM_INCLUDE_DOCS=OFF `
-              -DLLVM_INCLUDE_BENCHMARKS=OFF
-
-            Write-Host "⚙️ Building LLVM (this may take 10–20 minutes)..."
-            cmake --build $buildDir --target install --config Release
-          } else {
-            Write-Host "✅ Using cached LLVM build."
-          }
-
-          $llvmBin = "$installDir\bin"
-          "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$installDir" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          "LLVM_CONFIG_PATH=$llvmBin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          $llvmBin | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
-
-          if (Test-Path "$llvmBin\llvm-config.exe") {
-            Write-Host "🔍 LLVM version check:"
-            & "$llvmBin\llvm-config.exe" --version
-          } else {
-            Write-Host "⚠️ llvm-config.exe still not found. Printing $llvmBin contents:"
-            Get-ChildItem $llvmBin
-          }
-
-
-
-      - name: 💾 Cache LLVM build
-        if: runner.os == 'Windows'
-        uses: actions/cache@v4
-        with:
-          path: |
-            C:\llvm-build
-            C:\LLVM
-          key: llvm-${{ matrix.llvm }}-${{ runner.os }}
-
-
-
       # === Build ===
       - name: ⚙️ Build release binary
         run: cargo build --release -p wpp-cli --target ${{ matrix.target }}
 
-      # === Package ===
+      # === Package binaries ===
       - name: 📦 Package binary
         shell: bash
         run: |
           mkdir -p dist
           cd target/${{ matrix.target }}/release
 
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
+          if [[ "$RUNNER_OS" == "Windows" || "${{ matrix.target }}" == *"windows"* ]]; then
             cp wpp-cli.exe ../../../dist/
             cd ../../../dist
             zip -r wpp-cli-${{ matrix.target }}.zip wpp-cli.exe
@@ -168,7 +114,7 @@ jobs:
             shasum -a 256 wpp-cli-${{ matrix.target }}.tar.gz > wpp-cli-${{ matrix.target }}.sha256
           fi
 
-      # === Upload artifact for release aggregation ===
+      # === Upload artifacts ===
       - name: 🆙 Upload build artifact
         uses: actions/upload-artifact@v4
         with:

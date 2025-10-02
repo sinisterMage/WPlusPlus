@@ -29,8 +29,8 @@ jobs:
             llvm: 15
             arch: arm
 
-          # ✅ Windows (x86_64 only, no ARM)
-          - os: ubuntu-latest
+          # ✅ Windows (native, x86_64)
+          - os: windows-latest
             target: x86_64-pc-windows-gnu
             llvm: 15
 
@@ -55,19 +55,16 @@ jobs:
             target
           key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
-      # === Linux LLVM + fix Polly ===
+      # === Linux LLVM ===
       - name: 🧩 Install LLVM on Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt update
           sudo apt install -y \
             llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} \
-            libpolly-${{ matrix.llvm }}-dev \
-            gcc-mingw-w64 g++-mingw-w64
+            libpolly-${{ matrix.llvm }}-dev
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
-          echo "LIBRARY_PATH=/usr/lib/llvm-${{ matrix.llvm }}/lib:/usr/lib" >> $GITHUB_ENV
-          echo "LD_LIBRARY_PATH=/usr/lib/llvm-${{ matrix.llvm }}/lib:/usr/lib" >> $GITHUB_ENV
-          echo "✅ Installed LLVM ${{ matrix.llvm }} (with Polly fix)"
+          echo "✅ Installed LLVM ${{ matrix.llvm }} on Linux"
 
       # === macOS Intel LLVM ===
       - name: 🍎 Install LLVM on macOS (Intel)
@@ -77,6 +74,7 @@ jobs:
           LLVM_DIR="/usr/local/opt/llvm@${{ matrix.llvm }}"
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
+          echo "✅ Configured LLVM for Intel macOS at $LLVM_DIR"
 
       # === macOS ARM LLVM ===
       - name: 🍏 Install LLVM on macOS (ARM)
@@ -86,28 +84,34 @@ jobs:
           LLVM_DIR="/opt/homebrew/opt/llvm@${{ matrix.llvm }}"
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
+          echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
-      - name: 🧱 Install MinGW & Windows cross libs
-        if: matrix.target == 'x86_64-pc-windows-gnu'
+      # === Windows LLVM (Prebuilt from mstorsjo) ===
+      - name: 🪟 Install LLVM prebuilt (mstorsjo)
+        if: runner.os == 'Windows'
+        shell: pwsh
         run: |
-          sudo apt update
-          sudo apt install -y \
-            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
-            mingw-w64-x86-64-dev \
-            libffi-dev libxml2-dev libzstd-dev zlib1g-dev libtinfo-dev \
-            cmake pkg-config
-          
-          echo "✅ Installed MinGW cross toolchain and required libs"
-          
-      - name: 🔧 Configure cross-compiler environment
-        if: matrix.target == 'x86_64-pc-windows-gnu'
-        run: |
-          echo "CC=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
-          echo "CXX=x86_64-w64-mingw32-g++" >> $GITHUB_ENV
-          echo "AR=x86_64-w64-mingw32-ar" >> $GITHUB_ENV
-          echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
-          echo "LLVM_SYS_150_PREFIX=/usr/lib/llvm-15" >> $GITHUB_ENV
-          echo "✅ Cross compile env configured"
+          $url = "https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-ucrt-x86_64.zip"
+          $dest = "C:\LLVM"
+          Write-Host "⬇️ Downloading prebuilt LLVM from mstorsjo..."
+          Invoke-WebRequest -Uri $url -OutFile llvm.zip
+          Expand-Archive llvm.zip -DestinationPath $dest
+
+          $llvmBin = "$dest\llvm-mingw-20220906-ucrt-x86_64\bin"
+          $llvmRoot = "$dest\llvm-mingw-20220906-ucrt-x86_64"
+
+          # Expose for llvm-sys
+          "LLVM_SYS_150_PREFIX=$llvmRoot" | Out-File -FilePath $Env:GITHUB_ENV -Append -Encoding utf8
+          "LLVM_CONFIG_PATH=$llvmBin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Append -Encoding utf8
+          $llvmBin | Out-File -FilePath $Env:GITHUB_PATH -Append -Encoding utf8
+
+          Write-Host "✅ LLVM installed at $llvmRoot"
+          if (Test-Path "$llvmBin\llvm-config.exe") {
+            & "$llvmBin\llvm-config.exe" --version
+          } else {
+            Write-Host "⚠️ llvm-config.exe not found; printing directory contents..."
+            Get-ChildItem $llvmBin
+          }
 
       # === Build ===
       - name: ⚙️ Build release binary
@@ -120,7 +124,7 @@ jobs:
           mkdir -p dist
           cd target/${{ matrix.target }}/release
 
-          if [[ "$RUNNER_OS" == "Windows" || "${{ matrix.target }}" == *"windows"* ]]; then
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
             cp wpp-cli.exe ../../../dist/
             cd ../../../dist
             zip -r wpp-cli-${{ matrix.target }}.zip wpp-cli.exe

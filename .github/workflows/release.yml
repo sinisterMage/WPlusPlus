@@ -12,30 +12,26 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # Native Linux
+          # ✅ Linux
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             llvm: 15
 
-          # macOS Intel
+          # ✅ macOS Intel
           - os: macos-13
             target: x86_64-apple-darwin
             llvm: 15
             arch: intel
 
-          # macOS ARM
+          # ✅ macOS ARM
           - os: macos-14
             target: aarch64-apple-darwin
             llvm: 15
             arch: arm
 
-          # Cross-compile Windows from Linux
+          # ✅ Windows (x86_64 only, no ARM)
           - os: ubuntu-latest
             target: x86_64-pc-windows-gnu
-            llvm: 15
-
-          - os: ubuntu-latest
-            target: aarch64-pc-windows-gnu
             llvm: 15
 
     runs-on: ${{ matrix.os }}
@@ -49,7 +45,7 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      # === Cache cargo for speed ===
+      # === Cache cargo ===
       - name: ⚡ Cache cargo
         uses: actions/cache@v4
         with:
@@ -59,17 +55,19 @@ jobs:
             target
           key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
-      # === Linux LLVM + cross compilers ===
-      - name: 🧩 Install LLVM and cross toolchains
+      # === Linux LLVM + fix Polly ===
+      - name: 🧩 Install LLVM on Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt update
           sudo apt install -y \
             llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} \
-            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
-            gcc-aarch64-linux-gnu g++-aarch64-linux-gnu
+            libpolly-${{ matrix.llvm }}-dev \
+            gcc-mingw-w64 g++-mingw-w64
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
-          echo "✅ Installed LLVM ${{ matrix.llvm }} and cross-compilers"
+          echo "LIBRARY_PATH=/usr/lib/llvm-${{ matrix.llvm }}/lib:/usr/lib" >> $GITHUB_ENV
+          echo "LD_LIBRARY_PATH=/usr/lib/llvm-${{ matrix.llvm }}/lib:/usr/lib" >> $GITHUB_ENV
+          echo "✅ Installed LLVM ${{ matrix.llvm }} (with Polly fix)"
 
       # === macOS Intel LLVM ===
       - name: 🍎 Install LLVM on macOS (Intel)
@@ -79,7 +77,6 @@ jobs:
           LLVM_DIR="/usr/local/opt/llvm@${{ matrix.llvm }}"
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
-          echo "✅ Configured LLVM for Intel macOS at $LLVM_DIR"
 
       # === macOS ARM LLVM ===
       - name: 🍏 Install LLVM on macOS (ARM)
@@ -89,13 +86,12 @@ jobs:
           LLVM_DIR="/opt/homebrew/opt/llvm@${{ matrix.llvm }}"
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
-          echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
       # === Build ===
       - name: ⚙️ Build release binary
         run: cargo build --release -p wpp-cli --target ${{ matrix.target }}
 
-      # === Package binaries ===
+      # === Package ===
       - name: 📦 Package binary
         shell: bash
         run: |
@@ -114,7 +110,7 @@ jobs:
             shasum -a 256 wpp-cli-${{ matrix.target }}.tar.gz > wpp-cli-${{ matrix.target }}.sha256
           fi
 
-      # === Upload artifacts ===
+      # === Upload artifact ===
       - name: 🆙 Upload build artifact
         uses: actions/upload-artifact@v4
         with:

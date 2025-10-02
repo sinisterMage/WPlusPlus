@@ -75,10 +75,20 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
+          # Install LLVM 15 using Chocolatey
           choco install llvm --version=${{ matrix.llvm }}.0 --allow-downgrade -y
-          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=C:\Program Files\LLVM" | Out-File -Append -FilePath $Env:GITHUB_ENV
-          echo "✅ LLVM installed successfully on Windows"
-          clang --version
+          
+          # Use short path to avoid spaces in "Program Files"
+          $llvmPath = "C:\Progra~1\LLVM"
+
+          # Export LLVM paths for llvm-sys
+          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$llvmPath" | Out-File -Append -FilePath $Env:GITHUB_ENV
+          echo "LLVM_CONFIG_PATH=$llvmPath\bin\llvm-config.exe" | Out-File -Append -FilePath $Env:GITHUB_ENV
+          echo "$llvmPath\bin" | Out-File -Append -FilePath $Env:GITHUB_PATH
+
+          # Verify installation
+          Write-Host "✅ LLVM installed at $llvmPath"
+          & "$llvmPath\bin\llvm-config.exe" --version
 
       # === Build ===
       - name: ⚙️ Build release binary

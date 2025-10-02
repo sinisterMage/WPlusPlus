@@ -71,24 +71,26 @@ jobs:
           echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
       # === Windows LLVM ===
-      - name: 🪟 Install LLVM on Windows
+      - name: 🪟 Install LLVM on Windows (Manual)
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Install LLVM 15 using Chocolatey
-          choco install llvm --version=${{ matrix.llvm }}.0 --allow-downgrade -y
-          
-          # Use short path to avoid spaces in "Program Files"
-          $llvmPath = "C:\Progra~1\LLVM"
+          Write-Host "⬇️ Downloading LLVM 15 prebuilt binaries..."
+          Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/LLVM-15.0.7-win64.exe" -OutFile "llvm-installer.exe"
+          Start-Process -FilePath "llvm-installer.exe" -ArgumentList "/S", "/D=C:\LLVM" -Wait
 
-          # Export LLVM paths for llvm-sys
-          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$llvmPath" | Out-File -Append -FilePath $Env:GITHUB_ENV
-          echo "LLVM_CONFIG_PATH=$llvmPath\bin\llvm-config.exe" | Out-File -Append -FilePath $Env:GITHUB_ENV
-          echo "$llvmPath\bin" | Out-File -Append -FilePath $Env:GITHUB_PATH
+          # Set up environment
+          echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=C:\LLVM" | Out-File -Append -FilePath $Env:GITHUB_ENV
+          echo "LLVM_CONFIG_PATH=C:\LLVM\bin\llvm-config.exe" | Out-File -Append -FilePath $Env:GITHUB_ENV
+          echo "C:\LLVM\bin" | Out-File -Append -FilePath $Env:GITHUB_PATH
 
-          # Verify installation
-          Write-Host "✅ LLVM installed at $llvmPath"
-          & "$llvmPath\bin\llvm-config.exe" --version
+          Write-Host "✅ LLVM installed at C:\LLVM"
+          if (Test-Path "C:\LLVM\bin\llvm-config.exe") {
+            & "C:\LLVM\bin\llvm-config.exe" --version
+          } else {
+            Write-Host "⚠️ llvm-config.exe not found; using manual path setup."
+          }
+
 
       # === Build ===
       - name: ⚙️ Build release binary

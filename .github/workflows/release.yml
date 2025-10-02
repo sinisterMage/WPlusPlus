@@ -3,7 +3,7 @@ name: 🦥 Ingot Release (Beta 1)
 on:
   push:
     tags:
-      - "v*" # e.g. v2.0.0-beta.1
+      - "v*"
 
 permissions:
   contents: write
@@ -37,14 +37,35 @@ jobs:
           toolchain: stable
           override: true
           target: ${{ matrix.target }}
-          components: rustfmt, clippy
 
+      # --- 🧠 LLVM Installation (per OS) ---
+      - name: 🧠 Install LLVM (Linux)
+        if: startsWith(matrix.os, 'ubuntu')
+        run: |
+          sudo apt update
+          sudo apt install -y llvm-15-dev clang-15
+          echo "LLVM_SYS_150_PREFIX=/usr/lib/llvm-15" >> $GITHUB_ENV
+
+      - name: 🍎 Install LLVM (macOS)
+        if: startsWith(matrix.os, 'macos')
+        run: |
+          brew install llvm@15
+          echo "LLVM_SYS_150_PREFIX=$(brew --prefix llvm@15)" >> $GITHUB_ENV
+
+      - name: 🪟 Install LLVM (Windows)
+        if: startsWith(matrix.os, 'windows')
+        shell: powershell
+        run: |
+          choco install llvm --version=15.0.7 -y
+          echo "LLVM_SYS_150_PREFIX=C:\Program Files\LLVM" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      # --- 🧱 Build ---
       - name: 🧱 Build Ingot CLI
         run: |
           cd wpp-cli
           cargo build --release --target ${{ matrix.target }}
-        shell: bash
 
+      # --- 📦 Package ---
       - name: 📦 Package binary
         run: |
           cd target/${{ matrix.target }}/release
@@ -55,6 +76,7 @@ jobs:
           fi
         shell: bash
 
+      # --- 🚀 Upload artifact ---
       - name: 🚀 Upload artifact
         uses: actions/upload-artifact@v4
         with:

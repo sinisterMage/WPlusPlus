@@ -134,7 +134,7 @@ jobs:
   release:
     name: ✨ Create GitHub Release
     if: ${{ success() }}
-    needs: build
+    needs: [build, freebsd]
     runs-on: ubuntu-latest
     permissions:
       contents: write

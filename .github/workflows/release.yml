@@ -75,28 +75,38 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          Write-Host "⬇️ Installing LLVM ${{ matrix.llvm }} via Chocolatey..."
-          choco install llvm --version=${{ matrix.llvm }}.0 --force -y
+          Write-Host "⬇️ Downloading LLVM 15.0.7 (zip, includes llvm-config.exe)..."
+          $llvmZip = "LLVM-15.0.7-win64.zip"
+          Invoke-WebRequest -Uri "https://github.com/llvm/llvm-project/releases/download/llvmorg-15.0.7/$llvmZip" -OutFile $llvmZip
           
-          $llvmPath = "C:\Program Files\LLVM"
+          Write-Host "📦 Extracting to C:\LLVM..."
+          Expand-Archive -Path $llvmZip -DestinationPath "C:\LLVM" -Force
+          
+          # Detect subfolder (since LLVM zips contain a root dir)
+          $subdir = Get-ChildItem "C:\LLVM" | Where-Object { $_.PSIsContainer } | Select-Object -First 1
+          if ($subdir) {
+            Move-Item -Path $subdir.FullName\* -Destination "C:\LLVM" -Force
+            Remove-Item -Path $subdir.FullName -Recurse -Force
+          }
+
+          $llvmPath = "C:\LLVM"
           $llvmBin = "$llvmPath\bin"
 
-          # Export environment variables for llvm-sys
+          # Export environment variables
           "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$llvmPath" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           "LLVM_CONFIG_PATH=$llvmBin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-
-          # Add LLVM to PATH
           $llvmBin | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
 
-          Write-Host "✅ LLVM installed at $llvmPath"
+          Write-Host "✅ LLVM extracted to $llvmPath"
           if (Test-Path "$llvmBin\llvm-config.exe") {
-            Write-Host "🔍 llvm-config.exe found! Version:"
+            Write-Host "🔍 LLVM version check:"
             & "$llvmBin\llvm-config.exe" --version
           } else {
-            Write-Host "❌ llvm-config.exe not found; printing directory contents..."
+            Write-Host "❌ llvm-config.exe still missing! Dumping contents:"
             Get-ChildItem $llvmBin
             exit 1
           }
+
 
 
 

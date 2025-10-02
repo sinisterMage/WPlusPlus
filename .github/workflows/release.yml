@@ -16,23 +16,27 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-gnu
             llvm: 15
+            label: linux-x86_64
 
           # ✅ macOS Intel
           - os: macos-13
             target: x86_64-apple-darwin
             llvm: 15
             arch: intel
+            label: macos-x86_64
 
           # ✅ macOS ARM
           - os: macos-14
             target: aarch64-apple-darwin
             llvm: 15
             arch: arm
+            label: macos-arm64
 
-          # ✅ Windows (native, x86_64)
-          - os: windows-latest
-            target: x86_64-pc-windows-gnu
+          # ✅ FreeBSD (cross)
+          - os: ubuntu-latest
+            target: x86_64-unknown-freebsd
             llvm: 15
+            label: freebsd-x86_64
 
     runs-on: ${{ matrix.os }}
 
@@ -45,7 +49,6 @@ jobs:
         with:
           targets: ${{ matrix.target }}
 
-      # === Cache cargo ===
       - name: ⚡ Cache cargo
         uses: actions/cache@v4
         with:
@@ -55,18 +58,18 @@ jobs:
             target
           key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
-      # === Linux LLVM ===
-      - name: 🧩 Install LLVM on Linux
+      # === LLVM Setup ===
+      - name: 🧩 Install LLVM (Linux & FreeBSD)
         if: runner.os == 'Linux'
         run: |
           sudo apt update
           sudo apt install -y \
             llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} \
-            libpolly-${{ matrix.llvm }}-dev
+            libpolly-${{ matrix.llvm }}-dev cmake pkg-config \
+            libffi-dev libxml2-dev libzstd-dev zlib1g-dev libtinfo-dev
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
           echo "✅ Installed LLVM ${{ matrix.llvm }} on Linux"
 
-      # === macOS Intel LLVM ===
       - name: 🍎 Install LLVM on macOS (Intel)
         if: runner.os == 'macOS' && matrix.arch == 'intel'
         run: |
@@ -74,9 +77,7 @@ jobs:
           LLVM_DIR="/usr/local/opt/llvm@${{ matrix.llvm }}"
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
-          echo "✅ Configured LLVM for Intel macOS at $LLVM_DIR"
 
-      # === macOS ARM LLVM ===
       - name: 🍏 Install LLVM on macOS (ARM)
         if: runner.os == 'macOS' && matrix.arch == 'arm'
         run: |
@@ -84,34 +85,14 @@ jobs:
           LLVM_DIR="/opt/homebrew/opt/llvm@${{ matrix.llvm }}"
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
-          echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
-      # === Windows LLVM (Prebuilt from mstorsjo) ===
-      - name: 🪟 Install LLVM prebuilt (mstorsjo)
-        if: runner.os == 'Windows'
-        shell: pwsh
+      # === FreeBSD Cross-Compile Setup ===
+      - name: 🧱 Setup FreeBSD cross toolchain
+        if: matrix.target == 'x86_64-unknown-freebsd'
         run: |
-          $url = "https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-ucrt-x86_64.zip"
-          $dest = "C:\LLVM"
-          Write-Host "⬇️ Downloading prebuilt LLVM from mstorsjo..."
-          Invoke-WebRequest -Uri $url -OutFile llvm.zip
-          Expand-Archive llvm.zip -DestinationPath $dest
-
-          $llvmBin = "$dest\llvm-mingw-20220906-ucrt-x86_64\bin"
-          $llvmRoot = "$dest\llvm-mingw-20220906-ucrt-x86_64"
-
-          # Expose for llvm-sys
-          "LLVM_SYS_150_PREFIX=$llvmRoot" | Out-File -FilePath $Env:GITHUB_ENV -Append -Encoding utf8
-          "LLVM_CONFIG_PATH=$llvmBin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Append -Encoding utf8
-          $llvmBin | Out-File -FilePath $Env:GITHUB_PATH -Append -Encoding utf8
-
-          Write-Host "✅ LLVM installed at $llvmRoot"
-          if (Test-Path "$llvmBin\llvm-config.exe") {
-            & "$llvmBin\llvm-config.exe" --version
-          } else {
-            Write-Host "⚠️ llvm-config.exe not found; printing directory contents..."
-            Get-ChildItem $llvmBin
-          }
+          sudo apt install -y qemu-user-static libc6-dev-amd64-cross binutils
+          rustup target add x86_64-unknown-freebsd
+          echo "✅ FreeBSD target toolchain installed"
 
       # === Build ===
       - name: ⚙️ Build release binary
@@ -123,24 +104,17 @@ jobs:
         run: |
           mkdir -p dist
           cd target/${{ matrix.target }}/release
+          cp wpp-cli ../../../dist/
+          cd ../../../dist
+          FILENAME="W++-LLVM-${{ github.ref_name }}-${{ matrix.label }}"
+          tar -czf "${FILENAME}.tar.gz" wpp-cli
+          shasum -a 256 "${FILENAME}.tar.gz" > "${FILENAME}.sha256"
+          echo "✅ Packaged ${FILENAME}.tar.gz"
 
-          if [[ "$RUNNER_OS" == "Windows" ]]; then
-            cp wpp-cli.exe ../../../dist/
-            cd ../../../dist
-            zip -r wpp-cli-${{ matrix.target }}.zip wpp-cli.exe
-            sha256sum wpp-cli-${{ matrix.target }}.zip > wpp-cli-${{ matrix.target }}.sha256
-          else
-            cp wpp-cli ../../../dist/
-            cd ../../../dist
-            tar -czf wpp-cli-${{ matrix.target }}.tar.gz wpp-cli
-            shasum -a 256 wpp-cli-${{ matrix.target }}.tar.gz > wpp-cli-${{ matrix.target }}.sha256
-          fi
-
-      # === Upload artifact ===
       - name: 🆙 Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wpp-cli-${{ matrix.target }}
+          name: wpp-cli-${{ matrix.label }}
           path: dist/*
 
   release:
@@ -168,6 +142,6 @@ jobs:
           draft: false
           prerelease: true
           files: |
-            release-artifacts/**/*.{zip,tar.gz,sha256}
+            release-artifacts/**/*.{tar.gz,sha256}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

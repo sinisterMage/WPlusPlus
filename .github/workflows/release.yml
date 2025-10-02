@@ -1,13 +1,14 @@
-name: Build Ingot (W++ LLVM CLI)
+name: Build & Release Ingot (W++ LLVM CLI)
 
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'        # Example: v2.0.0-beta
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build ${{ matrix.target }}
     strategy:
       fail-fast: false
       matrix:
@@ -37,6 +38,7 @@ jobs:
       - name: 🦀 Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
 
+      # --- LLVM setup ---
       - name: 🔧 Install LLVM on Ubuntu
         if: matrix.os == 'ubuntu-latest'
         run: |
@@ -62,6 +64,7 @@ jobs:
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=C:\\Program Files\\LLVM" >> $env:GITHUB_ENV
           echo "LLVM_CONFIG_PATH=C:\\Program Files\\LLVM\\bin\\llvm-config.exe" >> $env:GITHUB_ENV
 
+      # --- Build and package ---
       - name: 🧱 Build project
         env:
           LLVM_SYS_150_PREFIX: ${{ env.LLVM_SYS_15_PREFIX }}
@@ -76,8 +79,47 @@ jobs:
           cd artifacts
           zip ingot-${{ matrix.target }}.zip *
 
-      - name: 🚀 Upload artifact
+      - name: 📤 Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: ingot-${{ matrix.target }}
           path: artifacts/ingot-${{ matrix.target }}.zip
+
+  # --- Release publishing job ---
+  release:
+    name: 🚀 Publish GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 🧾 Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: 🪄 Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: "Ingot ${{ github.ref_name }}"
+          body: |
+            🎉 **W++ LLVM Compiler (Ingot) Beta Release**
+            
+            Includes prebuilt binaries for:
+            - 🐧 Linux (x86_64)
+            - 🍎 macOS (Intel & Apple Silicon)
+            - 🪟 Windows (x86_64 & ARM64)
+            
+            To install locally:
+            ```bash
+            # Linux/macOS
+            unzip ingot-<your-arch>.zip -d /usr/local/bin
+            chmod +x /usr/local/bin/ingot
+            ```
+            
+            ---
+            💡 *Built automatically from commit:* `${{ github.sha }}`
+          files: |
+            artifacts/**/ingot-*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

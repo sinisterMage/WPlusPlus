@@ -143,8 +143,15 @@ Expr::StringLiteral(s) => {
     }
 
     // === Arithmetic and comparison ===
-    let left_val = self.compile_expr(left.as_ref()).into_int_value();
-    let right_val = self.compile_expr(right.as_ref()).into_int_value();
+    let left_raw = self.compile_expr(left.as_ref());
+let right_raw = self.compile_expr(right.as_ref());
+
+// Safety: ensure both sides are IntValues before doing math
+let (left_val, right_val) = match (left_raw, right_raw) {
+    (BasicValueEnum::IntValue(l), BasicValueEnum::IntValue(r)) => (l, r),
+    _ => panic!("Binary operator `{}` only supports integers", op),
+};
+
 
     let result = match op.as_str() {
         "+" => self.builder.build_int_add(left_val, right_val, "addtmp").unwrap().into(),
@@ -687,6 +694,43 @@ Expr::Funcy { name, params, body } => {
 
 
 
+Expr::Return(expr_opt) => {
+    let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+
+    // Determine return value
+    let ret_val = if let Some(expr) = expr_opt {
+    let v = self.compile_expr(expr);
+    match v {
+        BasicValueEnum::IntValue(iv) => iv,
+        BasicValueEnum::PointerValue(pv) => {
+            // Just print the string for now and return 0
+            let printf = self.module.get_function("printf").unwrap_or_else(|| {
+                let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+                let ty = self.context.i32_type().fn_type(&[i8ptr.into()], true);
+                self.module.add_function("printf", ty, None)
+            });
+            let fmt = self.builder.build_global_string_ptr("%s\n", "ret_fmt").unwrap();
+            let args = vec![fmt.as_pointer_value().into(), pv.into()];
+            self.builder.build_call(printf, &args, "print_return").unwrap();
+            self.i32_type.const_int(0, false)
+        }
+        _ => self.i32_type.const_int(0, false),
+    }
+} else {
+    self.i32_type.const_int(0, false)
+};
+
+
+    // Build actual LLVM return
+    self.builder.build_return(Some(&ret_val)).unwrap();
+
+    // Move builder to a safe new block to prevent further codegen errors
+    let after_ret = self.context.append_basic_block(func, "after_return");
+    self.builder.position_at_end(after_ret);
+
+    self.i32_type.const_int(0, false).into()
+}
+
 
 
 
@@ -775,12 +819,47 @@ Expr::Funcy { name, params, body } => {
     self.exception_value_i32 = Some(val_i32_ptr);
     self.exception_value_str = Some(val_str_ptr);
 
-    // ✅ NEW: Pre-compile all 'funcy' functions before main executes
-    for node in nodes {
-        if let Node::Expr(Expr::Funcy { name, params, body }) = node {
-            self.compile_funcy(name, params, body);
+    // === Pass 1: Predeclare all function signatures ===
+for node in nodes {
+    if let Node::Expr(Expr::Funcy { name, params, .. }) = node {
+        // Build param types (we can reuse scan_for_ints here)
+        let mut int_params: std::collections::HashSet<String> = std::collections::HashSet::new();
+        fn scan_for_ints(nodes: &[Node], int_params: &mut std::collections::HashSet<String>) {
+            for node in nodes {
+                match node {
+                    Node::Expr(expr) => match expr {
+                        crate::ast::Expr::BinaryOp { left, right, .. } => {
+                            if let crate::ast::Expr::Variable(name) = left.as_ref() {
+                                int_params.insert(name.clone());
+                            }
+                            if let crate::ast::Expr::Variable(name) = right.as_ref() {
+                                int_params.insert(name.clone());
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
         }
+
+        // for now: assume all params are i32 (safe default)
+        let param_types: Vec<inkwell::types::BasicMetadataTypeEnum> =
+            params.iter().map(|_| self.i32_type.into()).collect();
+
+        let fn_type = self.i32_type.fn_type(&param_types, false);
+        let function = self.module.add_function(name, fn_type, None);
+        self.functions.insert(name.clone(), function);
     }
+}
+
+// === Pass 2: Compile function bodies ===
+for node in nodes {
+    if let Node::Expr(Expr::Funcy { name, params, body }) = node {
+        self.compile_funcy(name, params, body);
+    }
+}
+
 
     // === Now compile regular statements (calls, control flow, etc.)
     let mut last_int: Option<IntValue> = None;
@@ -907,38 +986,51 @@ pub fn compile_funcy(
     let mut int_params = std::collections::HashSet::new();
 
     fn scan_for_ints(nodes: &[Node], int_params: &mut std::collections::HashSet<String>) {
-        for node in nodes {
-            match node {
-                Node::Expr(expr) => match expr {
-                    Expr::BinaryOp { left, right, .. } => {
-                        if let Expr::Variable(name) = left.as_ref() {
-                            int_params.insert(name.clone());
-                        }
-                        if let Expr::Variable(name) = right.as_ref() {
-                            int_params.insert(name.clone());
-                        }
+    for node in nodes {
+        match node {
+            Node::Expr(expr) => match expr {
+                Expr::BinaryOp { left, right, .. } => {
+                    if let Expr::Variable(name) = left.as_ref() {
+                        int_params.insert(name.clone());
                     }
-                    Expr::If { cond, then_branch, else_branch } => {
-                        scan_for_ints(&then_branch, int_params);
-                        if let Some(e) = else_branch {
-                            scan_for_ints(e, int_params);
-                        }
-                        if let Expr::Variable(name) = cond.as_ref() {
-                            int_params.insert(name.clone());
-                        }
+                    if let Expr::Variable(name) = right.as_ref() {
+                        int_params.insert(name.clone());
                     }
-                    Expr::While { cond, body } => {
-                        if let Expr::Variable(name) = cond.as_ref() {
-                            int_params.insert(name.clone());
-                        }
-                        scan_for_ints(body, int_params);
+                    // Recurse deeper if operands contain nested expressions
+                    scan_for_ints(&[Node::Expr(*left.clone())], int_params);
+                    scan_for_ints(&[Node::Expr(*right.clone())], int_params);
+                }
+
+                Expr::Return(inner) => {
+                    if let Some(inner_expr) = inner {
+                        scan_for_ints(&[Node::Expr(*inner_expr.clone())], int_params);
                     }
-                    _ => {}
-                },
+                }
+
+                Expr::If { cond, then_branch, else_branch } => {
+                    scan_for_ints(&[Node::Expr(*cond.clone())], int_params);
+                    scan_for_ints(then_branch, int_params);
+                    if let Some(e) = else_branch {
+                        scan_for_ints(e, int_params);
+                    }
+                }
+
+                Expr::While { cond, body } => {
+                    scan_for_ints(&[Node::Expr(*cond.clone())], int_params);
+                    scan_for_ints(body, int_params);
+                }
+
+                Expr::Funcy { body, .. } => {
+                    scan_for_ints(body, int_params);
+                }
+
                 _ => {}
-            }
+            },
+            _ => {}
         }
     }
+}
+
 
     scan_for_ints(body, &mut int_params);
 
@@ -956,7 +1048,12 @@ pub fn compile_funcy(
 
     // === Create the LLVM function ===
     let fn_type = self.i32_type.fn_type(&param_types, false);
-    let function = self.module.add_function(name, fn_type, None);
+    let function = if let Some(existing) = self.module.get_function(name) {
+    existing
+} else {
+    self.module.add_function(name, fn_type, None)
+};
+
 
     // === Entry block ===
     let entry = self.context.append_basic_block(function, "entry");
@@ -968,10 +1065,24 @@ pub fn compile_funcy(
 
     for (i, param_name) in params.iter().enumerate() {
         let param = function.get_nth_param(i as u32).unwrap();
-        let ty = param.get_type();
-        let alloca = self.builder.build_alloca(ty, param_name).unwrap();
-        self.builder.build_store(alloca, param).unwrap();
-        local_vars.insert(param_name.clone(), (alloca, ty));
+        let param_val = param;
+let is_int_param = int_params.contains(param_name);
+
+let (alloca, ty): (PointerValue, BasicTypeEnum) = if is_int_param {
+    let ty = self.i32_type.as_basic_type_enum();
+    let alloca = self.builder.build_alloca(ty, param_name).unwrap();
+    self.builder.build_store(alloca, param_val).unwrap();
+    (alloca, ty)
+} else {
+    // Treat as string (i8*)
+    let str_ty = self.context.i8_type().ptr_type(AddressSpace::default()).as_basic_type_enum();
+    let alloca = self.builder.build_alloca(str_ty, param_name).unwrap();
+    self.builder.build_store(alloca, param_val).unwrap();
+    (alloca, str_ty)
+};
+
+local_vars.insert(param_name.clone(), (alloca, ty));
+
     }
 
     // === Replace vars ===

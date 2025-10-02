@@ -51,7 +51,7 @@ pub enum Expr {
         params: Vec<String>,
         body: Vec<Node>,
     },
-    
+    Return(Option<Box<Expr>>),
 
 }
 

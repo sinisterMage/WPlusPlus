@@ -45,15 +45,17 @@ fn main() {
     println!("===================");
 
     // === Code generation (LLVM) ===
-    let context = Context::create();
-    let mut codegen = Codegen::new(&context, path);
-    let main_fn = codegen.compile_main(&ast);
+    let context = Context::create(); // ✅ Create the LLVM context
+let mut codegen = Codegen::new(&context, "wpp_module");
+let main_fn = codegen.compile_main(&ast);
 
-    if emit_ir {
-        println!("{}", codegen.module.print_to_string().to_string());
-        return;
-    }
+// 🧠 DEBUG: Dump the LLVM IR to console and file
+println!("\n🔬 === LLVM IR Dump ===");
+codegen.module.print_to_stderr();
 
-    // === Run JIT ===
-    codegen.run_jit();
+codegen.module.print_to_file("debug.ll").unwrap();
+println!("💾 IR written to debug.ll");
+
+codegen.run_jit();
+
 }

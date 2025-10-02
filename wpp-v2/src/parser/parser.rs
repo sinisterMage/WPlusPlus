@@ -130,7 +130,25 @@ TokenKind::Keyword(k) if k == "funcy" => {
     Some(Node::Expr(expr))
 }
 
+TokenKind::Keyword(k) if k == "return" => {
+    self.advance();
 
+    // Optional return expression
+    let expr = if !self.check(TokenKind::Symbol(";".into()))
+        && !self.check(TokenKind::Symbol("}".into()))
+    {
+        Some(Box::new(self.parse_expr()))
+    } else {
+        None
+    };
+
+    // Optional semicolon
+    if self.check(TokenKind::Symbol(";".into())) {
+        self.advance();
+    }
+
+    Some(Node::Expr(Expr::Return(expr)))
+}
 
 
 

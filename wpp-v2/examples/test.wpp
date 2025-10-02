@@ -1,10 +1,20 @@
-funcy add(a, b) {
-    a + b;
+funcy fact(n) {
+   if (n <= 1) {
+    return 1;
+}
+
+    return n * fact(n - 1);
 }
 
 funcy greet(x) {
     print(x);
+    return greet2();
 }
 
-print(add(5, 7));
-greet("Hello from funcy!");
+funcy greet2() {
+    print("Chaining works!");
+    return 42;
+}
+
+print(fact(5));
+print(greet("Hi from W++ recursion!"));

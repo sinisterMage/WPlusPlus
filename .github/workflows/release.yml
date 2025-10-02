@@ -87,6 +87,28 @@ jobs:
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=$LLVM_DIR" >> $GITHUB_ENV
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
 
+      - name: 🧱 Install MinGW & Windows cross libs
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        run: |
+          sudo apt update
+          sudo apt install -y \
+            gcc-mingw-w64-x86-64 g++-mingw-w64-x86-64 \
+            mingw-w64-x86-64-dev \
+            libffi-dev libxml2-dev libzstd-dev zlib1g-dev libtinfo-dev \
+            cmake pkg-config
+          
+          echo "✅ Installed MinGW cross toolchain and required libs"
+          
+      - name: 🔧 Configure cross-compiler environment
+        if: matrix.target == 'x86_64-pc-windows-gnu'
+        run: |
+          echo "CC=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
+          echo "CXX=x86_64-w64-mingw32-g++" >> $GITHUB_ENV
+          echo "AR=x86_64-w64-mingw32-ar" >> $GITHUB_ENV
+          echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-gcc" >> $GITHUB_ENV
+          echo "LLVM_SYS_150_PREFIX=/usr/lib/llvm-15" >> $GITHUB_ENV
+          echo "✅ Cross compile env configured"
+
       # === Build ===
       - name: ⚙️ Build release binary
         run: cargo build --release -p wpp-cli --target ${{ matrix.target }}

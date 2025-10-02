@@ -133,10 +133,12 @@ jobs:
 
   release:
     name: ✨ Create GitHub Release
+    if: ${{ success() }}
     needs: build
     runs-on: ubuntu-latest
     permissions:
-      contents: write  # ✅ Needed for uploading release assets
+      contents: write
+
 
     steps:
       - name: 🧱 Checkout repository

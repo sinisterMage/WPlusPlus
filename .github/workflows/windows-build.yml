@@ -1,0 +1,76 @@
+name: 🪟 Build W++ LLVM CLI (Windows)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows binary
+    runs-on: windows-latest
+
+    steps:
+      - name: 🧱 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🦀 Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: ⚙️ Install dependencies
+        shell: pwsh
+        run: |
+          choco install cmake ninja git python3 visualstudio2022buildtools -y
+
+      - name: 🧩 Build LLVM from source
+        shell: pwsh
+        run: |
+          $srcDir = "C:\llvm-src"
+          $buildDir = "C:\llvm-build"
+          $installDir = "C:\LLVM"
+
+          Write-Host "⬇️ Cloning LLVM..."
+          git clone https://github.com/llvm/llvm-project.git $srcDir --depth 1 --branch llvmorg-15.0.7
+
+          Write-Host "🛠️ Configuring build..."
+          cmake -S "$srcDir\llvm" -B $buildDir `
+            -G "Ninja" `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DCMAKE_INSTALL_PREFIX=$installDir `
+            -DLLVM_ENABLE_PROJECTS="clang" `
+            -DLLVM_TARGETS_TO_BUILD="X86;AArch64" `
+            -DLLVM_BUILD_TOOLS=ON `
+            -DLLVM_INCLUDE_TESTS=OFF `
+            -DLLVM_INCLUDE_DOCS=OFF `
+            -DLLVM_INCLUDE_EXAMPLES=OFF `
+            -DLLVM_ENABLE_TERMINFO=OFF `
+            -DLLVM_ENABLE_LIBXML2=OFF `
+            -DLLVM_ENABLE_ZLIB=ON
+
+          Write-Host "⚙️ Building LLVM..."
+          cmake --build $buildDir --target install --config Release
+
+          Write-Host "✅ LLVM installed to $installDir"
+          & "$installDir\bin\llvm-config.exe" --version
+
+          echo "LLVM_SYS_150_PREFIX=$installDir" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "LLVM_CONFIG_PATH=$installDir\bin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "$installDir\bin" | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
+
+      - name: ⚙️ Build W++ for Windows
+        run: cargo build --release -p wpp-cli --target x86_64-pc-windows-msvc
+
+      - name: 📦 Package binary
+        shell: pwsh
+        run: |
+          mkdir dist
+          Copy-Item target\x86_64-pc-windows-msvc\release\wpp-cli.exe dist\
+          Compress-Archive -Path dist\wpp-cli.exe -DestinationPath dist\wpp-cli-x86_64-pc-windows-msvc.zip
+          Get-FileHash dist\wpp-cli-x86_64-pc-windows-msvc.zip -Algorithm SHA256 | ForEach-Object {
+            $_.Hash + "  wpp-cli-x86_64-pc-windows-msvc.zip" } > dist\wpp-cli-x86_64-pc-windows-msvc.sha256
+
+      - name: 🆙 Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: wpp-cli-x86_64-pc-windows-msvc
+          path: dist/*

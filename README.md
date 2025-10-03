@@ -72,6 +72,55 @@ Until then:
 
 ---
 
+## 💻 Installing W++ on a Chromebook (aka, how to void your warranty)
+
+So… you’re on a Chromebook and thought:
+
+> “Yeah, I totally need a sloth-powered LLVM compiler on my browser laptop.”
+
+Respect. Here’s how to make it happen:
+
+1. **Enable Linux (Crostini)**
+   Open Settings → Advanced → Developers → **Turn On Linux (Beta)**
+   (If it’s greyed out — sorry, your school’s IT admin already hates fun.)
+
+2. **Open the Terminal**
+   That scary black window that says “Penguin 🐧” — that’s the one.
+   Don’t panic if it asks for updates. Panic if it doesn’t.
+
+3. **Clone the repo manually**
+   Since there’s no fancy install script (yet 😭), you’ll have to go old-school:
+
+   ```bash
+   sudo apt update
+   sudo apt install -y git build-essential llvm-15 clang-15
+   git clone https://github.com/sinisterMage/WPlusPlus.git
+   cd WPlusPlus
+   cargo build --release -p wpp-cli
+   ```
+
+4. **Add W++ to PATH (optional but makes you look professional)**
+
+   ```bash
+   echo 'export PATH="$PATH:$HOME/WPlusPlus/target/release"' >> ~/.bashrc
+   source ~/.bashrc
+   ```
+
+5. **Run your first chaotic program**
+
+   ```bash
+   ingot run hello.wpp
+   ```
+
+   If it prints something — congrats!
+   You’ve just compiled a programming language on a Chromebook.
+   (Your fans are now operating at NASA levels.)
+
+> ⚠️ Disclaimer: W++ may cause your Chromebook to question its existence.
+> Please keep snacks nearby for emotional support.
+
+---
+
 ## 🧬 Tech Stack
 
 * **Language core:** Rust 🦀

@@ -57,9 +57,7 @@ jobs:
           sudo apt update
           sudo apt install -y llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }}
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
-          echo "LLVM_SYS_NO_POLLY=1" >> $GITHUB_ENV
           echo "✅ Installed LLVM ${{ matrix.llvm }} on Linux"
-
 
       # === macOS Intel LLVM ===
       - name: 🍎 Install LLVM on macOS (Intel)
@@ -81,9 +79,24 @@ jobs:
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
           echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
-      # === Build ===
-      - name: ⚙️ Build release binary
-        run: cargo build --release -p wpp-cli --target ${{ matrix.target }}
+      # === Build on Linux (with Polly disabled) ===
+      - name: ⚙️ Build release binary (Linux)
+        if: runner.os == 'Linux'
+        env:
+          LLVM_SYS_NO_POLLY: "1"
+          LLVM_SYS_150_PREFIX: "/usr/lib/llvm-15"
+          LLVM_SYS_150_LLVM_CONFIG_PATH: "/usr/lib/llvm-15/bin/llvm-config"
+        run: |
+          echo "🧩 Using LLVM config at: $LLVM_SYS_150_LLVM_CONFIG_PATH"
+          $LLVM_SYS_150_LLVM_CONFIG_PATH --version
+          cargo clean
+          cargo build --release -p wpp-cli --target ${{ matrix.target }}
+
+      # === Build on macOS (normal) ===
+      - name: ⚙️ Build release binary (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cargo build --release -p wpp-cli --target ${{ matrix.target }}
 
       # === Package ===
       - name: 📦 Package binary
@@ -128,7 +141,6 @@ jobs:
             tar -czf wpp-cli-x86_64-unknown-freebsd.tar.gz wpp-cli
             sha256 wpp-cli-x86_64-unknown-freebsd.tar.gz > wpp-cli-x86_64-unknown-freebsd.sha256
 
-
       - name: 🆙 Upload FreeBSD artifact
         uses: actions/upload-artifact@v4
         with:
@@ -142,7 +154,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-
 
     steps:
       - name: 🧱 Checkout repository
@@ -173,4 +184,3 @@ jobs:
             final-release/*.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-

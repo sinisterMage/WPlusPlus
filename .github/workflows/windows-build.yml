@@ -23,47 +23,64 @@ jobs:
           choco install cmake ninja git python3 visualstudio2022buildtools -y
           Write-Host "✅ Installed CMake, Ninja, Git, Python, and VS Build Tools"
 
-      - name: 🧩 Build LLVM from source (with llvm-config)
+      - name: 💾 Restore LLVM build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\llvm-src
+            C:\llvm-build
+            C:\LLVM
+          key: llvm15-msvc-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: 🧩 Build LLVM from source
         shell: pwsh
         run: |
           $srcDir = "C:\llvm-src"
           $buildDir = "C:\llvm-build"
           $installDir = "C:\LLVM"
 
-          Write-Host "⬇️ Cloning LLVM 15.0.7 source..."
-          git clone https://github.com/llvm/llvm-project.git $srcDir --branch llvmorg-15.0.7 --depth 1
+          if (!(Test-Path "$installDir\bin\llvm-config.exe")) {
+            Write-Host "⬇️ Cloning LLVM 15.0.7 source..."
+            if (!(Test-Path $srcDir)) {
+              git clone https://github.com/llvm/llvm-project.git $srcDir --branch llvmorg-15.0.7 --depth 1
+            } else {
+              Write-Host "📦 LLVM source already cached."
+            }
 
-          Write-Host "🛠️ Configuring LLVM with CMake..."
-          cmake -S "$srcDir\llvm" -B $buildDir `
-            -G "Ninja" `
-            -DCMAKE_BUILD_TYPE=Release `
-            -DCMAKE_INSTALL_PREFIX=$installDir `
-            -DLLVM_ENABLE_PROJECTS="clang;lld;llvm-tools" `
-            -DLLVM_TARGETS_TO_BUILD="X86;AArch64" `
-            -DLLVM_BUILD_TOOLS=ON `
-            -DLLVM_BUILD_UTILS=ON `
-            -DLLVM_INCLUDE_TESTS=OFF `
-            -DLLVM_INCLUDE_DOCS=OFF `
-            -DLLVM_INCLUDE_EXAMPLES=OFF `
-            -DLLVM_ENABLE_TERMINFO=OFF `
-            -DLLVM_ENABLE_LIBXML2=OFF `
-            -DLLVM_ENABLE_ZLIB=ON `
-            -DLLVM_ENABLE_ASSERTIONS=OFF
+            Write-Host "🛠️ Configuring LLVM with CMake (MSVC toolchain)..."
+            cmake -S "$srcDir\llvm" -B $buildDir `
+              -G "Ninja" `
+              -DCMAKE_BUILD_TYPE=Release `
+              -DCMAKE_INSTALL_PREFIX=$installDir `
+              -DCMAKE_C_COMPILER="cl.exe" `
+              -DCMAKE_CXX_COMPILER="cl.exe" `
+              -DLLVM_ENABLE_PROJECTS="clang;lld;clang-tools-extra" `
+              -DLLVM_TARGETS_TO_BUILD="X86;AArch64" `
+              -DLLVM_BUILD_TOOLS=ON `
+              -DLLVM_INCLUDE_TESTS=OFF `
+              -DLLVM_INCLUDE_DOCS=OFF `
+              -DLLVM_INCLUDE_EXAMPLES=OFF `
+              -DLLVM_ENABLE_TERMINFO=OFF `
+              -DLLVM_ENABLE_LIBXML2=OFF `
+              -DLLVM_ENABLE_ZLIB=ON `
+              -DLLVM_ENABLE_ASSERTIONS=OFF
 
-          Write-Host "⚙️ Building LLVM (this may take a while)..."
-          cmake --build $buildDir --target install --config Release
+            Write-Host "⚙️ Building LLVM (may take 30–90 minutes)..."
+            cmake --build $buildDir --target install --config Release
+          } else {
+            Write-Host "✅ Using cached LLVM build."
+          }
 
-          Write-Host "✅ LLVM installation complete."
+          # === llvm-config.exe detection ===
           $llvmConfig = "$installDir\bin\llvm-config.exe"
-
           if (!(Test-Path $llvmConfig)) {
-            Write-Host "⚠️ llvm-config.exe not found in install dir. Searching recursively..."
+            Write-Host "⚠️ llvm-config.exe not found. Searching recursively..."
             $found = Get-ChildItem -Path $installDir -Recurse -Filter "llvm-config.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($found) {
               Write-Host "✅ Found llvm-config.exe at $($found.FullName)"
               $llvmConfig = $found.FullName
             } else {
-              Write-Host "❌ llvm-config.exe missing completely. Build will likely fail."
+              Write-Host "❌ llvm-config.exe missing entirely — aborting build."
               exit 1
             }
           }

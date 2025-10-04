@@ -79,8 +79,17 @@ jobs:
           echo "$LLVM_DIR/bin" >> $GITHUB_PATH
           echo "✅ Configured LLVM for Apple Silicon at $LLVM_DIR"
 
-      # === Build on Linux (with Polly disabled) ===
+      - name: 🔥 Clean Cargo cache
+        if: runner.os == 'Linux'
+        run: |
+          rm -rf ~/.cargo/registry/index
+          rm -rf ~/.cargo/registry/cache
+          rm -rf ~/.cargo/git
+          cargo clean
+
+      # === Build on Linux (Polly-free) ===
       - name: ⚙️ Build release binary (Linux)
+        if: runner.os == 'Linux'
         env:
           LLVM_SYS_150_PREFIX: "/usr/lib/llvm-15"
           LLVM_SYS_150_LLVM_CONFIG_PATH: "/usr/lib/llvm-15/bin/llvm-config"
@@ -89,7 +98,6 @@ jobs:
           $LLVM_SYS_150_LLVM_CONFIG_PATH --version
           cargo clean
           cargo build --release -p wpp-cli --target ${{ matrix.target }}
-
 
       # === Build on macOS (normal) ===
       - name: ⚙️ Build release binary (macOS)

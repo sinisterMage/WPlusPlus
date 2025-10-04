@@ -1,9 +1,15 @@
-async funcy task() {
-    print("starting");
+async funcy calc() {
+    print("calculating...");
     await wait();
-    print("done");
+    return 42;
 }
 
 funcy wait() {
     print("waiting...");
+}
+
+async funcy main() {
+    let x = await calc();
+    print("result:");
+    print(x);
 }

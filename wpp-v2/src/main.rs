@@ -11,6 +11,7 @@ use parser::Parser;
 use codegen::Codegen;
 use inkwell::context::Context;
 
+
 fn main() {
     // === Read source file ===
     let args: Vec<String> = env::args().collect();
@@ -47,9 +48,13 @@ fn main() {
 
     // === Code generation (LLVM) ===
     let context = Context::create(); // ✅ Create the LLVM context
+    
 let mut codegen = Codegen::new(&context, "wpp_module");
 let main_fn = codegen.compile_main(&ast);
-
+if let Err(msg) = codegen.module.verify() {
+    eprintln!("❌ LLVM Verification failed:\n{}", msg.to_string());
+    panic!("LLVM IR verification failed!");
+}
 // 🧠 DEBUG: Dump the LLVM IR to console and file
 println!("\n🔬 === LLVM IR Dump ===");
 codegen.module.print_to_stderr();

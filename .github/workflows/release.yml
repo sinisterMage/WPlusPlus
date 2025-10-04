@@ -51,13 +51,14 @@ jobs:
           key: ${{ runner.os }}-${{ matrix.target }}-${{ hashFiles('**/Cargo.lock') }}
 
       # === Linux LLVM ===
-      - name: 🧩 Install LLVM on Linux
+      - name: 🧩 Install LLVM + Polly on Linux
         if: runner.os == 'Linux'
         run: |
           sudo apt update
-          sudo apt install -y llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }}
+          sudo apt install -y llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }} \
+            libpolly-${{ matrix.llvm }}-dev
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
-          echo "✅ Installed LLVM ${{ matrix.llvm }} on Linux"
+          echo "✅ Installed LLVM ${{ matrix.llvm }} + Polly on Linux"
 
       # === macOS Intel LLVM ===
       - name: 🍎 Install LLVM on macOS (Intel)

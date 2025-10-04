@@ -81,9 +81,7 @@ jobs:
 
       # === Build on Linux (with Polly disabled) ===
       - name: ⚙️ Build release binary (Linux)
-        if: runner.os == 'Linux'
         env:
-          LLVM_SYS_NO_POLLY: "1"
           LLVM_SYS_150_PREFIX: "/usr/lib/llvm-15"
           LLVM_SYS_150_LLVM_CONFIG_PATH: "/usr/lib/llvm-15/bin/llvm-config"
         run: |
@@ -91,6 +89,7 @@ jobs:
           $LLVM_SYS_150_LLVM_CONFIG_PATH --version
           cargo clean
           cargo build --release -p wpp-cli --target ${{ matrix.target }}
+
 
       # === Build on macOS (normal) ===
       - name: ⚙️ Build release binary (macOS)

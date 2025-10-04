@@ -40,16 +40,16 @@ impl Task {
         *self.finished.lock().unwrap()
     }
 }
+
 unsafe impl Send for Task {}
 unsafe impl Sync for Task {}
+
 /// === GLOBALS ===
 static ENGINE: OnceCell<EnginePtr> = OnceCell::new();
-static TASK_QUEUE: Lazy<Mutex<VecDeque<Arc<Task>>>> =
-    Lazy::new(|| Mutex::new(VecDeque::new()));
+static TASK_QUEUE: Lazy<Mutex<VecDeque<Arc<Task>>>> = Lazy::new(|| Mutex::new(VecDeque::new()));
 static LAST_RESULT: Lazy<Mutex<Option<i32>>> = Lazy::new(|| Mutex::new(None));
 
 /// === ENGINE ===
-/// Store the LLVM JIT engine globally
 pub fn set_engine(engine: ExecutionEngine<'static>) {
     let boxed = Box::new(engine);
     let ptr = Box::into_raw(boxed);
@@ -60,14 +60,13 @@ pub fn set_engine(engine: ExecutionEngine<'static>) {
     println!("🧠 [runtime] ENGINE stored globally");
 }
 
-/// Access engine unsafely (global lifetime)
 unsafe fn get_engine<'a>() -> &'a ExecutionEngine<'static> {
     let EnginePtr(ptr) = ENGINE.get().expect("ENGINE not initialized");
     &**ptr
 }
 
 /// === SPAWN ===
-/// Called from LLVM when starting an async function
+/// Launches a new async function pointer
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_spawn(ptr: *const ()) {
     if ptr.is_null() {
@@ -84,11 +83,11 @@ pub extern "C" fn wpp_spawn(ptr: *const ()) {
 }
 
 /// === YIELD ===
-/// Called from LLVM when async function hits `await`
+/// Cooperatively yield to next runnable task
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_yield() {
     println!("😴 [runtime] Yielding control...");
-    thread::sleep(Duration::from_millis(5));
+    thread::sleep(Duration::from_millis(2));
     schedule_next();
 }
 
@@ -104,20 +103,26 @@ pub extern "C" fn wpp_return(value: i32) {
     }
 
     *LAST_RESULT.lock().unwrap() = Some(value);
-    drop(queue);
 
+    // 🔧 Remove all finished tasks so they aren’t re-scheduled
+    queue.retain(|t| !t.is_finished());
+
+    drop(queue);
     schedule_next();
 }
 
 /// === GET LAST RESULT ===
-/// Allows awaiters to read last async return value
+/// Returns the last awaited async result
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_get_last_result() -> i32 {
     let res = *LAST_RESULT.lock().unwrap();
-    res.unwrap_or(0)
+    let val = res.unwrap_or(0);
+    println!("📦 [runtime] Fetched last async result = {}", val);
+    val
 }
 
 /// === SCHEDULER ===
+/// Executes tasks one by one cooperatively
 fn schedule_next() {
     let mut queue = TASK_QUEUE.lock().unwrap();
 
@@ -126,11 +131,13 @@ fn schedule_next() {
         return;
     }
 
+    // take next task
     let task = queue.pop_front().unwrap();
 
     if task.is_finished() {
         let val = task.result.lock().unwrap().unwrap_or(0);
-        println!("🎯 [runtime] Task {:?} already finished with value {}", task.func, val);
+        println!("🎯 [runtime] Task {:?} finished with {}", task.func, val);
+        // don’t re-enqueue finished ones
         return;
     }
 
@@ -138,9 +145,15 @@ fn schedule_next() {
 
     unsafe {
         let func: extern "C" fn() = mem::transmute(task.func);
-        drop(queue);
+        drop(queue); // unlock before user code
         func();
     }
 
-    thread::sleep(Duration::from_millis(5));
+    thread::sleep(Duration::from_millis(2));
+
+    // 🧹 only push back unfinished tasks
+    let mut queue = TASK_QUEUE.lock().unwrap();
+    if !task.is_finished() {
+        queue.push_back(task);
+    }
 }

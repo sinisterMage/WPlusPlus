@@ -724,40 +724,58 @@ Expr::Funcy { name, params, body, is_async } => {
 
 Expr::Return(expr_opt) => {
     let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+    let func_name = func.get_name().to_str().unwrap_or_default().to_string();
 
-    // Determine return value
+    // === Evaluate return expression (if any) ===
     let ret_val = if let Some(expr) = expr_opt {
-    let v = self.compile_expr(expr);
-    match v {
-        BasicValueEnum::IntValue(iv) => iv,
-        BasicValueEnum::PointerValue(pv) => {
-            // Just print the string for now and return 0
-            let printf = self.module.get_function("printf").unwrap_or_else(|| {
-                let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
-                let ty = self.context.i32_type().fn_type(&[i8ptr.into()], true);
-                self.module.add_function("printf", ty, None)
-            });
-            let fmt = self.builder.build_global_string_ptr("%s\n", "ret_fmt").unwrap();
-            let args = vec![fmt.as_pointer_value().into(), pv.into()];
-            self.builder.build_call(printf, &args, "print_return").unwrap();
-            self.i32_type.const_int(0, false)
+        let v = self.compile_expr(expr);
+        match v {
+            BasicValueEnum::IntValue(iv) => iv,
+            BasicValueEnum::PointerValue(pv) => {
+                // Print string returns (for debugging)
+                let printf = self.module.get_function("printf").unwrap_or_else(|| {
+                    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+                    let ty = self.context.i32_type().fn_type(&[i8ptr.into()], true);
+                    self.module.add_function("printf", ty, None)
+                });
+                let fmt = self.builder.build_global_string_ptr("%s\n", "ret_fmt").unwrap();
+                let args = vec![fmt.as_pointer_value().into(), pv.into()];
+                self.builder.build_call(printf, &args, "print_return").unwrap();
+                self.i32_type.const_int(0, false)
+            }
+            _ => self.i32_type.const_int(0, false),
         }
-        _ => self.i32_type.const_int(0, false),
+    } else {
+        self.i32_type.const_int(0, false)
+    };
+
+    // === Async return signal ===
+    // Only call wpp_return() if this is an async function (heuristic: name != "bootstrap_main" and present in module)
+    let void_ty = self.context.void_type();
+    if func_name != "bootstrap_main" {
+        if let Some(f) = self.module.get_function("wpp_return") {
+            self.builder
+                .build_call(f, &[ret_val.into()], "async_return_signal")
+                .unwrap();
+        } else {
+            let fn_ty = void_ty.fn_type(&[self.i32_type.into()], false);
+            let f = self.module.add_function("wpp_return", fn_ty, None);
+            self.builder
+                .build_call(f, &[ret_val.into()], "async_return_signal")
+                .unwrap();
+        }
     }
-} else {
-    self.i32_type.const_int(0, false)
-};
 
-
-    // Build actual LLVM return
+    // === Build actual LLVM return ===
     self.builder.build_return(Some(&ret_val)).unwrap();
 
-    // Move builder to a safe new block to prevent further codegen errors
+    // === Move builder to a fresh safe block ===
     let after_ret = self.context.append_basic_block(func, "after_return");
     self.builder.position_at_end(after_ret);
 
     self.i32_type.const_int(0, false).into()
 }
+
 
 
 
@@ -866,7 +884,8 @@ Expr::Await(inner) => {
 /// Create main(), compile nodes, and return i32.
 pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     let fn_type = self.i32_type.fn_type(&[], false);
-    let function = self.module.add_function("main", fn_type, None);
+    let function_name = "main_async";
+let function = self.module.add_function(function_name, fn_type, None);
     let entry = self.context.append_basic_block(function, "entry");
     self.builder.position_at_end(entry);
 
@@ -905,6 +924,18 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
             }
         }
     }
+    // === Ensure main_async has a return terminator ===
+if let Some(func) = self.module.get_function("main_async") {
+    let entry_block = func.get_first_basic_block().unwrap();
+    let last_block = func.get_last_basic_block().unwrap_or(entry_block);
+    self.builder.position_at_end(last_block);
+
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        let ret_val = self.i32_type.const_int(0, false);
+        self.builder.build_return(Some(&ret_val)).unwrap();
+    }
+}
+
 
     // === Detect async entry ===
 // === Detect async entry (prefer async funcy main) ===
@@ -934,7 +965,7 @@ if let Some(ref entry_name) = async_entry {
 
         // === Create bootstrap main instead of modifying real main ===
         let fn_type = self.i32_type.fn_type(&[], false);
-        let bootstrap = self.module.add_function("bootstrap_main", fn_type, None);
+let bootstrap = self.module.add_function("main", fn_type, None);
         let entry_block = self.context.append_basic_block(bootstrap, "entry");
         self.builder.position_at_end(entry_block);
 
@@ -985,7 +1016,12 @@ if let Some(ref entry_name) = async_entry {
     }
 
     let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
+    if async_entry.is_none() {
+    let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
     self.builder.build_return(Some(&ret_val)).unwrap();
+    return function;
+}
+
 
     function
 }
@@ -1283,24 +1319,24 @@ pub fn compile_async_funcy(
     params: &[String],
     body: &[Node],
 ) -> FunctionValue<'ctx> {
-    // === Remove any stale symbol from previous builds ===
+    // === Remove stale definitions (for hot recompilation) ===
     if let Some(existing) = self.module.get_function(name) {
         unsafe { let _ = existing.delete(); }
     }
 
     println!("⚙️ compiling async funcy {}", name);
 
-    // === Define signature: i32 return, all params are i32 for now ===
+    // === Define function signature (i32 return, i32 params) ===
     let param_types: Vec<BasicMetadataTypeEnum<'ctx>> =
         params.iter().map(|_| self.i32_type.into()).collect();
     let fn_type = self.i32_type.fn_type(&param_types, false);
 
-    // === Create the function and entry block ===
+    // === Create function + entry block ===
     let function = self.module.add_function(name, fn_type, None);
     let entry = self.context.append_basic_block(function, "entry");
     self.builder.position_at_end(entry);
 
-    // === Allocate local variables for parameters ===
+    // === Allocate and store parameters ===
     let mut local_vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)> = HashMap::new();
     for (i, pname) in params.iter().enumerate() {
         let param = function.get_nth_param(i as u32).unwrap();
@@ -1309,7 +1345,7 @@ pub fn compile_async_funcy(
         local_vars.insert(pname.clone(), (alloca, self.i32_type.as_basic_type_enum()));
     }
 
-    // Swap current variable map to isolate scope
+    // === Scoped variable map ===
     let old_vars = std::mem::replace(&mut self.vars, local_vars);
 
     // === Compile body ===
@@ -1318,13 +1354,13 @@ pub fn compile_async_funcy(
         last_val = self.compile_node(node);
     }
 
-    // === Default return value (0) ===
+    // === Determine return value (default to 0) ===
     let ret_val = match last_val {
         Some(BasicValueEnum::IntValue(iv)) => iv,
         _ => self.i32_type.const_int(0, false),
     };
 
-    // === Add async footer only if block is not already terminated ===
+    // === Add async footer only if block isn’t already terminated ===
     if self
         .builder
         .get_insert_block()
@@ -1333,33 +1369,34 @@ pub fn compile_async_funcy(
     {
         let void_ty = self.context.void_type();
 
-        // === wpp_yield() before returning ===
-        // Ensures async tasks yield control to scheduler after finishing
-        let yield_fn = self.module.get_function("wpp_yield").unwrap_or_else(|| {
-            let fn_ty = void_ty.fn_type(&[], false);
-            self.module.add_function("wpp_yield", fn_ty, None)
-        });
-        self.builder.build_call(yield_fn, &[], "final_yield").unwrap();
-
-        // === wpp_return(i32) — signals async function completion ===
+        // wpp_return(i32)
         let wpp_return = self.module.get_function("wpp_return").unwrap_or_else(|| {
             let fn_ty = void_ty.fn_type(&[self.i32_type.into()], false);
             self.module.add_function("wpp_return", fn_ty, None)
         });
+
+        // wpp_yield()
+        let yield_fn = self.module.get_function("wpp_yield").unwrap_or_else(|| {
+            let fn_ty = void_ty.fn_type(&[], false);
+            self.module.add_function("wpp_yield", fn_ty, None)
+        });
+
+        // --- async return footer ---
+        // 1️⃣ Notify runtime of result (only once)
         self.builder
-            .build_call(wpp_return, &[ret_val.into()], "async_return")
+            .build_call(wpp_return, &[ret_val.into()], "final_async_return")
             .unwrap();
 
-        // ✅ Final yield (optional) — scheduler can pick up next task
+        // 2️⃣ Yield to scheduler to finalize
         self.builder.build_call(yield_fn, &[], "yield_after_return").unwrap();
 
-        // ✅ Single clean return — returns the async function's i32 result
+        // 3️⃣ Actually return from LLVM func
         self.builder.build_return(Some(&ret_val)).unwrap();
     } else {
         println!("⚠️ [compile_async_funcy] Block already terminated, skipping footer");
     }
 
-    // === Restore scope ===
+    // === Restore outer variable scope ===
     self.vars = old_vars;
     self.functions.insert(name.to_string(), function);
 

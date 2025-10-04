@@ -57,7 +57,9 @@ jobs:
           sudo apt update
           sudo apt install -y llvm-${{ matrix.llvm }} llvm-${{ matrix.llvm }}-dev clang-${{ matrix.llvm }}
           echo "LLVM_SYS_${{ matrix.llvm }}_PREFIX=/usr/lib/llvm-${{ matrix.llvm }}" >> $GITHUB_ENV
+          echo "LLVM_SYS_NO_POLLY=1" >> $GITHUB_ENV
           echo "✅ Installed LLVM ${{ matrix.llvm }} on Linux"
+
 
       # === macOS Intel LLVM ===
       - name: 🍎 Install LLVM on macOS (Intel)
@@ -118,12 +120,14 @@ jobs:
           run: |
             pkg install -y rust llvm15 cmake pkgconf
             export LLVM_SYS_150_PREFIX=/usr/local/llvm15
+            export LLVM_SYS_NO_POLLY=1
             cargo build --release -p wpp-cli
             mkdir -p dist
             cp target/release/wpp-cli dist/
             cd dist
             tar -czf wpp-cli-x86_64-unknown-freebsd.tar.gz wpp-cli
             sha256 wpp-cli-x86_64-unknown-freebsd.tar.gz > wpp-cli-x86_64-unknown-freebsd.sha256
+
 
       - name: 🆙 Upload FreeBSD artifact
         uses: actions/upload-artifact@v4

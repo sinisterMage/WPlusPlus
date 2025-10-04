@@ -50,8 +50,10 @@ pub enum Expr {
         name: String,
         params: Vec<String>,
         body: Vec<Node>,
+        is_async: bool, // ✅ Added this field
     },
     Return(Option<Box<Expr>>),
+    Await(Box<Expr>), // ✅ new expression kind
 
 }
 

@@ -2,6 +2,7 @@ mod lexer;
 mod parser;
 mod ast;
 mod codegen;
+pub mod runtime;
 
 use std::env;
 use std::fs;

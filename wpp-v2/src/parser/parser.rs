@@ -136,11 +136,24 @@ TokenKind::Keyword(k) if k == "throw" => {
     self.advance();
     Some(Node::Expr(self.parse_throw()))
 }
+TokenKind::Keyword(k) if k == "async" => {
+    self.advance(); // consume 'async'
+    if self.check(TokenKind::Keyword("funcy".into())) {
+        self.advance(); // consume 'funcy'
+        let expr = self.parse_funcy(true);
+        Some(Node::Expr(expr))
+    } else {
+        panic!("Expected 'funcy' after 'async'");
+    }
+}
+
 TokenKind::Keyword(k) if k == "funcy" => {
     self.advance();
-    let expr = self.parse_funcy();
+    let expr = self.parse_funcy(false);
     Some(Node::Expr(expr))
 }
+
+
 
 TokenKind::Keyword(k) if k == "return" => {
     self.advance();
@@ -399,7 +412,7 @@ fn parse_throw(&mut self) -> Expr {
     }
     Expr::Throw { expr: Box::new(expr) }
 }
-fn parse_funcy(&mut self) -> Expr {
+fn parse_funcy(&mut self, is_async: bool) -> Expr {
     // expect function name
     let name = match self.advance().clone() {
         TokenKind::Identifier(n) => n,
@@ -443,8 +456,15 @@ fn parse_funcy(&mut self) -> Expr {
 
     self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close function body");
 
-    Expr::Funcy { name, params, body }
+    // ✅ include async flag in AST
+    Expr::Funcy {
+        name,
+        params,
+        body,
+        is_async,
+    }
 }
+
 
 
 
@@ -563,46 +583,53 @@ impl Parser {
     }
 }impl Parser {
     fn parse_primary(&mut self) -> Expr {
-        match self.advance().clone() {
-            TokenKind::Number(n) => Expr::Literal(n),
-            TokenKind::String(s) => Expr::StringLiteral(s),
-            TokenKind::Identifier(name) => {
-                // Function call?
-                if self.matches(&[TokenKind::Symbol("(".into())]) {
-                    let mut args = Vec::new();
+    // ✅ handle 'await' keyword before consuming other tokens
+    if self.check(TokenKind::Keyword("await".into())) {
+        self.advance(); // consume 'await'
+        let inner = self.parse_primary(); // or parse_expr() for full expression support
+        return Expr::Await(Box::new(inner));
+    }
 
-                    if !self.check(TokenKind::Symbol(")".into())) {
-                        loop {
-                            args.push(self.parse_expr());
-                            if !self.matches(&[TokenKind::Symbol(",".into())]) {
-                                break;
-                            }
+    match self.advance().clone() {
+        TokenKind::Number(n) => Expr::Literal(n),
+        TokenKind::String(s) => Expr::StringLiteral(s),
+        TokenKind::Identifier(name) => {
+            // Function call?
+            if self.matches(&[TokenKind::Symbol("(".into())]) {
+                let mut args = Vec::new();
+
+                if !self.check(TokenKind::Symbol(")".into())) {
+                    loop {
+                        args.push(self.parse_expr());
+                        if !self.matches(&[TokenKind::Symbol(",".into())]) {
+                            break;
                         }
                     }
-
-                    self.expect(TokenKind::Symbol(")".into()), "Expected ')' after function args");
-                    Expr::Call { name, args }
-                } else {
-                    Expr::Variable(name)
                 }
+
+                self.expect(TokenKind::Symbol(")".into()), "Expected ')' after function args");
+                Expr::Call { name, args }
+            } else {
+                Expr::Variable(name)
             }
+        }
 
-            TokenKind::Keyword(k) if k == "true" => Expr::BoolLiteral(true),
-            TokenKind::Keyword(k) if k == "false" => Expr::BoolLiteral(false),
+        TokenKind::Keyword(k) if k == "true" => Expr::BoolLiteral(true),
+        TokenKind::Keyword(k) if k == "false" => Expr::BoolLiteral(false),
 
-            TokenKind::Symbol(sym) if sym == "(".to_string() => {
-                let expr = self.parse_expr();
-                self.expect(TokenKind::Symbol(")".into()), "Expected ')' after group");
-                expr
-            }
+        TokenKind::Symbol(sym) if sym == "(".to_string() => {
+            let expr = self.parse_expr();
+            self.expect(TokenKind::Symbol(")".into()), "Expected ')' after group");
+            expr
+        }
 
-            unexpected => {
-    println!("⚠️ Unexpected token in expression: {:?}", unexpected);
-    Expr::Literal(0)
-}
-
+        unexpected => {
+            println!("⚠️ Unexpected token in expression: {:?}", unexpected);
+            Expr::Literal(0)
         }
     }
+}
+
 
     fn expect(&mut self, kind: TokenKind, msg: &str) {
         if self.check(kind.clone()) {

@@ -11,9 +11,17 @@ use inkwell::{
 use std::collections::HashMap;
 use inkwell::types::BasicType;
 use inkwell::types::BasicMetadataTypeEnum;
+use std::ffi::CString;
+use std::os::raw::c_char;
 
 
 use crate::ast::{Expr, Node};
+use crate::runtime;
+use std::mem;
+use std::ffi::c_void;
+
+
+
 
 /// The core LLVM code generator for W++
 pub struct Codegen <'ctx> {
@@ -30,6 +38,20 @@ pub struct Codegen <'ctx> {
     exception_value_i32: Option<PointerValue<'ctx>>,
     exception_value_str: Option<PointerValue<'ctx>>,
         pub functions: HashMap<String, FunctionValue<'ctx>>,
+}
+fn get_or_declare_fn<'ctx>(
+    module: &Module<'ctx>,
+    context: &'ctx Context,
+    name: &str,
+    ret_ty: inkwell::types::BasicTypeEnum<'ctx>,
+    args: &[BasicMetadataTypeEnum<'ctx>],
+) -> FunctionValue<'ctx> {
+    if let Some(existing) = module.get_function(name) {
+        existing
+    } else {
+        let fn_type = ret_ty.fn_type(args, false);
+        module.add_function(name, fn_type, None)
+    }
 }
 
 impl<'ctx> Codegen<'ctx> {
@@ -687,10 +709,15 @@ self.i32_type.const_int(0, false).into()
 
 
 
-Expr::Funcy { name, params, body } => {
-    self.compile_funcy(name, params, body);
+Expr::Funcy { name, params, body, is_async } => {
+    if *is_async {
+        self.compile_async_funcy(name, params, body);
+    } else {
+        self.compile_funcy(name, params, body);
+    }
     self.i32_type.const_int(0, false).into()
 }
+
 
 
 
@@ -733,6 +760,17 @@ Expr::Return(expr_opt) => {
 
 
 
+Expr::Await(inner) => {
+    let awaited_val = self.compile_expr(inner);
+    let void_ty = self.context.void_type();
+    let yield_fn = self.module.get_function("wpp_yield").unwrap_or_else(|| {
+        let fn_type = void_ty.fn_type(&[], false);
+        self.module.add_function("wpp_yield", fn_type, None)
+    });
+    self.builder.build_call(yield_fn, &[], "await_yield").unwrap();
+    awaited_val
+}
+
 
 
 
@@ -742,6 +780,7 @@ Expr::Return(expr_opt) => {
         _ => panic!("Unhandled expression: {:?}", expr),
     }
 }
+
 
     /// Compile a statement. Returns last expression value (if any).
     pub fn compile_node(&mut self, node: &Node) -> Option<BasicValueEnum<'ctx>> {
@@ -855,51 +894,147 @@ for node in nodes {
 
 // === Pass 2: Compile function bodies ===
 for node in nodes {
-    if let Node::Expr(Expr::Funcy { name, params, body }) = node {
-        self.compile_funcy(name, params, body);
+    if let Node::Expr(Expr::Funcy { name, params, body, is_async }) = node {
+        if *is_async {
+            self.compile_async_funcy(name, params, body);
+        } else {
+            self.compile_funcy(name, params, body);
+        }
     }
 }
 
-
-    // === Now compile regular statements (calls, control flow, etc.)
-    let mut last_int: Option<IntValue> = None;
-    for node in nodes {
-        if let Some(v) = self.compile_node(node) {
-            if let BasicValueEnum::IntValue(iv) = v {
-                last_int = Some(iv);
-            }
+// === Compile top-level nodes ===
+let mut last_int: Option<IntValue> = None;
+for node in nodes {
+    if let Some(v) = self.compile_node(node) {
+        if let BasicValueEnum::IntValue(iv) = v {
+            last_int = Some(iv);
         }
     }
+}
 
-    self.ensure_builder_position();
-    let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
-    self.builder.build_return(Some(&ret_val)).unwrap();
-    function
+// === Detect and spawn async entry ===
+// ✅ Detect and spawn the first async entry (e.g. `async funcy task`)
+if let Some(async_entry) = nodes.iter().find_map(|n| {
+    if let Node::Expr(Expr::Funcy { name, is_async: true, .. }) = n {
+        Some(name)
+    } else {
+        None
+    }
+}) {
+    if let Some(fn_val) = self.module.get_function(async_entry) {
+        println!("⚡ Injecting async entry `{}` into main()", async_entry);
+
+        // === Reposition builder to main's entry block
+        let entry_block = function.get_first_basic_block().unwrap();
+        if self.builder.get_insert_block().is_none()
+            || self.builder.get_insert_block().unwrap().get_parent().unwrap() != function
+        {
+            self.builder.position_at_end(entry_block);
+        }
+
+        // === Declare types
+        let void_ty = self.context.void_type();
+        let fn_ptr_ty = void_ty.fn_type(&[], false).ptr_type(AddressSpace::default());
+        let spawn_ty = void_ty.fn_type(&[fn_ptr_ty.into()], false);
+
+        // === Declare extern functions (if not already)
+        let spawn_fn = self.module.get_function("wpp_spawn").unwrap_or_else(|| {
+            self.module.add_function("wpp_spawn", spawn_ty, None)
+        });
+        let yield_fn = self.module.get_function("wpp_yield").unwrap_or_else(|| {
+            let fn_ty = void_ty.fn_type(&[], false);
+            self.module.add_function("wpp_yield", fn_ty, None)
+        });
+
+        // === Inject spawn call
+        self.builder
+            .build_call(
+                spawn_fn,
+                &[fn_val.as_global_value().as_pointer_value().into()],
+                "spawn_task",
+            )
+            .unwrap();
+
+        // === Inject yield call to start scheduler
+        self.builder
+            .build_call(yield_fn, &[], "start_scheduler")
+            .unwrap();
+
+        // === Return 0
+        let ret_val = self.i32_type.const_int(0, false);
+        self.builder.build_return(Some(&ret_val)).unwrap();
+    } else {
+        println!("⚠️ Async entry declared but not found in module!");
+    }
+} else {
+    // No async entry, just return 0
+    self.builder
+        .build_return(Some(&self.i32_type.const_int(0, false)))
+        .unwrap();
+}
+
+function
+
+
+
+
+
 }
 
 
 
     pub fn run_jit(&self) {
-    let engine = self.create_engine();
+    // 1️⃣ Create JIT engine
+    let engine: ExecutionEngine<'_> = self.create_engine();
 
+    // 2️⃣ Register the global engine for runtime access
+    // (This is the key part you were missing!)
     unsafe {
-        // === Cross-platform printf registration ===
-        use libc::printf as c_printf; // works on all OSes, including Windows
+        // SAFETY: we leak the engine as a global static pointer for async tasks
+        crate::runtime::set_engine(mem::transmute::<ExecutionEngine<'_>, ExecutionEngine<'static>>(engine.clone()));
+    }
+
+    println!("✅ [jit] Execution engine registered globally");
+
+    // 3️⃣ Map printf, spawn, yield, etc.
+    unsafe {
+        use libc::printf;
 
         if let Some(func) = self.module.get_function("printf") {
-            engine.add_global_mapping(&func, c_printf as usize);
+            engine.add_global_mapping(&func, printf as usize);
         }
 
-        // === Execute main() ===
-        let addr = engine
-            .get_function_address("main")
-            .expect("Failed to get main() address");
-        let main_fn: unsafe extern "C" fn() -> i32 = std::mem::transmute(addr);
-        let result = main_fn();
-
-        println!("✅ JIT result from main(): {}", result);
-    }
+        extern "C" fn wpp_spawn_stub(ptr: *const c_void) {
+    crate::runtime::wpp_spawn(ptr);
 }
+
+        extern "C" fn wpp_yield_stub() {
+            crate::runtime::wpp_yield();
+        }
+
+        if let Some(spawn) = self.module.get_function("wpp_spawn") {
+            engine.add_global_mapping(&spawn, wpp_spawn_stub as usize);
+        }
+
+        if let Some(yield_fn) = self.module.get_function("wpp_yield") {
+            engine.add_global_mapping(&yield_fn, wpp_yield_stub as usize);
+        }
+    }
+
+    // 4️⃣ Run the compiled "main" function
+    let main_addr = engine
+        .get_function_address("main")
+        .expect("Failed to get main() address");
+    let main_fn: extern "C" fn() -> i32 = unsafe { mem::transmute(main_addr) };
+    let result = main_fn();
+
+    println!("🏁 [jit] Finished running main(), result = {}", result);
+}
+
+
+
+
 
 
 fn compile_switch(
@@ -1096,6 +1231,78 @@ local_vars.insert(param_name.clone(), (alloca, ty));
     }
 
     self.functions.insert(name.to_string(), function);
+    function
+}
+
+pub fn compile_async_funcy(
+    &mut self,
+    name: &str,
+    params: &[String],
+    body: &[Node],
+) -> FunctionValue<'ctx> {
+    // === Remove any stale symbol from previous builds ===
+    if let Some(existing) = self.module.get_function(name) {
+        unsafe { let _ = existing.delete(); }
+    }
+
+    println!("⚙️ compiling async funcy {}", name);
+
+    // === Define signature: i32 return, all params are i32 for now ===
+    let param_types: Vec<BasicMetadataTypeEnum<'ctx>> =
+        params.iter().map(|_| self.i32_type.into()).collect();
+    let fn_type = self.i32_type.fn_type(&param_types, false);
+
+    // === Create the function and entry block ===
+    let function = self.module.add_function(name, fn_type, None);
+    let entry = self.context.append_basic_block(function, "entry");
+    self.builder.position_at_end(entry);
+
+    // === Allocate local variables for parameters ===
+    let mut local_vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)> = HashMap::new();
+    for (i, pname) in params.iter().enumerate() {
+        let param = function.get_nth_param(i as u32).unwrap();
+        let alloca = self.builder.build_alloca(self.i32_type, pname).unwrap();
+        self.builder.build_store(alloca, param).unwrap();
+        local_vars.insert(pname.clone(), (alloca, self.i32_type.as_basic_type_enum()));
+    }
+
+    // Swap current variable map to isolate scope
+    let old_vars = std::mem::replace(&mut self.vars, local_vars);
+
+    // === Compile body ===
+    let mut last_val: Option<BasicValueEnum<'ctx>> = None;
+    for node in body {
+        last_val = self.compile_node(node);
+    }
+
+    // === Return value (default = 0) ===
+    let ret_val = match last_val {
+        Some(BasicValueEnum::IntValue(iv)) => iv,
+        _ => self.i32_type.const_int(0, false),
+    };
+
+    // === Call wpp_yield() before returning ===
+    // This ensures async tasks yield back to the scheduler after finishing
+    let void_ty = self.context.void_type();
+    let yield_fn = self.module.get_function("wpp_yield").unwrap_or_else(|| {
+        let fn_ty = void_ty.fn_type(&[], false);
+        self.module.add_function("wpp_yield", fn_ty, None)
+    });
+
+    self.builder
+        .build_call(yield_fn, &[], "final_yield")
+        .unwrap();
+
+    // === Return from the async function cleanly ===
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        self.builder.build_return(Some(&ret_val)).unwrap();
+    }
+
+    // Restore old scope
+    self.vars = old_vars;
+    self.functions.insert(name.to_string(), function);
+
+    println!("✅ async funcy {} compiled successfully", name);
     function
 }
 

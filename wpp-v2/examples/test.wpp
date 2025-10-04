@@ -1,20 +1,9 @@
-funcy fact(n) {
-   if (n <= 1) {
-    return 1;
+async funcy task() {
+    print("starting");
+    await wait();
+    print("done");
 }
 
-    return n * fact(n - 1);
+funcy wait() {
+    print("waiting...");
 }
-
-funcy greet(x) {
-    print(x);
-    return greet2();
-}
-
-funcy greet2() {
-    print("Chaining works!");
-    return 42;
-}
-
-print(fact(5));
-print(greet("Hi from W++ recursion!"));

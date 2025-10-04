@@ -23,7 +23,7 @@ jobs:
           choco install cmake ninja git python3 visualstudio2022buildtools -y
           Write-Host "✅ Installed CMake, Ninja, Git, Python, and VS Build Tools"
 
-      - name: 🧩 Build LLVM from source
+      - name: 🧩 Build LLVM from source (with llvm-config)
         shell: pwsh
         run: |
           $srcDir = "C:\llvm-src"
@@ -31,46 +31,45 @@ jobs:
           $installDir = "C:\LLVM"
 
           Write-Host "⬇️ Cloning LLVM 15.0.7 source..."
-          git clone https://github.com/llvm/llvm-project.git $srcDir --depth 1 --branch llvmorg-15.0.7
+          git clone https://github.com/llvm/llvm-project.git $srcDir --branch llvmorg-15.0.7 --depth 1
 
           Write-Host "🛠️ Configuring LLVM with CMake..."
           cmake -S "$srcDir\llvm" -B $buildDir `
             -G "Ninja" `
             -DCMAKE_BUILD_TYPE=Release `
             -DCMAKE_INSTALL_PREFIX=$installDir `
-            -DLLVM_ENABLE_PROJECTS="clang;lld" `
+            -DLLVM_ENABLE_PROJECTS="clang;lld;llvm-tools" `
             -DLLVM_TARGETS_TO_BUILD="X86;AArch64" `
             -DLLVM_BUILD_TOOLS=ON `
+            -DLLVM_BUILD_UTILS=ON `
             -DLLVM_INCLUDE_TESTS=OFF `
             -DLLVM_INCLUDE_DOCS=OFF `
             -DLLVM_INCLUDE_EXAMPLES=OFF `
             -DLLVM_ENABLE_TERMINFO=OFF `
             -DLLVM_ENABLE_LIBXML2=OFF `
             -DLLVM_ENABLE_ZLIB=ON `
-            -DLLVM_INSTALL_TOOLCHAIN_ONLY=OFF
+            -DLLVM_ENABLE_ASSERTIONS=OFF
 
           Write-Host "⚙️ Building LLVM (this may take a while)..."
           cmake --build $buildDir --target install --config Release
 
-          Write-Host "✅ LLVM installed to $installDir"
-
-          # === llvm-config sanity check ===
+          Write-Host "✅ LLVM installation complete."
           $llvmConfig = "$installDir\bin\llvm-config.exe"
+
           if (!(Test-Path $llvmConfig)) {
-            Write-Host "⚠️ llvm-config.exe not found in expected path. Searching..."
-            $found = Get-ChildItem -Recurse -Path $installDir -Filter "llvm-config.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
+            Write-Host "⚠️ llvm-config.exe not found in install dir. Searching recursively..."
+            $found = Get-ChildItem -Path $installDir -Recurse -Filter "llvm-config.exe" -ErrorAction SilentlyContinue | Select-Object -First 1
             if ($found) {
-              Write-Host "✅ Found llvm-config.exe at: $($found.FullName)"
+              Write-Host "✅ Found llvm-config.exe at $($found.FullName)"
               $llvmConfig = $found.FullName
             } else {
-              Write-Host "❌ llvm-config.exe missing entirely. Build may fail."
+              Write-Host "❌ llvm-config.exe missing completely. Build will likely fail."
+              exit 1
             }
           }
 
-          if (Test-Path $llvmConfig) {
-            Write-Host "🔍 llvm-config version check:"
-            & $llvmConfig --version
-          }
+          Write-Host "🔍 llvm-config version check:"
+          & $llvmConfig --version
 
           "LLVM_SYS_150_PREFIX=$installDir" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           "LLVM_CONFIG_PATH=$llvmConfig" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append

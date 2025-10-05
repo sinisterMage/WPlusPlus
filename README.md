@@ -139,18 +139,79 @@ Respect. Here’s how to make it happen:
 
 ---
 
-## 🔮 Roadmap
 
-* [x] LLVM-based backend
-* [x] Core language ported
-* [x] Ingot CLI integration
-* [x] FreeBSD builds (because why not)
-* [ ] HTTP & API support
-* [ ] Async / Await
-* [ ] OOPSIE Framework ™
-* [ ] Windows support (eventually…)
+
+## 🗺️ W++ Roadmap — *The Path to Controlled Chaos*
+
+> 🦥 *Will probably be done once I come back from Cyprus.*
+> Because nothing says “software stability” like beachside debugging and questionable design decisions.
 
 ---
+
+### 🧪 **Beta 2.0 — Async Awaits the Brave**
+
+* Full `async/await` support with an improved (or more buggy, depends on wloth's mood) runtime scheduler.
+* `const` declarations (because variables deserve boundaries too).
+* Stack stability fixes (and some philosophical ones).
+
+> “Await the future. Literally.”
+
+---
+
+### ☁️ **Beta 2.5 — The Web Awakens**
+
+* Native HTTP support (`http.get`, `http.post`, etc.).
+* Built-in API endpoint syntax (`api.create("/sloth", handler)`).
+* CORS management, web requests, and mild regret.
+
+> “REST? Never heard of it — we do *chaos-driven development*.”
+
+---
+
+### ⚛️ **Beta 3.0 — Multithreading via React Hooks**
+
+* Revolutionary concurrency model using **React-style hooks** to manage thread state.
+* `useThread()`, `useState()`, `useSloth()` — for when you want your threads *stateful and tired*.
+
+> “Finally, concurrency that hooks your soul.”
+
+---
+
+### 🦥 **Release 1.0 — The OOPSIE Framework + Ingot Registry**
+
+* The legendary **OOPSIE Framework™** (Object-Oriented Programming Sometimes Isn't Excellent).
+* Launch of the **Ingot Package Registry** (`ingot publish`, `ingot install`).
+* General sense of completion, but also confusion.
+
+> “We’ll call it 1.0 when it stops compiling accidentally.”
+
+---
+
+### 🧩 **Planned Libraries (a.k.a. The Slothverse Expansion Pack)**
+
+| Library                  | Description                                                                                                 |
+| ------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| 🗄️ **WDB**              | Drivers for SQLite, PostgreSQL, MySQL, MongoDB, Firestore/Firebase, and Apache Cassandra — because why not. |
+| ☀️ **Proxima Notebooks** | Jupyter-style interactive notebooks, but set in a solar system. Each planet = notebook.                     |
+| 🕰️ **Pascal Interop**   | Seamless interop with Pascal, for historical authenticity.                                                  |
+| 🕸️ **CORS Lib**         | Cross-Origin Ridiculous Support — handle web chaos gracefully (or not).                                     |
+| 💫 **More coming soon…** | Possibly something that breaks physics. Stay tuned.                                                         |
+
+---
+
+### 🧃 Future Dreams / Threats
+
+* `async drop` for emotionally detached memory management.
+* Native graphics API (`draw.rect`, `draw.wloth`).
+* W++ Cloud ☁️ — serverless, stateless, sanity-less.
+* Quantum support (once we figure out what “entangled null” means).
+
+---
+
+> 🦥 *“W++ will never be finished — only temporarily stable.”*
+
+---
+
 
 ### 🦥 Philosophy
 

@@ -93,9 +93,10 @@ fn expect_symbol(&mut self, sym: &str) {
 impl Parser {
     fn parse_stmt(&mut self) -> Option<Node> {
     match self.peek() {
-        TokenKind::Keyword(k) if k == "let" => {
+        TokenKind::Keyword(k) if k == "let" || k == "const" => {
+            let is_const = k == "const"; // ✅ determine constness
             self.advance();
-            self.parse_let()
+            self.parse_let(is_const)
         }
 
         TokenKind::Keyword(k) if k == "if" => {
@@ -191,24 +192,25 @@ TokenKind::Keyword(k) if k == "return" => {
 
 
 
-    fn parse_let(&mut self) -> Option<Node> {
-        if let TokenKind::Identifier(name) = self.advance().clone() {
-            // expect '='
-            if let TokenKind::Symbol(s) = self.advance().clone() {
-                if s == "=" {
-                    let expr = self.parse_expr();
-                    // expect optional ';'
-                    if let TokenKind::Symbol(semi) = self.peek() {
-                        if semi == ";" {
-                            self.advance();
-                        }
+    fn parse_let(&mut self, is_const: bool) -> Option<Node> {
+    if let TokenKind::Identifier(name) = self.advance().clone() {
+        // expect '='
+        if let TokenKind::Symbol(s) = self.advance().clone() {
+            if s == "=" {
+                let expr = self.parse_expr();
+                // optional ';'
+                if let TokenKind::Symbol(semi) = self.peek() {
+                    if semi == ";" {
+                        self.advance();
                     }
-                    return Some(Node::Let { name, value: expr });
                 }
+                return Some(Node::Let { name, value: expr, is_const });
             }
         }
-        None
     }
+    None
+}
+
     fn parse_if(&mut self) -> Node {
         // parse condition (must start with "(")
         self.expect(TokenKind::Symbol("(".into()), "Expected '(' after 'if'");
@@ -264,12 +266,12 @@ fn parse_for(&mut self) -> Expr {
 
     if !self.check(TokenKind::Symbol(";".into())) {
         if self.check(TokenKind::Keyword("let".into())) {
-            // 👇 parse_let() already consumes its trailing ';'
-            self.advance(); // consume 'let'
-            if let Some(node) = self.parse_let() {
-                init = Some(node);
-            }
-        } else {
+    self.advance(); // consume 'let'
+    if let Some(node) = self.parse_let(false) {
+        init = Some(node);
+    }
+}
+else {
             // parse expression initializer
             let expr = self.parse_expr();
             init = Some(Node::Expr(expr));

@@ -22,8 +22,12 @@ use std::ffi::c_void;
 
 
 
-
-
+#[derive(Clone)]
+pub struct VarInfo<'ctx> {
+    pub ptr: PointerValue<'ctx>,
+    pub ty: BasicTypeEnum<'ctx>,
+    pub is_const: bool,
+}
 /// The core LLVM code generator for W++
 pub struct Codegen <'ctx> {
     pub context: &'ctx Context,
@@ -32,7 +36,8 @@ pub struct Codegen <'ctx> {
     pub i32_type: inkwell::types::IntType<'ctx>,
 
     /// Symbol table: name -> (alloca ptr, type of the slot)
-    pub vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)>,
+    pub vars: HashMap<String, VarInfo<'ctx>>,
+        pub globals: HashMap<String, VarInfo<'ctx>>, // ✅ persistent globals
         pub loop_stack: Vec<(inkwell::basic_block::BasicBlock<'ctx>, inkwell::basic_block::BasicBlock<'ctx>)>,
     pub switch_stack: Vec<inkwell::basic_block::BasicBlock<'ctx>>,
     exception_flag: Option<PointerValue<'ctx>>,
@@ -85,6 +90,8 @@ impl<'ctx> Codegen<'ctx> {
         exception_value_i32: Some(exc_i32.as_pointer_value()),
         exception_value_str: Some(exc_str.as_pointer_value()),
             functions: HashMap::new(), // ✅
+            globals: HashMap::new(), // ✅ added
+
     }
 }
 
@@ -128,42 +135,54 @@ Expr::StringLiteral(s) => {
 
         // === Variable lookup ===
         Expr::Variable(name) => {
-            let (ptr, ty) = self
-                .vars
-                .get(name)
-                .unwrap_or_else(|| panic!("Unknown variable '{}'", name));
-            self.builder.build_load(*ty, *ptr, &format!("load_{}", name)).unwrap().into()
-        }
+    let var = self.vars.get(name)
+        .or_else(|| self.globals.get(name)) // ✅ fallback
+        .unwrap_or_else(|| panic!("Unknown variable '{}'", name));
+
+    self.builder
+        .build_load(var.ty, var.ptr, &format!("load_{}", name))
+        .unwrap()
+        .into()
+}
+
 
         // === Binary operation ===
         Expr::BinaryOp { left, op, right } => {
     if op == "=" {
-        if let Expr::Variable(var_name) = left.as_ref() {
-            // Compute RHS
-            let value = self.compile_expr(right.as_ref());
+    println!("🧩 Detected assignment expression!");
 
-            // Lookup variable and store
-            if let Some((ptr, _)) = self.vars.get(var_name) {
-                self.builder.build_store(*ptr, value).unwrap();
+    if let Expr::Variable(var_name) = left.as_ref() {
+        println!("➡️ Assigning to variable: {}", var_name);
 
-                // ✅ Ensure the result is always an i32 (if not already)
-                let result = match value {
-                    BasicValueEnum::IntValue(iv) => iv,
-                    BasicValueEnum::PointerValue(_) => {
-                        // Assigning pointer types not supported yet
-                        self.i32_type.const_int(0, false)
-                    }
-                    _ => self.i32_type.const_int(0, false),
-                };
+        // Compute RHS
+        let value = self.compile_expr(right.as_ref());
 
-                return result.into();
-            } else {
-                panic!("Unknown variable in assignment: {}", var_name);
+        // Lookup variable info
+        if let Some(var) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
+            println!("🔍 Found variable {} (is_const = {})", var_name, var.is_const);
+            if var.is_const {
+                panic!("❌ Cannot assign to constant variable '{}'", var_name);
             }
-        } else {
-            panic!("Left-hand side of assignment must be a variable");
-        }
+
+            self.builder.build_store(var.ptr, value).unwrap();
+
+    // ✅ Return consistent i32 result
+    let result = match value {
+        BasicValueEnum::IntValue(iv) => iv,
+        BasicValueEnum::PointerValue(_) => self.i32_type.const_int(0, false),
+        _ => self.i32_type.const_int(0, false),
+    };
+
+    return result.into();
+} else {
+    panic!("Unknown variable in assignment: {}", var_name);
+}
+
+    } else {
+        panic!("Left-hand side of assignment must be a variable");
     }
+}
+
 
     // === Arithmetic and comparison ===
     let left_raw = self.compile_expr(left.as_ref());
@@ -482,10 +501,11 @@ Expr::For { init, cond, post, body } => {
         Expr::BinaryOp { left, op, right } if op == "=" => {
             if let Expr::Variable(var_name) = left.as_ref() {
                 let value = self.compile_expr(right.as_ref());
-                if let Some((ptr, _)) = self.vars.get(var_name) {
-                    self.builder.build_store(*ptr, value).unwrap();
-                } else {
-                    panic!("Unknown variable in for-loop post: {}", var_name);
+                if let Some(var) = self.vars.get(var_name) {
+    if var.is_const {
+        panic!("❌ Cannot assign to constant variable '{}'", var_name);
+    }
+    self.builder.build_store(var.ptr, value).unwrap();
                 }
             }
         }
@@ -666,7 +686,15 @@ if let Some(var) = catch_var {
     let alloca = self.builder.build_alloca(str_ty, var).unwrap();
     let val_str = self.builder.build_load(str_ty, val_str_ptr, "ex_str").unwrap();
     self.builder.build_store(alloca, val_str).unwrap();
-    self.vars.insert(var.clone(), (alloca, str_ty.as_basic_type_enum()));
+    self.vars.insert(
+    var.clone(),
+    VarInfo {
+        ptr: alloca,
+        ty: str_ty.as_basic_type_enum(),
+        is_const: false,
+    },
+);
+
 }
 for node in catch_block {
     self.compile_node(node);
@@ -834,33 +862,38 @@ Expr::Await(inner) => {
     }
 
     match node {
-        Node::Let { name, value } => {
-            let v = self.compile_expr(value);
-
-            let (alloca, ty): (PointerValue, BasicTypeEnum) = match v {
-                BasicValueEnum::IntValue(_) => {
-                    let ty = self.i32_type.as_basic_type_enum();
-                    let p = self.builder.build_alloca(ty, name).unwrap();
-                    (p, ty)
-                }
-                BasicValueEnum::PointerValue(_) => {
-                    let ty = self
-                        .context
-                        .i8_type()
-                        .ptr_type(AddressSpace::default())
-                        .as_basic_type_enum();
-                    let p = self.builder.build_alloca(ty, name).unwrap();
-                    (p, ty)
-                }
-                other => panic!("let {} = <unsupported type: {:?}>", name, other),
-            };
-
-            self.builder.build_store(alloca, v).unwrap();
-            self.vars.insert(name.clone(), (alloca, ty));
-            None
+        
+        Node::Let { name, value, is_const } => {
+    let v = self.compile_expr(value);
+    let (alloca, ty): (PointerValue, BasicTypeEnum) = match v {
+        BasicValueEnum::IntValue(_) => {
+            let ty = self.i32_type.as_basic_type_enum();
+            let p = self.builder.build_alloca(ty, name).unwrap();
+            (p, ty)
         }
+        BasicValueEnum::PointerValue(_) => {
+            let ty = self.context.i8_type()
+                .ptr_type(AddressSpace::default())
+                .as_basic_type_enum();
+            let p = self.builder.build_alloca(ty, name).unwrap();
+            (p, ty)
+        }
+        _ => panic!("unsupported type"),
+    };
+
+    self.builder.build_store(alloca, v).unwrap();
+
+    let info = VarInfo { ptr: alloca, ty, is_const: *is_const };
+    self.vars.insert(name.clone(), info.clone());
+    self.globals.insert(name.clone(), info); // ✅ persist globally
+
+    None
+}
+
+
 
         Node::Expr(expr) => {
+            
             let v = self.compile_expr(expr);
 
             // ✅ Stop if this expression emitted a terminator (e.g. break/continue)
@@ -885,7 +918,7 @@ Expr::Await(inner) => {
 pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     let fn_type = self.i32_type.fn_type(&[], false);
     let function_name = "main_async";
-let function = self.module.add_function(function_name, fn_type, None);
+    let function = self.module.add_function(function_name, fn_type, None);
     let entry = self.context.append_basic_block(function, "entry");
     self.builder.position_at_end(entry);
 
@@ -904,7 +937,7 @@ let function = self.module.add_function(function_name, fn_type, None);
     self.exception_value_i32 = Some(val_i32_ptr);
     self.exception_value_str = Some(val_str_ptr);
 
-    // === Pass 1: predeclare function signatures ===
+    // === Pass 1: predeclare all function signatures ===
     for node in nodes {
         if let Node::Expr(Expr::Funcy { name, params, .. }) = node {
             let param_types: Vec<_> = params.iter().map(|_| self.i32_type.into()).collect();
@@ -924,48 +957,29 @@ let function = self.module.add_function(function_name, fn_type, None);
             }
         }
     }
-    // === Ensure main_async has a return terminator ===
-if let Some(func) = self.module.get_function("main_async") {
-    let entry_block = func.get_first_basic_block().unwrap();
-    let last_block = func.get_last_basic_block().unwrap_or(entry_block);
-    self.builder.position_at_end(last_block);
+// === Ensure main_async has a proper terminator ===
+// (Do NOT insert return yet — we’ll do it after top-level compilation)
 
-    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
-        let ret_val = self.i32_type.const_int(0, false);
-        self.builder.build_return(Some(&ret_val)).unwrap();
-    }
-}
-
-
-    // === Detect async entry ===
 // === Detect async entry (prefer async funcy main) ===
 let async_entry = nodes.iter().find_map(|n| {
     if let Node::Expr(Expr::Funcy { name, is_async: true, .. }) = n {
-        if name == "main" {
-            Some(name.clone())
-        } else {
-            None
-        }
-    } else {
-        None
-    }
+        if name == "main" { Some(name.clone()) } else { None }
+    } else { None }
 }).or_else(|| {
     nodes.iter().find_map(|n| {
         if let Node::Expr(Expr::Funcy { name, is_async: true, .. }) = n {
             Some(name.clone())
-        } else {
-            None
-        }
+        } else { None }
     })
 });
 
+// === Async bootstrap ===
 if let Some(ref entry_name) = async_entry {
     if let Some(fn_val) = self.module.get_function(entry_name) {
         println!("⚡ Injecting async entry `{}` via bootstrap", entry_name);
 
-        // === Create bootstrap main instead of modifying real main ===
         let fn_type = self.i32_type.fn_type(&[], false);
-let bootstrap = self.module.add_function("main", fn_type, None);
+        let bootstrap = self.module.add_function("main", fn_type, None);
         let entry_block = self.context.append_basic_block(bootstrap, "entry");
         self.builder.position_at_end(entry_block);
 
@@ -990,40 +1004,64 @@ let bootstrap = self.module.add_function("main", fn_type, None);
                 "spawn_main_task",
             )
             .unwrap();
-
         self.builder.build_call(yield_fn, &[], "start_scheduler").unwrap();
 
         let ret_val = self.i32_type.const_int(0, false);
         self.builder.build_return(Some(&ret_val)).unwrap();
 
-        // mark bootstrap_main as the entry function
+        // move builder safely again
+        let safe_block = self.context.append_basic_block(bootstrap, "after_return");
+        self.builder.position_at_end(safe_block);
+
         return bootstrap;
     }
 }
 
-
-
-
-
-    // === No async entry: compile top-level ===
-    let mut last_int: Option<IntValue> = None;
-    for node in nodes {
-        if let Some(v) = self.compile_node(node) {
-            if let BasicValueEnum::IntValue(iv) = v {
-                last_int = Some(iv);
-            }
+// === No async entry: compile top-level ===
+let mut last_int: Option<IntValue> = None;
+for node in nodes {
+    println!("🧱 Compiling top-level node: {:?}", node);
+    if let Some(v) = self.compile_node(node) {
+        if let BasicValueEnum::IntValue(iv) = v {
+            last_int = Some(iv);
         }
     }
-
-    let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
-    if async_entry.is_none() {
-    let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
-    self.builder.build_return(Some(&ret_val)).unwrap();
-    return function;
 }
 
+// === Ensure main() exists BEFORE returning ===
+if self.module.get_function("main").is_none() {
+    if let Some(main_async) = self.module.get_function("main_async") {
+        println!("🔗 Generating wrapper main() -> main_async");
 
-    function
+        let fn_type = self.i32_type.fn_type(&[], false);
+        let wrapper = self.module.add_function("main", fn_type, None);
+        let entry = self.context.append_basic_block(wrapper, "entry");
+        self.builder.position_at_end(entry);
+
+        let call_site = self.builder.build_call(main_async, &[], "call_main_async").unwrap();
+        let result = call_site
+            .try_as_basic_value()
+            .left()
+            .unwrap_or_else(|| self.i32_type.const_int(0, false).into());
+
+        self.builder.build_return(Some(&result.into_int_value())).unwrap();
+
+        // move builder safely
+        let safe_block = self.context.append_basic_block(wrapper, "after_return");
+        self.builder.position_at_end(safe_block);
+    }
+}
+
+// === Final top-level return (if no async entry) ===
+if async_entry.is_none() {
+    let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
+    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+        self.builder.build_return(Some(&ret_val)).unwrap();
+    }
+}
+
+function
+
 }
 
 
@@ -1260,7 +1298,7 @@ pub fn compile_funcy(
     self.builder.position_at_end(entry);
 
     // === Local scope ===
-    let mut local_vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)> = HashMap::new();
+let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
 
     for (i, param_name) in params.iter().enumerate() {
         let param = function.get_nth_param(i as u32).unwrap();
@@ -1280,7 +1318,15 @@ let (alloca, ty): (PointerValue, BasicTypeEnum) = if is_int_param {
     (alloca, str_ty)
 };
 
-local_vars.insert(param_name.clone(), (alloca, ty));
+local_vars.insert(
+    param_name.clone(),
+    VarInfo {
+        ptr: alloca,
+        ty,
+        is_const: false,
+    },
+);
+
 
     }
 
@@ -1337,16 +1383,24 @@ pub fn compile_async_funcy(
     self.builder.position_at_end(entry);
 
     // === Allocate and store parameters ===
-    let mut local_vars: HashMap<String, (PointerValue<'ctx>, BasicTypeEnum<'ctx>)> = HashMap::new();
+let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
     for (i, pname) in params.iter().enumerate() {
         let param = function.get_nth_param(i as u32).unwrap();
         let alloca = self.builder.build_alloca(self.i32_type, pname).unwrap();
         self.builder.build_store(alloca, param).unwrap();
-        local_vars.insert(pname.clone(), (alloca, self.i32_type.as_basic_type_enum()));
+        local_vars.insert(
+    pname.clone(),
+    VarInfo {
+        ptr: alloca,
+        ty: self.i32_type.as_basic_type_enum(),
+        is_const: false,
+    },
+);
+
     }
 
     // === Scoped variable map ===
-    let old_vars = std::mem::replace(&mut self.vars, local_vars);
+    let old_vars: HashMap<String, VarInfo<'ctx>> = std::mem::replace(&mut self.vars, local_vars);
 
     // === Compile body ===
     let mut last_val: Option<BasicValueEnum<'ctx>> = None;

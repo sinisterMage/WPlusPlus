@@ -1,15 +1,9 @@
-async funcy calc() {
-    print("calculating...");
-    await wait();
-    return 42;
-}
+// define constants
+const PI = 3
 
-funcy wait() {
-    print("waiting...");
-}
+// normal var
+let x = 10
 
-async funcy main() {
-    let x = await calc();
-    print("result:");
-    print(x);
-}
+// mutate
+x = 20
+PI = 4

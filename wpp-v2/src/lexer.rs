@@ -60,7 +60,7 @@ impl<'a> Lexer<'a> {
                     let kind = match ident.as_str() {
     "let" | "if" | "else" | "while" | "for"
     | "break" | "continue" | "true" | "false"
-    | "switch" | "case" | "default" | "try" | "catch" | "throw" | "finally" | "funcy" | "return" | "async" | "await" => {
+    | "switch" | "case" | "default" | "try" | "catch" | "throw" | "finally" | "funcy" | "return" | "async" | "await" | "const" => {
         TokenKind::Keyword(ident)
     }
     _ => TokenKind::Identifier(ident),
@@ -98,14 +98,37 @@ impl<'a> Lexer<'a> {
                 }
 
                 // --- Operators and symbols ---
-                _ => {
-                    let sym = self.consume_symbol();
-                    tokens.push(Token {
-                        kind: TokenKind::Symbol(sym),
-                        line: self.line,
-                        col: self.col,
-                    });
+                // --- Operators and symbols ---
+_ => {
+    if ch == '/' {
+        // Peek ahead for comment start
+        let mut iter = self.input.clone();
+        iter.next(); // skip '/'
+        if let Some('/') = iter.next() {
+            // ✅ It's a comment — consume the whole line
+            self.input.next(); // skip first '/'
+            self.input.next(); // skip second '/'
+            self.col += 2;
+            while let Some(&c) = self.input.peek() {
+                if c == '\n' {
+                    break;
                 }
+                self.input.next();
+                self.col += 1;
+            }
+            continue; // 🧠 skip comment entirely
+        }
+    }
+
+    // Otherwise, normal symbol or operator
+    let sym = self.consume_symbol();
+    tokens.push(Token {
+        kind: TokenKind::Symbol(sym),
+        line: self.line,
+        col: self.col,
+    });
+}
+
             }
         }
 

@@ -66,7 +66,6 @@ unsafe fn get_engine<'a>() -> &'a ExecutionEngine<'static> {
 }
 
 /// === SPAWN ===
-/// Launches a new async function pointer
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_spawn(ptr: *const ()) {
     if ptr.is_null() {
@@ -79,20 +78,34 @@ pub extern "C" fn wpp_spawn(ptr: *const ()) {
     let task = Task::new(ptr);
     TASK_QUEUE.lock().unwrap().push_back(task);
 
-    schedule_next();
+    // schedule asynchronously
+    thread::spawn(|| {
+        schedule_next();
+    });
 }
 
 /// === YIELD ===
-/// Cooperatively yield to next runnable task
+/// Yield cooperatively without blocking caller
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_yield() {
-    println!("😴 [runtime] Yielding control...");
-    thread::sleep(Duration::from_millis(2));
-    schedule_next();
+    println!("😴 [runtime] Yield requested");
+
+    // Move current task to the back of the queue
+    let mut queue = TASK_QUEUE.lock().unwrap();
+    if let Some(task) = queue.pop_front() {
+        if !task.is_finished() {
+            queue.push_back(task);
+        }
+    }
+    drop(queue);
+
+    // Run scheduler asynchronously, non-blocking
+    thread::spawn(|| {
+        schedule_next();
+    });
 }
 
 /// === RETURN ===
-/// Called from LLVM when async func returns a value
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_return(value: i32) {
     println!("✅ [runtime] Async function returned {value}");
@@ -104,15 +117,17 @@ pub extern "C" fn wpp_return(value: i32) {
 
     *LAST_RESULT.lock().unwrap() = Some(value);
 
-    // 🔧 Remove all finished tasks so they aren’t re-scheduled
+    // Remove finished tasks
     queue.retain(|t| !t.is_finished());
-
     drop(queue);
-    schedule_next();
+
+    // Continue scheduling in the background
+    thread::spawn(|| {
+        schedule_next();
+    });
 }
 
 /// === GET LAST RESULT ===
-/// Returns the last awaited async result
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_get_last_result() -> i32 {
     let res = *LAST_RESULT.lock().unwrap();
@@ -121,8 +136,19 @@ pub extern "C" fn wpp_get_last_result() -> i32 {
     val
 }
 
+/// === DYNAMIC SLEEP ===
+fn dynamic_sleep() {
+    let len = TASK_QUEUE.lock().unwrap().len();
+
+    match len {
+        0 => {}
+        1..=3 => thread::sleep(Duration::from_millis(1)),
+        4..=10 => thread::sleep(Duration::from_micros(200)),
+        _ => {} // no sleep for large queues
+    }
+}
+
 /// === SCHEDULER ===
-/// Executes tasks one by one cooperatively
 fn schedule_next() {
     let mut queue = TASK_QUEUE.lock().unwrap();
 
@@ -131,13 +157,11 @@ fn schedule_next() {
         return;
     }
 
-    // take next task
     let task = queue.pop_front().unwrap();
 
     if task.is_finished() {
         let val = task.result.lock().unwrap().unwrap_or(0);
         println!("🎯 [runtime] Task {:?} finished with {}", task.func, val);
-        // don’t re-enqueue finished ones
         return;
     }
 
@@ -145,15 +169,27 @@ fn schedule_next() {
 
     unsafe {
         let func: extern "C" fn() = mem::transmute(task.func);
-        drop(queue); // unlock before user code
+        drop(queue);
         func();
     }
 
-    thread::sleep(Duration::from_millis(2));
+    dynamic_sleep();
 
-    // 🧹 only push back unfinished tasks
+    // Only requeue if unfinished
     let mut queue = TASK_QUEUE.lock().unwrap();
     if !task.is_finished() {
         queue.push_back(task);
     }
+
+    drop(queue);
+
+    // Schedule next task asynchronously (non-blocking)
+    thread::spawn(|| schedule_next());
+}
+
+/// === OPTIONAL CLEAN SHUTDOWN ===
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_shutdown() {
+    TASK_QUEUE.lock().unwrap().clear();
+    println!("🧹 [runtime] Scheduler cleared all tasks, shutdown complete");
 }

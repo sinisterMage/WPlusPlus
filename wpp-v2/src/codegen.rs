@@ -998,26 +998,67 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
         Node::Let { name, value, is_const, ty } => {
     println!("🧱 Compiling top-level node: Let {{ name: {}, ty: {:?} }}", name, ty);
 
-    // determine the declared type
+    // === Determine variable type ===
     let var_type: BasicTypeEnum<'ctx> = if let Some(t) = ty {
-    self.resolve_basic_type(t)
-} else {
-    self.i32_type.into() // default fallback
-};
+        // 🧩 Explicit type (e.g. let i64 x = ...)
+        self.resolve_basic_type(t)
+    } else {
+        // 🔍 Type inference from RHS
+        match value {
+            Expr::TypedLiteral { value: val, ty: lit_ty } => {
+    // If literal already has an explicit internal type (like f64), use it
+    match lit_ty.as_str() {
+        "i1" | "bool" => self.context.bool_type().into(),
+        "i8" => self.context.i8_type().into(),
+        "i32" => self.context.i32_type().into(),
+        "i64" => self.context.i64_type().into(),
+        "f64" => self.context.f64_type().into(),
+        _ => self.infer_type_from_literal(val, lit_ty == "f64"),
+    }
+}
 
+            Expr::Literal(v) => {
+                // Integer literal (infer by numeric range)
+                self.infer_type_from_literal(&v.to_string(), false)
+            }
 
-    // allocate space for the variable
+            Expr::BoolLiteral(_) => self.context.bool_type().into(),
+
+            Expr::Variable(var_name) => {
+                // Copy type from existing variable if known
+                if let Some(existing) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
+                    existing.ty
+                } else {
+                    println!("⚠️ Unknown variable `{}`, defaulting to i32", var_name);
+                    self.i32_type.into()
+                }
+            }
+
+            Expr::BinaryOp { left, right, .. } => {
+                // Infer from operands (float dominance)
+                let left_ty = self.infer_expr_type(left);
+                let right_ty = self.infer_expr_type(right);
+                self.merge_types(left_ty, right_ty)
+            }
+
+            _ => {
+                println!("⚠️ Complex expression — defaulting to i32");
+                self.i32_type.into()
+            }
+        }
+    };
+
+    // === Allocate space for variable ===
     let alloca = self.builder.build_alloca(var_type, name).unwrap();
 
-    // compile the RHS expression
+    // === Compile RHS expression ===
     let rhs_val = self.compile_expr(value);
 
-    // perform type cast if necessary
+    // === Perform safe casting if needed ===
     let casted_val = match (rhs_val, var_type) {
         (BasicValueEnum::IntValue(iv), BasicTypeEnum::IntType(int_ty)) => {
             let rhs_bits = iv.get_type().get_bit_width();
             let lhs_bits = int_ty.get_bit_width();
-
             if rhs_bits == lhs_bits {
                 iv.as_basic_value_enum()
             } else if rhs_bits < lhs_bits {
@@ -1049,11 +1090,15 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
                 .as_basic_value_enum()
         }
 
+        (BasicValueEnum::IntValue(iv), BasicTypeEnum::PointerType(_)) => iv.as_basic_value_enum(),
+
         _ => rhs_val,
     };
 
+    // === Store the value into memory ===
     self.builder.build_store(alloca, casted_val).unwrap();
 
+    // === Register variable ===
     self.vars.insert(
         name.clone(),
         VarInfo {
@@ -1065,6 +1110,7 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
 
     None
 }
+
 
 
 
@@ -1343,6 +1389,63 @@ function
 }
 
 
+fn infer_type_from_literal(&self, raw: &str, is_float: bool) -> BasicTypeEnum<'ctx> {
+    if is_float || raw.contains('.') {
+        self.context.f64_type().into()
+    } else {
+        match raw.parse::<i64>() {
+            Ok(v) if v >= i8::MIN as i64 && v <= i8::MAX as i64 => self.context.i8_type().into(),
+            Ok(v) if v >= i32::MIN as i64 && v <= i32::MAX as i64 => self.context.i32_type().into(),
+            Ok(_) => self.context.i64_type().into(),
+            Err(_) => panic!("❌ Invalid numeric literal: {}", raw),
+        }
+    }
+}
+
+fn infer_expr_type(&self, expr: &Expr) -> BasicTypeEnum<'ctx> {
+    match expr {
+        Expr::TypedLiteral { ty, .. } => self.resolve_basic_type(ty),
+        Expr::Literal(v) => self.infer_type_from_literal(&v.to_string(), false),
+        Expr::BoolLiteral(_) => self.context.bool_type().into(),
+        Expr::Variable(name) => {
+            self.vars
+                .get(name)
+                .or_else(|| self.globals.get(name))
+                .map(|v| v.ty)
+                .unwrap_or_else(|| self.i32_type.into())
+        }
+        Expr::BinaryOp { left, right, .. } => {
+            let l = self.infer_expr_type(left);
+            let r = self.infer_expr_type(right);
+            self.merge_types(l, r)
+        }
+        _ => self.i32_type.into(),
+    }
+}
+
+fn merge_types(&self, left: BasicTypeEnum<'ctx>, right: BasicTypeEnum<'ctx>) -> BasicTypeEnum<'ctx> {
+    if left == right {
+        return left;
+    }
+
+    // f64 dominance for mixed math
+    if left.is_float_type() || right.is_float_type() {
+        return self.context.f64_type().into();
+    }
+
+    // Choose widest integer type
+    let l_bits = if let BasicTypeEnum::IntType(t) = left { t.get_bit_width() } else { 0 };
+    let r_bits = if let BasicTypeEnum::IntType(t) = right { t.get_bit_width() } else { 0 };
+    let max_bits = std::cmp::max(l_bits, r_bits);
+
+    match max_bits {
+        1 => self.context.bool_type().into(),
+        8 => self.context.i8_type().into(),
+        32 => self.context.i32_type().into(),
+        64 => self.context.i64_type().into(),
+        _ => self.i32_type.into(),
+    }
+}
 
 
 

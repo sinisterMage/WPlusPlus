@@ -1,8 +1,6 @@
-let i32 a = 10
-let i64 b = 9999999999
-let f64 c = 3.14
-let f64 d = c + 2.5
-let i8 small = 5
-let i32 z = small
-a = 42
-c = 9.81
+let a = 10;          // i32
+let big = 9999999999; // i64
+let c = 3.14;         // f64
+let tiny = 5;         // i8 (range based)
+let flag = true;      // i1
+let z = big;          // i64 (inferred from variable)

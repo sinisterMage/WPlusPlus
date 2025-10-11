@@ -15,22 +15,17 @@ entry:
   store ptr null, ptr %exc_val_str, align 8
   %a = alloca i32, align 4
   store i32 10, ptr %a, align 4
-  %b = alloca i64, align 8
-  store i64 1410065407, ptr %b, align 4
+  %big = alloca i32, align 4
+  store i32 1410065407, ptr %big, align 4
   %c = alloca double, align 8
   store double 3.140000e+00, ptr %c, align 8
-  %d = alloca double, align 8
-  %load_c = load double, ptr %c, align 8
-  %fadd = fadd double %load_c, 2.500000e+00
-  store double %fadd, ptr %d, align 8
-  %small = alloca i8, align 1
-  store i8 5, ptr %small, align 1
+  %tiny = alloca i32, align 4
+  store i32 5, ptr %tiny, align 4
+  %flag = alloca i1, align 1
+  store i1 true, ptr %flag, align 1
   %z = alloca i32, align 4
-  %load_small = load i8, ptr %small, align 1
-  %zext = zext i8 %load_small to i32
-  store i32 %zext, ptr %z, align 4
-  store i32 42, ptr %a, align 4
-  store double 9.810000e+00, ptr %c, align 8
+  %load_big = load i32, ptr %big, align 4
+  store i32 %load_big, ptr %z, align 4
   ret i32 0
 }
 

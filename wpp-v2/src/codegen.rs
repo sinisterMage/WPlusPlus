@@ -13,6 +13,7 @@ use inkwell::types::BasicType;
 use inkwell::types::BasicMetadataTypeEnum;
 use std::ffi::CString;
 use std::os::raw::c_char;
+use inkwell::values::BasicValue;
 
 
 use crate::ast::{Expr, Node};
@@ -145,6 +146,17 @@ Expr::StringLiteral(s) => {
         .into()
 }
 
+Expr::TypedLiteral { value, ty } => {
+    match ty.as_str() {
+        "i8"  => self.context.i8_type().const_int(value.parse::<i64>().unwrap() as u64, false).into(),
+        "i32" => self.context.i32_type().const_int(value.parse::<i64>().unwrap() as u64, false).into(),
+        "i64" => self.context.i64_type().const_int(value.parse::<i64>().unwrap() as u64, false).into(),
+        "u64" => self.context.i64_type().const_int(value.parse::<u64>().unwrap(), false).into(),
+        "f64" => self.context.f64_type().const_float(value.parse::<f64>().unwrap()).into(),
+        _ => panic!("❌ Unknown literal type: {}", ty),
+    }
+}
+
 
         // === Binary operation ===
         Expr::BinaryOp { left, op, right } => {
@@ -153,70 +165,180 @@ Expr::StringLiteral(s) => {
 
     if let Expr::Variable(var_name) = left.as_ref() {
         println!("➡️ Assigning to variable: {}", var_name);
-
-        // Compute RHS
         let value = self.compile_expr(right.as_ref());
 
-        // Lookup variable info
+        // Lookup variable info (either local or global)
         if let Some(var) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
             println!("🔍 Found variable {} (is_const = {})", var_name, var.is_const);
             if var.is_const {
                 panic!("❌ Cannot assign to constant variable '{}'", var_name);
             }
 
-            self.builder.build_store(var.ptr, value).unwrap();
+            let var_ty = var.ty;
 
-    // ✅ Return consistent i32 result
-    let result = match value {
-        BasicValueEnum::IntValue(iv) => iv,
-        BasicValueEnum::PointerValue(_) => self.i32_type.const_int(0, false),
-        _ => self.i32_type.const_int(0, false),
-    };
+            // ✅ Step 1: type-aware casting
+            let casted_val: BasicValueEnum<'ctx> = match (value, var_ty) {
+                // === Integer → Integer ===
+                (BasicValueEnum::IntValue(iv), BasicTypeEnum::IntType(int_ty)) => {
+                    let rhs_bits = iv.get_type().get_bit_width();
+                    let lhs_bits = int_ty.get_bit_width();
 
-    return result.into();
-} else {
-    panic!("Unknown variable in assignment: {}", var_name);
-}
+                    if rhs_bits == lhs_bits {
+                        iv.as_basic_value_enum()
+                    } else if rhs_bits < lhs_bits {
+                        // smaller → larger
+                        self.builder
+                            .build_int_z_extend(iv, int_ty, "assign_zext")
+                            .unwrap()
+                            .as_basic_value_enum()
+                    } else {
+                        // larger → smaller
+                        self.builder
+                            .build_int_truncate(iv, int_ty, "assign_trunc")
+                            .unwrap()
+                            .as_basic_value_enum()
+                    }
+                }
 
+                // === Float → Float ===
+                (BasicValueEnum::FloatValue(fv), BasicTypeEnum::FloatType(_)) => {
+                    fv.as_basic_value_enum()
+                }
+
+                // === Int → Float ===
+                (BasicValueEnum::IntValue(iv), BasicTypeEnum::FloatType(f_ty)) => {
+                    self.builder
+                        .build_signed_int_to_float(iv, f_ty, "assign_int2float")
+                        .unwrap()
+                        .as_basic_value_enum()
+                }
+
+                // === Float → Int ===
+                (BasicValueEnum::FloatValue(fv), BasicTypeEnum::IntType(i_ty)) => {
+                    self.builder
+                        .build_float_to_signed_int(fv, i_ty, "assign_float2int")
+                        .unwrap()
+                        .as_basic_value_enum()
+                }
+
+                // === Pointer → Pointer ===
+                (BasicValueEnum::PointerValue(pv), BasicTypeEnum::PointerType(_)) => {
+                    pv.as_basic_value_enum()
+                }
+
+                // === Type mismatch ===
+                (val, _) => panic!(
+                    "❌ Type mismatch assigning {:?} to {:?}",
+                    val.get_type(),
+                    var_ty
+                ),
+            };
+
+            // ✅ Step 2: Store the casted value
+            self.builder.build_store(var.ptr, casted_val).unwrap();
+
+            // ✅ Step 3: return i32(0) for consistency
+            return self.i32_type.const_int(0, false).into();
+        } else {
+            panic!("Unknown variable in assignment: {}", var_name);
+        }
     } else {
         panic!("Left-hand side of assignment must be a variable");
     }
 }
 
 
+
     // === Arithmetic and comparison ===
-    let left_raw = self.compile_expr(left.as_ref());
+    // === Arithmetic and comparison ===
+let left_raw = self.compile_expr(left.as_ref());
 let right_raw = self.compile_expr(right.as_ref());
 
-// Safety: ensure both sides are IntValues before doing math
-let (left_val, right_val) = match (left_raw, right_raw) {
-    (BasicValueEnum::IntValue(l), BasicValueEnum::IntValue(r)) => (l, r),
-    _ => panic!("Binary operator `{}` only supports integers", op),
+let result: BasicValueEnum<'ctx> = match (left_raw, right_raw) {
+    // --- Integer + Integer ---
+    (BasicValueEnum::IntValue(l), BasicValueEnum::IntValue(r)) => {
+        let lhs_ty = l.get_type();
+        let rhs_ty = r.get_type();
+
+        // Auto-promote smaller integer → larger integer
+        let (l_cast, r_cast, final_ty) = if lhs_ty.get_bit_width() == rhs_ty.get_bit_width() {
+            (l, r, lhs_ty)
+        } else if lhs_ty.get_bit_width() < rhs_ty.get_bit_width() {
+            (
+                self.builder.build_int_z_extend(l, rhs_ty, "l_promote").unwrap(),
+                r,
+                rhs_ty,
+            )
+        } else {
+            (
+                l,
+                self.builder.build_int_z_extend(r, lhs_ty, "r_promote").unwrap(),
+                lhs_ty,
+            )
+        };
+
+        match op.as_str() {
+            "+" => self.builder.build_int_add(l_cast, r_cast, "addtmp").unwrap().as_basic_value_enum(),
+            "-" => self.builder.build_int_sub(l_cast, r_cast, "subtmp").unwrap().as_basic_value_enum(),
+            "*" => self.builder.build_int_mul(l_cast, r_cast, "multmp").unwrap().as_basic_value_enum(),
+            "/" => self.builder.build_int_signed_div(l_cast, r_cast, "divtmp").unwrap().as_basic_value_enum(),
+
+            // Comparisons return i1 → no forced i32
+            "==" => self.builder.build_int_compare(inkwell::IntPredicate::EQ, l_cast, r_cast, "eqtmp").unwrap().as_basic_value_enum(),
+            "!=" => self.builder.build_int_compare(inkwell::IntPredicate::NE, l_cast, r_cast, "netmp").unwrap().as_basic_value_enum(),
+            "<"  => self.builder.build_int_compare(inkwell::IntPredicate::SLT, l_cast, r_cast, "lttmp").unwrap().as_basic_value_enum(),
+            "<=" => self.builder.build_int_compare(inkwell::IntPredicate::SLE, l_cast, r_cast, "letmp").unwrap().as_basic_value_enum(),
+            ">"  => self.builder.build_int_compare(inkwell::IntPredicate::SGT, l_cast, r_cast, "gttmp").unwrap().as_basic_value_enum(),
+            ">=" => self.builder.build_int_compare(inkwell::IntPredicate::SGE, l_cast, r_cast, "getmp").unwrap().as_basic_value_enum(),
+            _ => panic!("Unsupported integer operator: {}", op),
+        }
+    }
+
+    // --- Float + Float ---
+    (BasicValueEnum::FloatValue(lf), BasicValueEnum::FloatValue(rf)) => match op.as_str() {
+        "+" => self.builder.build_float_add(lf, rf, "fadd").unwrap().as_basic_value_enum(),
+        "-" => self.builder.build_float_sub(lf, rf, "fsub").unwrap().as_basic_value_enum(),
+        "*" => self.builder.build_float_mul(lf, rf, "fmul").unwrap().as_basic_value_enum(),
+        "/" => self.builder.build_float_div(lf, rf, "fdiv").unwrap().as_basic_value_enum(),
+        "==" => self.builder.build_float_compare(inkwell::FloatPredicate::OEQ, lf, rf, "feq").unwrap().as_basic_value_enum(),
+        "!=" => self.builder.build_float_compare(inkwell::FloatPredicate::ONE, lf, rf, "fne").unwrap().as_basic_value_enum(),
+        "<"  => self.builder.build_float_compare(inkwell::FloatPredicate::OLT, lf, rf, "flt").unwrap().as_basic_value_enum(),
+        "<=" => self.builder.build_float_compare(inkwell::FloatPredicate::OLE, lf, rf, "fle").unwrap().as_basic_value_enum(),
+        ">"  => self.builder.build_float_compare(inkwell::FloatPredicate::OGT, lf, rf, "fgt").unwrap().as_basic_value_enum(),
+        ">=" => self.builder.build_float_compare(inkwell::FloatPredicate::OGE, lf, rf, "fge").unwrap().as_basic_value_enum(),
+        _ => panic!("Unsupported float operator: {}", op),
+    },
+
+    // --- Mixed: Int + Float ---
+    (BasicValueEnum::IntValue(iv), BasicValueEnum::FloatValue(fv)) => {
+        let f_ty = fv.get_type();
+        let iv_cast = self.builder.build_signed_int_to_float(iv, f_ty, "int_to_float_lhs").unwrap();
+        let new_expr = self.builder.build_float_add(iv_cast, fv, "promoted_add").unwrap();
+        if ["+", "-", "*", "/"].contains(&op.as_str()) {
+            new_expr.as_basic_value_enum()
+        } else {
+            panic!("Cannot compare mixed int/float types without explicit cast")
+        }
+    }
+
+    (BasicValueEnum::FloatValue(fv), BasicValueEnum::IntValue(iv)) => {
+        let f_ty = fv.get_type();
+        let iv_cast = self.builder.build_signed_int_to_float(iv, f_ty, "int_to_float_rhs").unwrap();
+        let new_expr = self.builder.build_float_add(fv, iv_cast, "promoted_add").unwrap();
+        if ["+", "-", "*", "/"].contains(&op.as_str()) {
+            new_expr.as_basic_value_enum()
+        } else {
+            panic!("Cannot compare mixed float/int types without explicit cast")
+        }
+    }
+
+    _ => panic!("❌ Unsupported operand types for operator `{}`", op),
 };
 
-
-    let result = match op.as_str() {
-        "+" => self.builder.build_int_add(left_val, right_val, "addtmp").unwrap().into(),
-        "-" => self.builder.build_int_sub(left_val, right_val, "subtmp").unwrap().into(),
-        "*" => self.builder.build_int_mul(left_val, right_val, "multmp").unwrap().into(),
-        "/" => self.builder.build_int_signed_div(left_val, right_val, "divtmp").unwrap().into(),
-        "==" => self.builder.build_int_compare(inkwell::IntPredicate::EQ, left_val, right_val, "eqtmp").unwrap().into(),
-        "!=" => self.builder.build_int_compare(inkwell::IntPredicate::NE, left_val, right_val, "netmp").unwrap().into(),
-        "<"  => self.builder.build_int_compare(inkwell::IntPredicate::SLT, left_val, right_val, "lttmp").unwrap().into(),
-        "<=" => self.builder.build_int_compare(inkwell::IntPredicate::SLE, left_val, right_val, "letmp").unwrap().into(),
-        ">"  => self.builder.build_int_compare(inkwell::IntPredicate::SGT, left_val, right_val, "gttmp").unwrap().into(),
-        ">=" => self.builder.build_int_compare(inkwell::IntPredicate::SGE, left_val, right_val, "getmp").unwrap().into(),
-        _ => panic!("Unsupported binary operator: {}", op),
-    };
-
-    // ✅ Auto-convert i1 → i32 for arithmetic safety
-    match result {
-        BasicValueEnum::IntValue(iv) if iv.get_type().get_bit_width() == 1 => {
-            self.builder.build_int_z_extend(iv, self.i32_type, "bool_to_i32").unwrap().into()
+// ✅ Result is now type-accurate (no auto i32 cast)
+result
         }
-        _ => result,
-    }
-}
+
 
 
 
@@ -850,6 +972,16 @@ Expr::Await(inner) => {
         _ => panic!("Unhandled expression: {:?}", expr),
     }
 }
+fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
+    match ty {
+        "i8"  => self.context.i8_type().into(),
+        "i32" => self.context.i32_type().into(),
+        "i64" => self.context.i64_type().into(),
+        "u64" => self.context.i64_type().into(), // LLVM doesn’t distinguish signed vs unsigned types
+        "f64" => self.context.f64_type().into(),
+        _ => panic!("❌ Unknown type: {}", ty),
+    }
+}
 
 
     /// Compile a statement. Returns last expression value (if any).
@@ -863,32 +995,78 @@ Expr::Await(inner) => {
 
     match node {
         
-        Node::Let { name, value, is_const } => {
-    let v = self.compile_expr(value);
-    let (alloca, ty): (PointerValue, BasicTypeEnum) = match v {
-        BasicValueEnum::IntValue(_) => {
-            let ty = self.i32_type.as_basic_type_enum();
-            let p = self.builder.build_alloca(ty, name).unwrap();
-            (p, ty)
+        Node::Let { name, value, is_const, ty } => {
+    println!("🧱 Compiling top-level node: Let {{ name: {}, ty: {:?} }}", name, ty);
+
+    // determine the declared type
+    let var_type: BasicTypeEnum<'ctx> = if let Some(t) = ty {
+    self.resolve_basic_type(t)
+} else {
+    self.i32_type.into() // default fallback
+};
+
+
+    // allocate space for the variable
+    let alloca = self.builder.build_alloca(var_type, name).unwrap();
+
+    // compile the RHS expression
+    let rhs_val = self.compile_expr(value);
+
+    // perform type cast if necessary
+    let casted_val = match (rhs_val, var_type) {
+        (BasicValueEnum::IntValue(iv), BasicTypeEnum::IntType(int_ty)) => {
+            let rhs_bits = iv.get_type().get_bit_width();
+            let lhs_bits = int_ty.get_bit_width();
+
+            if rhs_bits == lhs_bits {
+                iv.as_basic_value_enum()
+            } else if rhs_bits < lhs_bits {
+                self.builder
+                    .build_int_z_extend(iv, int_ty, "zext")
+                    .unwrap()
+                    .as_basic_value_enum()
+            } else {
+                self.builder
+                    .build_int_truncate(iv, int_ty, "trunc")
+                    .unwrap()
+                    .as_basic_value_enum()
+            }
         }
-        BasicValueEnum::PointerValue(_) => {
-            let ty = self.context.i8_type()
-                .ptr_type(AddressSpace::default())
-                .as_basic_type_enum();
-            let p = self.builder.build_alloca(ty, name).unwrap();
-            (p, ty)
+
+        (BasicValueEnum::FloatValue(fv), BasicTypeEnum::FloatType(_)) => fv.as_basic_value_enum(),
+
+        (BasicValueEnum::IntValue(iv), BasicTypeEnum::FloatType(f_ty)) => {
+            self.builder
+                .build_signed_int_to_float(iv, f_ty, "int2float")
+                .unwrap()
+                .as_basic_value_enum()
         }
-        _ => panic!("unsupported type"),
+
+        (BasicValueEnum::FloatValue(fv), BasicTypeEnum::IntType(i_ty)) => {
+            self.builder
+                .build_float_to_signed_int(fv, i_ty, "float2int")
+                .unwrap()
+                .as_basic_value_enum()
+        }
+
+        _ => rhs_val,
     };
 
-    self.builder.build_store(alloca, v).unwrap();
+    self.builder.build_store(alloca, casted_val).unwrap();
 
-    let info = VarInfo { ptr: alloca, ty, is_const: *is_const };
-    self.vars.insert(name.clone(), info.clone());
-    self.globals.insert(name.clone(), info); // ✅ persist globally
+    self.vars.insert(
+        name.clone(),
+        VarInfo {
+            ptr: alloca,
+            ty: var_type,
+            is_const: *is_const,
+        },
+    );
 
     None
 }
+
+
 
 
 
@@ -919,8 +1097,11 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     let fn_type = self.i32_type.fn_type(&[], false);
     let function_name = "main_async";
     let function = self.module.add_function(function_name, fn_type, None);
-    let entry = self.context.append_basic_block(function, "entry");
-    self.builder.position_at_end(entry);
+let entry = self.context.append_basic_block(function, "entry");
+self.builder.position_at_end(entry);
+
+// Keep handle for later verification
+let main_entry_block = entry;
 
     // === Exception slots ===
     let flag_ptr = self.builder.build_alloca(self.i32_type, "exc_flag").unwrap();
@@ -1059,6 +1240,18 @@ if async_entry.is_none() {
         self.builder.build_return(Some(&ret_val)).unwrap();
     }
 }
+
+// ✅ Ensure the main function ends with a valid return instruction
+// === FINAL SAFETY: Ensure main_async's entry block is terminated ===
+if main_entry_block.get_terminator().is_none() {
+    let temp_builder = self.context.create_builder();
+    temp_builder.position_at_end(main_entry_block);
+    let ret_val = self.i32_type.const_int(0, false);
+    temp_builder.build_return(Some(&ret_val)).unwrap();
+    println!("🟢 Added final return terminator to main_async::entry");
+}
+
+
 
 function
 

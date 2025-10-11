@@ -1,9 +1,8 @@
-// define constants
-const PI = 3
-
-// normal var
-let x = 10
-
-// mutate
-x = 20
-PI = 4
+let i32 a = 10
+let i64 b = 9999999999
+let f64 c = 3.14
+let f64 d = c + 2.5
+let i8 small = 5
+let i32 z = small
+a = 42
+c = 9.81

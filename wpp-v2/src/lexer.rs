@@ -6,7 +6,11 @@ use std::str::Chars;
 pub enum TokenKind {
     Keyword(String),     // e.g. let, if, else, while, for, break, continue
     Identifier(String),  // e.g. variable or function name
-    Number(i32),         // e.g. 123
+    Number {
+    raw: String,
+    ty: String, // e.g. "i32", "u64", "f64"
+},
+
     String(String),      // e.g. "hello"
     Symbol(String),      // e.g. { } ( ) ; , = + - * / == != <= >= < >
     EOF,                 // End of file
@@ -75,16 +79,14 @@ impl<'a> Lexer<'a> {
 
                 // --- Numbers ---
                 c if c.is_ascii_digit() => {
-                    let num_str = self.consume_number();
-                    let value = num_str.parse::<i32>().unwrap_or_else(|_| {
-                        panic!("Invalid number literal on line {}", self.line)
-                    });
-                    tokens.push(Token {
-                        kind: TokenKind::Number(value),
-                        line: self.line,
-                        col: self.col,
-                    });
-                }
+    let token = self.read_typed_number();
+    tokens.push(Token {
+        kind: token,
+        line: self.line,
+        col: self.col,
+    });
+}
+
 
                 // --- Strings ---
                 '"' => {
@@ -214,6 +216,53 @@ _ => {
         // Single-character symbols
         ch.to_string()
     }
+    fn read_typed_number(&mut self) -> TokenKind {
+    let mut num_str = String::new();
+    let mut is_float = false;
+
+    // 1️⃣ Gather digits and optional decimal
+    while let Some(&c) = self.input.peek() {
+        if c.is_ascii_digit() {
+            num_str.push(c);
+            self.input.next();
+            self.col += 1;
+        } else if c == '.' && !is_float {
+            is_float = true;
+            num_str.push(c);
+            self.input.next();
+            self.col += 1;
+        } else {
+            break;
+        }
+    }
+
+    // 2️⃣ Gather optional type suffix (like i32, u64, f64, etc.)
+    let mut type_str = String::new();
+    if let Some(&c) = self.input.peek() {
+        if c == 'i' || c == 'u' || c == 'f' {
+            while let Some(&next) = self.input.peek() {
+                if next.is_ascii_alphanumeric() {
+                    type_str.push(next);
+                    self.input.next();
+                    self.col += 1;
+                } else {
+                    break;
+                }
+            }
+        }
+    }
+
+    // 3️⃣ Default types
+    if type_str.is_empty() {
+        type_str = if is_float { "f64".to_string() } else { "i32".to_string() };
+    }
+
+    TokenKind::Number {
+        raw: num_str,
+        ty: type_str,
+    }
+}
+
 }
 
 #[cfg(test)]
@@ -231,7 +280,12 @@ mod tests {
 
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Keyword(ref s) if s == "let")));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Identifier(ref s) if s == "x")));
-        assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Number(10))));
+        assert!(tokens.iter().any(|t|
+    matches!(t.kind, TokenKind::Number { ref raw, ref ty }
+        if raw == "10" && ty == "i32"
+    )
+));
+
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Symbol(ref s) if s == "{")));
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Symbol(ref s) if s == "}")));
         assert!(matches!(tokens.last().unwrap().kind, TokenKind::EOF));

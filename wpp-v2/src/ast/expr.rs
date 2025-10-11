@@ -6,6 +6,7 @@ pub enum Expr {
     BoolLiteral(bool),
     StringLiteral(String),
     Variable(String),
+        TypedLiteral { value: String, ty: String },
     BinaryOp {
         left: Box<Expr>,
         op: String,

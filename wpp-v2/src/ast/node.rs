@@ -6,6 +6,7 @@ pub enum Node {
         name: String,
         value: Expr,
         is_const: bool, // ✅ new field
+        ty: Option<String>,
     },
     Expr(Expr),
 }

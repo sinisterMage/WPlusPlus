@@ -91,6 +91,14 @@ fn expect_symbol(&mut self, sym: &str) {
 
 }
 impl Parser {
+    fn peek_type_name(&self) -> bool {
+    match self.peek() {
+        TokenKind::Identifier(name)
+            if ["i32", "u64", "i8", "i1", "f64"].contains(&name.as_str()) => true,
+        _ => false,
+    }
+}
+
     fn parse_stmt(&mut self) -> Option<Node> {
     match self.peek() {
         TokenKind::Keyword(k) if k == "let" || k == "const" => {
@@ -193,23 +201,49 @@ TokenKind::Keyword(k) if k == "return" => {
 
 
     fn parse_let(&mut self, is_const: bool) -> Option<Node> {
-    if let TokenKind::Identifier(name) = self.advance().clone() {
-        // expect '='
-        if let TokenKind::Symbol(s) = self.advance().clone() {
-            if s == "=" {
-                let expr = self.parse_expr();
-                // optional ';'
-                if let TokenKind::Symbol(semi) = self.peek() {
-                    if semi == ";" {
-                        self.advance();
-                    }
-                }
-                return Some(Node::Let { name, value: expr, is_const });
-            }
+    // check if the next token is a type annotation like i32/i64/f64/i8/u64
+    let mut explicit_type: Option<String> = None;
+
+    // If next token looks like a type identifier (i32, f64, etc.)
+    if let TokenKind::Identifier(type_name) = self.peek().clone() {
+        if ["i8", "i32", "i64", "u64", "f64"].contains(&type_name.as_str()) {
+            explicit_type = Some(type_name);
+            self.advance(); // consume type identifier
         }
     }
-    None
+
+    // expect variable name
+    let var_name = match self.advance().clone() {
+        TokenKind::Identifier(n) => n,
+        _ => panic!("Expected variable name after let"),
+    };
+
+    // expect '='
+    match self.advance().clone() {
+        TokenKind::Symbol(s) if s == "=" => {}
+        _ => panic!("Expected symbol '='"),
+    }
+
+    // parse expression (right-hand side)
+    let expr = self.parse_expr();
+
+    // optional ';'
+    if let TokenKind::Symbol(semi) = self.peek() {
+        if semi == ";" {
+            self.advance();
+        }
+    }
+
+    Some(Node::Let {
+        name: var_name,
+        value: expr,
+        is_const,
+        ty: explicit_type,
+
+    })
 }
+
+
 
     fn parse_if(&mut self) -> Node {
         // parse condition (must start with "(")
@@ -593,7 +627,7 @@ impl Parser {
     }
 
     match self.advance().clone() {
-        TokenKind::Number(n) => Expr::Literal(n),
+        TokenKind::Number { raw, ty } => Expr::TypedLiteral { value: raw, ty },
         TokenKind::String(s) => Expr::StringLiteral(s),
         TokenKind::Identifier(name) => {
             // Function call?

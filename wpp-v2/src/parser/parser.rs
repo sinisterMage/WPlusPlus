@@ -619,21 +619,34 @@ impl Parser {
     }
 }impl Parser {
     fn parse_primary(&mut self) -> Expr {
-    // ✅ handle 'await' keyword before consuming other tokens
+    // ✅ handle 'await' keyword
     if self.check(TokenKind::Keyword("await".into())) {
-        self.advance(); // consume 'await'
-        let inner = self.parse_primary(); // or parse_expr() for full expression support
+        self.advance();
+        let inner = self.parse_primary();
         return Expr::Await(Box::new(inner));
     }
 
+    // ✅ handle array literals
+    if self.check(TokenKind::Symbol("[".into())) {
+        return self.parse_array_literal();
+    }
+
+    // ✅ handle object literals
+    if self.check(TokenKind::Symbol("{".into())) {
+        // But we must check if this is a *block* or an *object literal*.
+        // If the next token is a string or identifier followed by ':', treat as object literal.
+        if self.lookahead_is_object_literal() {
+            return self.parse_object_literal();
+        }
+    }
+
+    // ✅ fallback to existing literal/identifier logic
     match self.advance().clone() {
         TokenKind::Number { raw, ty } => Expr::TypedLiteral { value: raw, ty },
         TokenKind::String(s) => Expr::StringLiteral(s),
         TokenKind::Identifier(name) => {
-            // Function call?
             if self.matches(&[TokenKind::Symbol("(".into())]) {
                 let mut args = Vec::new();
-
                 if !self.check(TokenKind::Symbol(")".into())) {
                     loop {
                         args.push(self.parse_expr());
@@ -642,29 +655,26 @@ impl Parser {
                         }
                     }
                 }
-
                 self.expect(TokenKind::Symbol(")".into()), "Expected ')' after function args");
                 Expr::Call { name, args }
             } else {
                 Expr::Variable(name)
             }
         }
-
         TokenKind::Keyword(k) if k == "true" => Expr::BoolLiteral(true),
         TokenKind::Keyword(k) if k == "false" => Expr::BoolLiteral(false),
-
         TokenKind::Symbol(sym) if sym == "(".to_string() => {
             let expr = self.parse_expr();
             self.expect(TokenKind::Symbol(")".into()), "Expected ')' after group");
             expr
         }
-
         unexpected => {
             println!("⚠️ Unexpected token in expression: {:?}", unexpected);
             Expr::Literal(0)
         }
     }
 }
+
 
 
     fn expect(&mut self, kind: TokenKind, msg: &str) {
@@ -693,6 +703,58 @@ impl Parser {
     nodes
 }
 
+fn lookahead_is_object_literal(&self) -> bool {
+    // Look ahead to detect `{ <identifier or string> :`
+    let next = self.tokens.get(self.pos + 1);
+    let next2 = self.tokens.get(self.pos + 2);
+
+    matches!(next, Some(Token { kind: TokenKind::String(_), .. }) | Some(Token { kind: TokenKind::Identifier(_), .. }))
+        && matches!(next2, Some(Token { kind: TokenKind::Symbol(s), .. }) if s == ":")
+}
+
+fn parse_array_literal(&mut self) -> Expr {
+    self.expect(TokenKind::Symbol("[".into()), "Expected '[' to start array literal");
+    let mut elements = Vec::new();
+
+    if !self.check(TokenKind::Symbol("]".into())) {
+        loop {
+            elements.push(self.parse_expr());
+            if self.check(TokenKind::Symbol("]".into())) {
+                break;
+            }
+            self.expect(TokenKind::Symbol(",".into()), "Expected ',' between array elements");
+        }
+    }
+
+    self.expect(TokenKind::Symbol("]".into()), "Expected ']' to close array literal");
+    Expr::ArrayLiteral(elements)
+}
+
+fn parse_object_literal(&mut self) -> Expr {
+    self.expect(TokenKind::Symbol("{".into()), "Expected '{' to start object literal");
+    let mut fields = Vec::new();
+
+    if !self.check(TokenKind::Symbol("}".into())) {
+        loop {
+            let key = match self.advance().clone() {
+                TokenKind::String(s) => s,
+                TokenKind::Identifier(id) => id,
+                _ => panic!("Expected string or identifier as object key"),
+            };
+            self.expect(TokenKind::Symbol(":".into()), "Expected ':' after object key");
+            let val = self.parse_expr();
+            fields.push((key, val));
+
+            if self.check(TokenKind::Symbol("}".into())) {
+                break;
+            }
+            self.expect(TokenKind::Symbol(",".into()), "Expected ',' between object fields");
+        }
+    }
+
+    self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close object literal");
+    Expr::ObjectLiteral(fields)
+}
 
 }
 

@@ -55,6 +55,7 @@ pub enum Expr {
     },
     Return(Option<Box<Expr>>),
     Await(Box<Expr>), // ✅ new expression kind
-
+    ArrayLiteral(Vec<Expr>),
+    ObjectLiteral(Vec<(String, Expr)>),
 }
 

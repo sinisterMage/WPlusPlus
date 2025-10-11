@@ -14,6 +14,7 @@ use inkwell::types::BasicMetadataTypeEnum;
 use std::ffi::CString;
 use std::os::raw::c_char;
 use inkwell::values::BasicValue;
+use libc::malloc;
 
 
 use crate::ast::{Expr, Node};
@@ -963,6 +964,281 @@ Expr::Await(inner) => {
 }
 
 
+Expr::ArrayLiteral(elements) => {
+    let element_count = elements.len() as u64;
+    let i32_type = self.context.i32_type();
+    let i64_type = self.context.i64_type();
+    let elem_ty = i32_type; // default element type for now
+
+    // === Allocate memory: (len + elements)
+    // Total slots = element_count + 1 (store length first)
+    let total_slots = element_count + 1;
+
+    // Convert total_slots -> i64
+    let total_slots_val = i64_type.const_int(total_slots, false);
+
+    // size_of(i32) as i64
+   // === Compute sizeof(i32) as i64 ===
+let one = i32_type.const_int(1, false);
+let gep = unsafe {
+    self.builder.build_gep(
+        i32_type,
+        i32_type.ptr_type(AddressSpace::default()).const_null(),
+        &[one],
+        "size_of_i32",
+    ).unwrap()
+};
+
+let i32_size_i64 = self.builder.build_ptr_to_int(
+    gep,
+    i64_type,
+    "i32_size_i64",
+).unwrap();
+
+
+    // total bytes = sizeof(i32) * total_slots
+    let total_size_bytes = self.builder.build_int_mul(i32_size_i64, total_slots_val, "arr_total_bytes");
+
+    // malloc(i64)
+    let malloc_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+    let malloc_fn = self.module.get_function("malloc").unwrap_or_else(|| {
+        let ty = malloc_ty.fn_type(&[i64_type.into()], false);
+        self.module.add_function("malloc", ty, None)
+    });
+
+    let total_size_bytes_val = total_size_bytes.unwrap();
+let mem_ptr_i8 = self.builder
+    .build_call(
+        malloc_fn,
+        &[total_size_bytes_val.into()],
+        "arr_malloc",
+    )
+    .unwrap()
+    .try_as_basic_value()
+    .left()
+    .expect("malloc must return pointer")
+    .into_pointer_value();
+
+
+    // Cast to i32*
+    let arr_ptr = self.builder
+        .build_bitcast(mem_ptr_i8, i32_type.ptr_type(AddressSpace::default()), "arr_cast")
+        .unwrap()
+        .into_pointer_value();
+
+    // === Store length at [0]
+    self.builder.build_store(arr_ptr, i32_type.const_int(element_count, false)).unwrap();
+
+    // === Compile and store each element sequentially
+    for (i, el) in elements.iter().enumerate() {
+        let val = self.compile_expr(el);
+        let offset = i32_type.const_int((i + 1) as u64, false);
+        let elem_ptr = unsafe {
+            self.builder.build_gep(i32_type, arr_ptr, &[offset], "elem_ptr").unwrap()
+        };
+
+        match val {
+            BasicValueEnum::IntValue(iv) => {
+                self.builder.build_store(elem_ptr, iv).unwrap();
+            }
+            BasicValueEnum::FloatValue(fv) => {
+                let iv = self.builder.build_float_to_signed_int(fv, i32_type, "arr_cast_float").unwrap();
+                self.builder.build_store(elem_ptr, iv).unwrap();
+            }
+            BasicValueEnum::PointerValue(_) => {
+                println!("⚠️ Pointer elements not yet supported in array literal");
+            }
+            _ => {}
+        }
+    }
+
+    arr_ptr.as_basic_value_enum()
+}
+
+Expr::ObjectLiteral(fields) => {
+    let field_count = fields.len() as u64;
+    let i32_type = self.context.i32_type();
+    let i64_type = self.context.i64_type();
+    let i8_ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    // === Define runtime struct: { i32 field_count, i8** keys, i32* values }
+    let struct_ty = self.context.struct_type(
+        &[
+            i32_type.into(),
+            i8_ptr_ty.ptr_type(AddressSpace::default()).into(),
+            i32_type.ptr_type(AddressSpace::default()).into(),
+        ],
+        false,
+    );
+
+    // === malloc(i64)
+    let malloc_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+    let malloc_fn = self.module.get_function("malloc").unwrap_or_else(|| {
+        let ty = malloc_ty.fn_type(&[i64_type.into()], false);
+        self.module.add_function("malloc", ty, None)
+    });
+
+    // === Compute sizeof(struct_ty)
+    let one = i32_type.const_int(1, false);
+    let gep = unsafe {
+        self.builder
+            .build_gep(
+                struct_ty,
+                struct_ty.ptr_type(AddressSpace::default()).const_null(),
+                &[one],
+                "sizeof_struct",
+            )
+            .unwrap()
+    };
+
+    let struct_size_i64 = self
+        .builder
+        .build_ptr_to_int(gep, i64_type, "struct_size_i64")
+        .unwrap();
+
+    // === Allocate struct
+    let mem_ptr_i8 = self
+        .builder
+        .build_call(malloc_fn, &[struct_size_i64.into()], "obj_malloc")
+        .unwrap()
+        .try_as_basic_value()
+        .left()
+        .expect("malloc must return pointer")
+        .into_pointer_value();
+
+    let obj_ptr = self
+        .builder
+        .build_bitcast(
+            mem_ptr_i8,
+            struct_ty.ptr_type(AddressSpace::default()),
+            "obj_cast",
+        )
+        .unwrap()
+        .into_pointer_value();
+
+    // === Compute sizeof(i32) as i64
+    let one = i32_type.const_int(1, false);
+    let gep = unsafe {
+        self.builder
+            .build_gep(
+                i32_type,
+                i32_type.ptr_type(AddressSpace::default()).const_null(),
+                &[one],
+                "sizeof_i32",
+            )
+            .unwrap()
+    };
+    let i32_size_i64 = self
+        .builder
+        .build_ptr_to_int(gep, i64_type, "i32_size_i64")
+        .unwrap();
+
+    // === Compute total bytes for arrays
+    let field_count_val = i64_type.const_int(field_count, false);
+    let total_keys_bytes = self
+        .builder
+        .build_int_mul(i32_size_i64, field_count_val, "total_keys_bytes")
+        .unwrap();
+    let total_vals_bytes = self
+        .builder
+        .build_int_mul(i32_size_i64, field_count_val, "total_vals_bytes")
+        .unwrap();
+
+    // === Allocate keys array
+    let keys_mem_i8 = self
+        .builder
+        .build_call(malloc_fn, &[total_keys_bytes.into()], "keys_malloc")
+        .unwrap()
+        .try_as_basic_value()
+        .left()
+        .expect("malloc must return pointer")
+        .into_pointer_value();
+
+    let keys_ptr = self
+        .builder
+        .build_bitcast(
+            keys_mem_i8,
+            i8_ptr_ty.ptr_type(AddressSpace::default()),
+            "keys_cast",
+        )
+        .unwrap()
+        .into_pointer_value();
+
+    // === Allocate values array
+    let vals_mem_i8 = self
+        .builder
+        .build_call(malloc_fn, &[total_vals_bytes.into()], "vals_malloc")
+        .unwrap()
+        .try_as_basic_value()
+        .left()
+        .expect("malloc must return pointer")
+        .into_pointer_value();
+
+    let vals_ptr = self
+        .builder
+        .build_bitcast(
+            vals_mem_i8,
+            i32_type.ptr_type(AddressSpace::default()),
+            "vals_cast",
+        )
+        .unwrap()
+        .into_pointer_value();
+
+    // === Populate keys + values
+    for (i, (key, val)) in fields.iter().enumerate() {
+        let val_compiled = self.compile_expr(val);
+
+        // Store key as constant string
+        let key_const = self.context.const_string(key.as_bytes(), true);
+        let gname = format!("objkey_{}", i);
+        let gkey = self.module.add_global(key_const.get_type(), None, &gname);
+        gkey.set_initializer(&key_const);
+        gkey.set_constant(true);
+        gkey.set_linkage(Linkage::Private);
+        let key_ptr = gkey.as_pointer_value();
+
+        let key_index = i32_type.const_int(i as u64, false);
+        let key_slot = unsafe {
+            self.builder
+                .build_gep(i8_ptr_ty, keys_ptr, &[key_index], "key_slot")
+                .unwrap()
+        };
+        self.builder.build_store(key_slot, key_ptr).unwrap();
+
+        // Store value (convert to i32 if needed)
+        let val_i32 = match val_compiled {
+            BasicValueEnum::IntValue(iv) => iv,
+            BasicValueEnum::FloatValue(fv) => self
+                .builder
+                .build_float_to_signed_int(fv, i32_type, "val_float2int")
+                .unwrap(),
+            _ => i32_type.const_int(0, false),
+        };
+        let val_slot = unsafe {
+            self.builder
+                .build_gep(i32_type, vals_ptr, &[key_index], "val_slot")
+                .unwrap()
+        };
+        self.builder.build_store(val_slot, val_i32).unwrap();
+    }
+
+    // === Fill struct fields
+    let field_0 =
+        unsafe { self.builder.build_struct_gep(struct_ty, obj_ptr, 0, "f0").unwrap() };
+    self.builder
+        .build_store(field_0, i32_type.const_int(field_count, false))
+        .unwrap();
+
+    let field_1 =
+        unsafe { self.builder.build_struct_gep(struct_ty, obj_ptr, 1, "f1").unwrap() };
+    self.builder.build_store(field_1, keys_ptr).unwrap();
+
+    let field_2 =
+        unsafe { self.builder.build_struct_gep(struct_ty, obj_ptr, 2, "f2").unwrap() };
+    self.builder.build_store(field_2, vals_ptr).unwrap();
+
+    obj_ptr.as_basic_value_enum()
+}
 
 
 
@@ -1365,6 +1641,9 @@ function
         if let Some(get_last_fn) = self.module.get_function("wpp_get_last_result") {
             engine.add_global_mapping(&get_last_fn, wpp_get_last_result_stub as usize);
         }
+        if let Some(func) = self.module.get_function("malloc") {
+    engine.add_global_mapping(&func, malloc as usize);
+}
     }
 
     // 4️⃣ Pick the right entrypoint (bootstrap_main > main)

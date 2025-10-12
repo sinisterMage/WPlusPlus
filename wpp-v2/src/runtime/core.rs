@@ -7,6 +7,7 @@ use std::{
     thread,
     time::Duration,
 };
+use tokio::runtime::Runtime;
 
 /// === SAFETY WRAPPERS ===
 #[derive(Clone, Copy)]
@@ -193,5 +194,26 @@ pub extern "C" fn wpp_shutdown() {
     TASK_QUEUE.lock().unwrap().clear();
     println!("🧹 [runtime] Scheduler cleared all tasks, shutdown complete");
 }
-pub use crate::runtime::server::{register_endpoint, start_server};
+pub use crate::runtime::server::{register_endpoint, wpp_start_server};
 
+static TOKIO_RT: Lazy<Runtime> = Lazy::new(|| {
+    tokio::runtime::Builder::new_multi_thread()
+        .enable_all()
+        .build()
+        .expect("❌ Failed to build Tokio runtime")
+});
+
+/// Register an async task inside the shared runtime
+pub fn register_task<F>(fut: F)
+where
+    F: std::future::Future<Output = ()> + Send + 'static,
+{
+    TOKIO_RT.spawn(fut);
+}
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_runtime_wait() {
+    println!("🕓 [runtime] Waiting for async background tasks (press Ctrl+C to stop)...");
+    loop {
+        thread::sleep(Duration::from_secs(1));
+    }
+}

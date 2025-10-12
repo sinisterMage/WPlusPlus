@@ -561,12 +561,24 @@ else if name == "server.start" {
         self.module.add_function("wpp_start_server", ty, None)
     });
 
+    // Call start server
     self.builder
         .build_call(start_fn, &[port_val.into()], "call_server_start")
         .unwrap();
 
+    // 🕓 Add persistent wait
+    let wait_fn = self.module.get_function("wpp_runtime_wait").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[], false);
+        self.module.add_function("wpp_runtime_wait", ty, None)
+    });
+
+    self.builder
+        .build_call(wait_fn, &[], "call_runtime_wait")
+        .unwrap();
+
     return self.i32_type.const_int(0, false).into();
 }
+
 
 
             else if let Some(func_val) = self.functions.get(name).cloned() {
@@ -1827,6 +1839,14 @@ unsafe extern "C" {
         if let Some(func) = self.module.get_function("wpp_print_object") {
             engine.add_global_mapping(&func, wpp_print_object as usize);
         }
+        unsafe extern "C" {
+    fn wpp_runtime_wait();
+}
+
+if let Some(func) = self.module.get_function("wpp_runtime_wait") {
+    engine.add_global_mapping(&func, wpp_runtime_wait as usize);
+}
+
     }
 
     // ✅ Launch entrypoint

@@ -31,6 +31,7 @@ entry:
   store ptr null, ptr %exc_val_str, align 8
   call void @wpp_register_endpoint(ptr @strlit_2, ptr @hello)
   call void @wpp_start_server(i32 8080)
+  call void @wpp_runtime_wait()
   %res = alloca i32, align 4
   %call_http_get = call i32 @wpp_http_get(ptr @strlit_3)
   store i32 %call_http_get, ptr %res, align 4
@@ -49,6 +50,8 @@ entry1:                                           ; No predecessors!
   call void @wpp_print_value(ptr @strlit_1, i32 0)
   ret i32 0
 }
+
+declare void @wpp_runtime_wait()
 
 define i32 @main() {
 entry:

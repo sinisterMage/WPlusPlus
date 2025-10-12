@@ -11,6 +11,8 @@ use parser::Parser;
 use codegen::Codegen;
 use inkwell::context::Context;
 
+#[link(name = "wpp_runtime", kind = "static")]
+unsafe extern "C" {}
 
 fn main() {
     // === Read source file ===

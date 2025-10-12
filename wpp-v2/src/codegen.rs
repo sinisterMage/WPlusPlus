@@ -21,6 +21,8 @@ use crate::ast::{Expr, Node};
 use crate::runtime;
 use std::mem;
 use std::ffi::c_void;
+use inkwell::types::IntType;
+
 
 
 
@@ -61,26 +63,45 @@ fn get_or_declare_fn<'ctx>(
         module.add_function(name, fn_type, None)
     }
 }
+impl<'ctx> Codegen<'ctx> {
+    pub fn init_runtime_support(&self) {
+        let void_ty = self.context.void_type();
+        let i8_ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+        let i32_ty = self.context.i32_type();
+
+        // void wpp_print_value(void* ptr, int32_t type_id)
+        let print_val_ty = void_ty.fn_type(&[i8_ptr_ty.into(), i32_ty.into()], false);
+        self.module.add_function("wpp_print_value", print_val_ty, None);
+
+        // void wpp_print_array(void* ptr)
+        let arr_ty = void_ty.fn_type(&[i8_ptr_ty.into()], false);
+        self.module.add_function("wpp_print_array", arr_ty, None);
+
+        // void wpp_print_object(void* ptr)
+        let obj_ty = void_ty.fn_type(&[i8_ptr_ty.into()], false);
+        self.module.add_function("wpp_print_object", obj_ty, None);
+    }
+}
+
 
 impl<'ctx> Codegen<'ctx> {
     pub fn new(context: &'ctx Context, name: &str) -> Self {
     let module = context.create_module(name);
     let builder = context.create_builder();
     let i32_type = context.i32_type();
-    let bool_type = context.bool_type();
-    let i8_ptr_type = context.i8_type().ptr_type(AddressSpace::default());
 
-    // Create global flags and exception storage
-    let flag = module.add_global(bool_type, None, "_exception_flag");
-    flag.set_initializer(&bool_type.const_int(0, false));
+    // ✅ Create global vars for exception state
+    let flag_global = module.add_global(context.bool_type(), None, "_wpp_exc_flag");
+    flag_global.set_initializer(&context.bool_type().const_int(0, false));
 
-    let exc_i32 = module.add_global(i32_type, None, "_exception_value_i32");
-    exc_i32.set_initializer(&i32_type.const_int(0, false));
+    let exc_i32_global = module.add_global(context.i32_type(), None, "_wpp_exc_i32");
+    exc_i32_global.set_initializer(&context.i32_type().const_int(0, false));
 
-    let exc_str = module.add_global(i8_ptr_type, None, "_exception_value_str");
-    exc_str.set_initializer(&i8_ptr_type.const_null());
+    let exc_str_global = module.add_global(context.i8_type().ptr_type(AddressSpace::default()), None, "_wpp_exc_str");
+    exc_str_global.set_initializer(&context.i8_type().ptr_type(AddressSpace::default()).const_null());
 
-    Self {
+    // ✅ Build struct once
+    let codegen = Self {
         context,
         module,
         builder,
@@ -88,14 +109,21 @@ impl<'ctx> Codegen<'ctx> {
         vars: HashMap::new(),
         loop_stack: Vec::new(),
         switch_stack: Vec::new(),
-        exception_flag: Some(flag.as_pointer_value()),
-        exception_value_i32: Some(exc_i32.as_pointer_value()),
-        exception_value_str: Some(exc_str.as_pointer_value()),
-            functions: HashMap::new(), // ✅
-            globals: HashMap::new(), // ✅ added
+        exception_flag: Some(flag_global.as_pointer_value()),
+        exception_value_i32: Some(exc_i32_global.as_pointer_value()),
+        exception_value_str: Some(exc_str_global.as_pointer_value()),
+        functions: HashMap::new(),
+        globals: HashMap::new(),
+    };
 
-    }
+    // ✅ Register runtime externs right after initialization
+    codegen.init_runtime_support();
+
+    // ✅ Return ready-to-use codegen
+    codegen
 }
+
+
 
 
     pub fn create_engine(&self) -> ExecutionEngine<'ctx> {
@@ -349,88 +377,89 @@ result
 
         // === Function call (print, etc.) ===
         Expr::Call { name, args } => {
-            if name == "print" {
-    // === Declare printf and puts if not yet defined ===
+             if name == "print" {
+    // === Declare runtime externs ===
+    let void_ty = self.context.void_type();
     let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
 
-    let printf = self.module.get_function("printf").unwrap_or_else(|| {
-        let ty = self.context.i32_type().fn_type(&[i8ptr.into()], true);
-        self.module.add_function("printf", ty, None)
+    let wpp_print_value = self.module.get_function("wpp_print_value").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i8ptr.into(), i32_ty.into()], false);
+        self.module.add_function("wpp_print_value", ty, None)
     });
 
-    let puts = self.module.get_function("puts").unwrap_or_else(|| {
-        let ty = self.context.i32_type().fn_type(&[i8ptr.into()], false);
-        self.module.add_function("puts", ty, None)
-    });
-
-    // === Compile the argument ===
+    // === Compile argument ===
     if args.is_empty() {
-        panic!("print() expects 1 argument");
+        panic!("print() expects at least one argument");
     }
+
     let val = self.compile_expr(&args[0]);
 
-    match val {
-        // === Print string ===
-        BasicValueEnum::PointerValue(pv) => {
-            // Null-pointer check (optional safety)
-            let fmt = self.builder.build_global_string_ptr("%s\n", "fmt_s").unwrap();
-            let call_args: Vec<BasicMetadataValueEnum> =
-                vec![fmt.as_pointer_value().into(), pv.into()];
-            self.builder.build_call(printf, &call_args, "call_printf_str").unwrap();
-        }
-
-        // === Print int or bool ===
+    // === Convert the value into a pointer to pass to C ===
+    let casted_ptr = match val {
+        BasicValueEnum::PointerValue(pv) => pv,
         BasicValueEnum::IntValue(iv) => {
-            if iv.get_type().get_bit_width() == 1 {
-                // ✅ Boolean print
-                let cond = self.builder.build_int_compare(
-                    inkwell::IntPredicate::EQ,
+            // Treat numbers as generic pointer (not dereferenced)
+            self.builder
+                .build_int_to_ptr(
                     iv,
-                    self.context.bool_type().const_int(1, false),
-                    "is_true",
-                ).unwrap();
-
-                let true_str = self.builder.build_global_string_ptr("true\n", "true_str").unwrap();
-                let false_str = self.builder.build_global_string_ptr("false\n", "false_str").unwrap();
-
-                let parent_fn = self.builder.get_insert_block().unwrap().get_parent().unwrap();
-                let then_block = self.context.append_basic_block(parent_fn, "then");
-                let else_block = self.context.append_basic_block(parent_fn, "else");
-                let merge_block = self.context.append_basic_block(parent_fn, "merge");
-
-                self.builder.build_conditional_branch(cond, then_block, else_block).unwrap();
-
-                // THEN block
-                self.builder.position_at_end(then_block);
-                self.builder
-                    .build_call(puts, &[true_str.as_pointer_value().into()], "puts_true")
-                    .unwrap();
-                self.builder.build_unconditional_branch(merge_block).unwrap();
-
-                // ELSE block
-                self.builder.position_at_end(else_block);
-                self.builder
-                    .build_call(puts, &[false_str.as_pointer_value().into()], "puts_false")
-                    .unwrap();
-                self.builder.build_unconditional_branch(merge_block).unwrap();
-
-                // MERGE block
-                self.builder.position_at_end(merge_block);
-            } else {
-                // === Normal integer print ===
-                let fmt = self.builder.build_global_string_ptr("%d\n", "fmt_d").unwrap();
-                let args = vec![fmt.as_pointer_value().into(), iv.into()];
-                self.builder.build_call(printf, &args, "call_printf_int").unwrap();
-            }
+                    i8ptr,
+                    "int_as_ptr",
+                )
+                .unwrap()
         }
+        BasicValueEnum::ArrayValue(av) => {
+            // Store the array temporarily
+            let tmp = self.builder.build_alloca(av.get_type(), "tmp_arr").unwrap();
+            self.builder.build_store(tmp, av).unwrap();
+            self.builder
+                .build_pointer_cast(tmp, i8ptr, "casted_arr")
+                .unwrap()
+        }
+        BasicValueEnum::StructValue(sv) => {
+            // Store the struct temporarily
+            let tmp = self.builder.build_alloca(sv.get_type(), "tmp_obj").unwrap();
+            self.builder.build_store(tmp, sv).unwrap();
+            self.builder
+                .build_pointer_cast(tmp, i8ptr, "casted_obj")
+                .unwrap()
+        }
+        _ => {
+            println!("⚠️ Unsupported print type — using null");
+            i8ptr.const_null()
+        }
+    };
 
-        // === Unsupported type ===
-        other => panic!("print(..): unsupported value type {:?}", other),
+    // === Infer runtime type_id ===
+    // 1 = array, 2 = object, 0 = other
+    let type_id = match &args[0] {
+    Expr::Variable(name) => {
+        if name == "arr" {
+            i32_ty.const_int(1, false) // array
+        } else if name == "obj" {
+            i32_ty.const_int(2, false) // object
+        } else {
+            i32_ty.const_int(0, false)
+        }
     }
+    Expr::ArrayLiteral(_) => i32_ty.const_int(1, false),
+    Expr::ObjectLiteral(_) => i32_ty.const_int(2, false),
+    _ => i32_ty.const_int(0, false),
+};
 
-    // Print returns dummy int (printf returns int)
-    self.i32_type.const_int(0, false).into()
+    // === Call the C runtime function ===
+    self.builder
+        .build_call(
+            wpp_print_value,
+            &[casted_ptr.into(), type_id.into()],
+            "call_wpp_print_value",
+        )
+        .unwrap();
+
+    // === Return dummy i32 ===
+    return self.i32_type.const_int(0, false).into();
 }
+
 
             else if let Some(func_val) = self.functions.get(name).cloned() {
     let func = func_val; // owned copy (FunctionValue is Copy internally)
@@ -1274,34 +1303,39 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
         Node::Let { name, value, is_const, ty } => {
     println!("🧱 Compiling top-level node: Let {{ name: {}, ty: {:?} }}", name, ty);
 
+    // === Detect heap-allocated expressions (arrays/objects) ===
+    let is_heap_value = matches!(value, Expr::ArrayLiteral(_) | Expr::ObjectLiteral(_));
+    if is_heap_value {
+        println!("💾 Variable `{}` is a heap object — allocating as pointer", name);
+    }
+
     // === Determine variable type ===
-    let var_type: BasicTypeEnum<'ctx> = if let Some(t) = ty {
-        // 🧩 Explicit type (e.g. let i64 x = ...)
+    let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
+        // All heap structures are stored as pointers (i8*)
+        self.context
+            .i8_type()
+            .ptr_type(AddressSpace::default())
+            .as_basic_type_enum()
+    } else if let Some(t) = ty {
+        // Explicit type annotation
         self.resolve_basic_type(t)
     } else {
         // 🔍 Type inference from RHS
         match value {
-            Expr::TypedLiteral { value: val, ty: lit_ty } => {
-    // If literal already has an explicit internal type (like f64), use it
-    match lit_ty.as_str() {
-        "i1" | "bool" => self.context.bool_type().into(),
-        "i8" => self.context.i8_type().into(),
-        "i32" => self.context.i32_type().into(),
-        "i64" => self.context.i64_type().into(),
-        "f64" => self.context.f64_type().into(),
-        _ => self.infer_type_from_literal(val, lit_ty == "f64"),
-    }
-}
+            Expr::TypedLiteral { value: val, ty: lit_ty } => match lit_ty.as_str() {
+                "i1" | "bool" => self.context.bool_type().into(),
+                "i8" => self.context.i8_type().into(),
+                "i32" => self.context.i32_type().into(),
+                "i64" => self.context.i64_type().into(),
+                "f64" => self.context.f64_type().into(),
+                _ => self.infer_type_from_literal(val, lit_ty == "f64"),
+            },
 
-            Expr::Literal(v) => {
-                // Integer literal (infer by numeric range)
-                self.infer_type_from_literal(&v.to_string(), false)
-            }
+            Expr::Literal(v) => self.infer_type_from_literal(&v.to_string(), false),
 
             Expr::BoolLiteral(_) => self.context.bool_type().into(),
 
             Expr::Variable(var_name) => {
-                // Copy type from existing variable if known
                 if let Some(existing) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
                     existing.ty
                 } else {
@@ -1311,7 +1345,6 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
             }
 
             Expr::BinaryOp { left, right, .. } => {
-                // Infer from operands (float dominance)
                 let left_ty = self.infer_expr_type(left);
                 let right_ty = self.infer_expr_type(right);
                 self.merge_types(left_ty, right_ty)
@@ -1327,52 +1360,57 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
     // === Allocate space for variable ===
     let alloca = self.builder.build_alloca(var_type, name).unwrap();
 
-    // === Compile RHS expression ===
+    // === Compile RHS ===
     let rhs_val = self.compile_expr(value);
 
-    // === Perform safe casting if needed ===
-    let casted_val = match (rhs_val, var_type) {
-        (BasicValueEnum::IntValue(iv), BasicTypeEnum::IntType(int_ty)) => {
-            let rhs_bits = iv.get_type().get_bit_width();
-            let lhs_bits = int_ty.get_bit_width();
-            if rhs_bits == lhs_bits {
-                iv.as_basic_value_enum()
-            } else if rhs_bits < lhs_bits {
+    // === Store safely ===
+    if is_heap_value {
+        // Heap values already return a pointer; store directly
+        self.builder.build_store(alloca, rhs_val).unwrap();
+    } else {
+        // Primitive values: perform safe casting if needed
+        let casted_val = match (rhs_val, var_type) {
+            (BasicValueEnum::IntValue(iv), BasicTypeEnum::IntType(int_ty)) => {
+                let rhs_bits = iv.get_type().get_bit_width();
+                let lhs_bits = int_ty.get_bit_width();
+                if rhs_bits == lhs_bits {
+                    iv.as_basic_value_enum()
+                } else if rhs_bits < lhs_bits {
+                    self.builder
+                        .build_int_z_extend(iv, int_ty, "zext")
+                        .unwrap()
+                        .as_basic_value_enum()
+                } else {
+                    self.builder
+                        .build_int_truncate(iv, int_ty, "trunc")
+                        .unwrap()
+                        .as_basic_value_enum()
+                }
+            }
+
+            (BasicValueEnum::FloatValue(fv), BasicTypeEnum::FloatType(_)) => fv.as_basic_value_enum(),
+
+            (BasicValueEnum::IntValue(iv), BasicTypeEnum::FloatType(f_ty)) => {
                 self.builder
-                    .build_int_z_extend(iv, int_ty, "zext")
-                    .unwrap()
-                    .as_basic_value_enum()
-            } else {
-                self.builder
-                    .build_int_truncate(iv, int_ty, "trunc")
+                    .build_signed_int_to_float(iv, f_ty, "int2float")
                     .unwrap()
                     .as_basic_value_enum()
             }
-        }
 
-        (BasicValueEnum::FloatValue(fv), BasicTypeEnum::FloatType(_)) => fv.as_basic_value_enum(),
+            (BasicValueEnum::FloatValue(fv), BasicTypeEnum::IntType(i_ty)) => {
+                self.builder
+                    .build_float_to_signed_int(fv, i_ty, "float2int")
+                    .unwrap()
+                    .as_basic_value_enum()
+            }
 
-        (BasicValueEnum::IntValue(iv), BasicTypeEnum::FloatType(f_ty)) => {
-            self.builder
-                .build_signed_int_to_float(iv, f_ty, "int2float")
-                .unwrap()
-                .as_basic_value_enum()
-        }
+            (BasicValueEnum::IntValue(iv), BasicTypeEnum::PointerType(_)) => iv.as_basic_value_enum(),
 
-        (BasicValueEnum::FloatValue(fv), BasicTypeEnum::IntType(i_ty)) => {
-            self.builder
-                .build_float_to_signed_int(fv, i_ty, "float2int")
-                .unwrap()
-                .as_basic_value_enum()
-        }
+            _ => rhs_val,
+        };
 
-        (BasicValueEnum::IntValue(iv), BasicTypeEnum::PointerType(_)) => iv.as_basic_value_enum(),
-
-        _ => rhs_val,
-    };
-
-    // === Store the value into memory ===
-    self.builder.build_store(alloca, casted_val).unwrap();
+        self.builder.build_store(alloca, casted_val).unwrap();
+    }
 
     // === Register variable ===
     self.vars.insert(
@@ -1386,6 +1424,7 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
 
     None
 }
+
 
 
 
@@ -1586,15 +1625,13 @@ function
 
 
 
-    pub fn run_jit(&self) {
+   pub fn run_jit(&self) {
     use std::mem;
     use libc::printf;
     use crate::runtime;
 
-    // 1️⃣ Create JIT engine
     let engine: ExecutionEngine<'_> = self.create_engine();
 
-    // 2️⃣ Register the engine globally for async runtime access
     unsafe {
         crate::runtime::set_engine(mem::transmute::<
             ExecutionEngine<'_>,
@@ -1603,15 +1640,15 @@ function
     }
     println!("✅ [jit] Execution engine registered globally");
 
-    // 3️⃣ Map runtime externs (printf, spawn, yield, etc.)
     unsafe {
+        // printf (system)
         if let Some(func) = self.module.get_function("printf") {
             engine.add_global_mapping(&func, printf as usize);
         }
 
+        // === Runtime: spawn / yield / return ===
         extern "C" fn wpp_spawn_stub(ptr: *const std::ffi::c_void) {
-            let ptr = ptr as *const ();
-            runtime::wpp_spawn(ptr);
+            runtime::wpp_spawn(ptr as *const ());
         }
 
         extern "C" fn wpp_yield_stub() {
@@ -1641,12 +1678,33 @@ function
         if let Some(get_last_fn) = self.module.get_function("wpp_get_last_result") {
             engine.add_global_mapping(&get_last_fn, wpp_get_last_result_stub as usize);
         }
+
         if let Some(func) = self.module.get_function("malloc") {
-    engine.add_global_mapping(&func, malloc as usize);
+            engine.add_global_mapping(&func, libc::malloc as usize);
+        }
+
+        // === 🔗 NEW: connect print runtime ===
+        // === 🔗 NEW: connect print runtime ===
+unsafe extern "C" {
+    fn wpp_print_value(ptr: *const std::ffi::c_void, type_id: i32);
+    fn wpp_print_array(ptr: *const std::ffi::c_void);
+    fn wpp_print_object(ptr: *const std::ffi::c_void);
 }
+
+
+
+        if let Some(func) = self.module.get_function("wpp_print_value") {
+            engine.add_global_mapping(&func, wpp_print_value as usize);
+        }
+        if let Some(func) = self.module.get_function("wpp_print_array") {
+            engine.add_global_mapping(&func, wpp_print_array as usize);
+        }
+        if let Some(func) = self.module.get_function("wpp_print_object") {
+            engine.add_global_mapping(&func, wpp_print_object as usize);
+        }
     }
 
-    // 4️⃣ Pick the right entrypoint (bootstrap_main > main)
+    // ✅ Launch entrypoint
     let entry_name = if self.module.get_function("bootstrap_main").is_some() {
         "bootstrap_main"
     } else {
@@ -1655,11 +1713,9 @@ function
 
     println!("🚀 [jit] Launching entrypoint: {}", entry_name);
 
-    // 5️⃣ Run the entrypoint
     let entry_addr = engine
-    .get_function_address(entry_name)
-    .unwrap_or_else(|_| panic!("❌ Could not find function `{}` in module", entry_name));
-
+        .get_function_address(entry_name)
+        .unwrap_or_else(|_| panic!("❌ Could not find function `{}` in module", entry_name));
 
     let entry_fn: extern "C" fn() -> i32 = unsafe { mem::transmute(entry_addr) };
     let result = entry_fn();

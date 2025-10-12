@@ -506,6 +506,51 @@ else if name == "http.get" {
         i32_ty.const_int(0, false).into()
     });
 }
+else if name == "http.post" || name == "http.put" || name == "http.patch" || name == "http.delete" {
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let (func_name, needs_body) = match name.as_str() {
+        "http.post" => ("wpp_http_post", true),
+        "http.put" => ("wpp_http_put", true),
+        "http.patch" => ("wpp_http_patch", true),
+        "http.delete" => ("wpp_http_delete", false),
+        _ => unreachable!(),
+    };
+
+    // Validate argument count
+    if (needs_body && args.len() != 2) || (!needs_body && args.len() != 1) {
+        panic!("{} expects {} argument(s)", name, if needs_body { 2 } else { 1 });
+    }
+
+    // Compile URL
+    let url_val = self.compile_expr(&args[0]);
+
+    // Compile body if applicable
+    let mut params = vec![url_val.into()];
+    if needs_body {
+        let body_val = self.compile_expr(&args[1]);
+        params.push(body_val.into());
+    }
+
+    // Ensure extern is declared
+    let fn_ty = if needs_body {
+        i32_ty.fn_type(&[i8ptr.into(), i8ptr.into()], false)
+    } else {
+        i32_ty.fn_type(&[i8ptr.into()], false)
+    };
+    let extern_fn = self.module.get_function(func_name).unwrap_or_else(|| {
+        self.module.add_function(func_name, fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(extern_fn, &params, &format!("call_{}", name))
+        .unwrap();
+
+    return call.try_as_basic_value().left().unwrap_or_else(|| {
+        i32_ty.const_int(0, false).into()
+    });
+}
 
 // === SERVER REGISTER ===
 else if name == "server.register" {
@@ -1828,6 +1873,25 @@ unsafe extern "C" {
     fn wpp_print_object(ptr: *const std::ffi::c_void);
 }
 
+unsafe extern "C" {
+    fn wpp_http_post(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
+    fn wpp_http_put(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
+    fn wpp_http_patch(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
+    fn wpp_http_delete(url: *const std::os::raw::c_char) -> i32;
+}
+
+if let Some(func) = self.module.get_function("wpp_http_post") {
+    engine.add_global_mapping(&func, wpp_http_post as usize);
+}
+if let Some(func) = self.module.get_function("wpp_http_put") {
+    engine.add_global_mapping(&func, wpp_http_put as usize);
+}
+if let Some(func) = self.module.get_function("wpp_http_patch") {
+    engine.add_global_mapping(&func, wpp_http_patch as usize);
+}
+if let Some(func) = self.module.get_function("wpp_http_delete") {
+    engine.add_global_mapping(&func, wpp_http_delete as usize);
+}
 
 
         if let Some(func) = self.module.get_function("wpp_print_value") {

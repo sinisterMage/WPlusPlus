@@ -1,7 +1,6 @@
 use reqwest::Client;
 use std::collections::HashMap;
-use std::ffi::CStr;
-use std::os::raw::c_char;
+use std::ffi::{CStr, c_char};
 
 /// A basic HTTP response structure for W++ use.
 #[derive(Debug)]
@@ -11,11 +10,23 @@ pub struct HttpResponse {
     pub headers: HashMap<String, String>,
 }
 
-/// Perform HTTP GET request asynchronously.
-pub async fn wpp_http_get_async(url: &str) -> HttpResponse {
+/// === Internal async handler ===
+async fn do_request(method: &str, url: &str, body: Option<&str>) -> HttpResponse {
     let client = Client::new();
-    let resp = client.get(url).send().await.unwrap();
+    let mut req = match method {
+        "GET" => client.get(url),
+        "POST" => client.post(url),
+        "PUT" => client.put(url),
+        "PATCH" => client.patch(url),
+        "DELETE" => client.delete(url),
+        _ => client.get(url),
+    };
 
+    if let Some(b) = body {
+        req = req.body(b.to_string());
+    }
+
+    let resp = req.send().await.unwrap();
     let status = resp.status().as_u16() as i32;
     let headers = resp
         .headers()
@@ -27,47 +38,56 @@ pub async fn wpp_http_get_async(url: &str) -> HttpResponse {
     HttpResponse { status, body, headers }
 }
 
-/// Test helper — synchronous wrapper for quick debugging
-pub fn test_http_get(url: &str) {
-    let rt = tokio::runtime::Runtime::new().unwrap();
-    let res = rt.block_on(wpp_http_get_async(url));
-    println!(
-        "🌐 GET {} => {} ({} bytes)",
-        url,
-        res.status,
-        res.body.len()
-    );
-}
+/// === Async Rust functions for each method (renamed with `_impl_`) ===
+pub async fn _impl_http_get(url: &str) -> HttpResponse { do_request("GET", url, None).await }
+pub async fn _impl_http_post(url: &str, body: &str) -> HttpResponse { do_request("POST", url, Some(body)).await }
+pub async fn _impl_http_put(url: &str, body: &str) -> HttpResponse { do_request("PUT", url, Some(body)).await }
+pub async fn _impl_http_patch(url: &str, body: &str) -> HttpResponse { do_request("PATCH", url, Some(body)).await }
+pub async fn _impl_http_delete(url: &str) -> HttpResponse { do_request("DELETE", url, None).await }
+
+/// === Synchronous C ABI wrappers ===
 #[unsafe(no_mangle)]
-pub extern "C" fn wpp_http_get(url_ptr: *const c_char) -> i32 {
+pub extern "C" fn wpp_http_get(ptr: *const c_char) -> i32 {
+    call_blocking_http(ptr, None, "GET")
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_http_post(url_ptr: *const c_char, body_ptr: *const c_char) -> i32 {
+    call_blocking_http(url_ptr, Some(body_ptr), "POST")
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_http_put(url_ptr: *const c_char, body_ptr: *const c_char) -> i32 {
+    call_blocking_http(url_ptr, Some(body_ptr), "PUT")
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_http_patch(url_ptr: *const c_char, body_ptr: *const c_char) -> i32 {
+    call_blocking_http(url_ptr, Some(body_ptr), "PATCH")
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_http_delete(url_ptr: *const c_char) -> i32 {
+    call_blocking_http(url_ptr, None, "DELETE")
+}
+
+/// === Shared helper for blocking FFI calls ===
+fn call_blocking_http(url_ptr: *const c_char, body_ptr: Option<*const c_char>, method: &str) -> i32 {
     if url_ptr.is_null() {
-        eprintln!("⚠️ [http] null pointer passed to wpp_http_get");
+        eprintln!("⚠️ [http] null pointer passed");
         return -1;
     }
 
-    // Convert C string → Rust String
     let url = unsafe { CStr::from_ptr(url_ptr) }.to_string_lossy().to_string();
-    println!("🌐 [http] GET {}", url);
+    let body = body_ptr.map(|b| unsafe { CStr::from_ptr(b) }.to_string_lossy().to_string());
 
-    // Create a short-lived async runtime for this call
-    let rt = match tokio::runtime::Runtime::new() {
-        Ok(rt) => rt,
-        Err(e) => {
-            eprintln!("❌ [http] failed to create runtime: {e}");
-            return -1;
-        }
-    };
+    println!("🌐 [{}] {}", method, url);
 
-    // Execute the async GET and wait synchronously for completion
-    let res = rt.block_on(async { crate::runtime::http::wpp_http_get_async(&url).await });
+    let rt = tokio::runtime::Runtime::new().unwrap();
+    let res = rt.block_on(async {
+        do_request(method, &url, body.as_deref()).await
+    });
 
-    println!(
-        "✅ [http] {} => status {}, {} bytes",
-        url,
-        res.status,
-        res.body.len()
-    );
-
-    // For now, just return status code (integer)
+    println!("✅ [{}] {} => {} ({} bytes)", method, url, res.status, res.body.len());
     res.status
 }

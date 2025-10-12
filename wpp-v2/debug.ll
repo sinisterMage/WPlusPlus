@@ -4,14 +4,22 @@ source_filename = "wpp_module"
 @_wpp_exc_flag = global i1 false
 @_wpp_exc_i32 = global i32 0
 @_wpp_exc_str = global ptr null
-@objkey_0 = private constant [2 x i8] c"x\00"
-@objkey_1 = private constant [2 x i8] c"y\00"
+@strlit_0 = private constant [25 x i8] c"hello from W++ endpoint!\00"
+@strlit_1 = private constant [25 x i8] c"hello from W++ endpoint!\00"
+@strlit_2 = private constant [4 x i8] c"/hi\00"
+@strlit_3 = private constant [20 x i8] c"https://example.com\00"
 
 declare void @wpp_print_value(ptr, i32)
 
 declare void @wpp_print_array(ptr)
 
 declare void @wpp_print_object(ptr)
+
+declare i32 @wpp_http_get(ptr)
+
+declare void @wpp_register_endpoint(ptr, ptr)
+
+declare void @wpp_start_server(i32)
 
 define i32 @main_async() {
 entry:
@@ -21,45 +29,26 @@ entry:
   store i32 0, ptr %exc_val_i32, align 4
   %exc_val_str = alloca ptr, align 8
   store ptr null, ptr %exc_val_str, align 8
-  %arr = alloca ptr, align 8
-  %arr_malloc = call ptr @malloc(i64 mul (i64 ptrtoint (ptr getelementptr (i32, ptr null, i32 1) to i64), i64 5))
-  store i32 4, ptr %arr_malloc, align 4
-  %elem_ptr = getelementptr i32, ptr %arr_malloc, i32 1
-  store i32 1, ptr %elem_ptr, align 4
-  %elem_ptr1 = getelementptr i32, ptr %arr_malloc, i32 2
-  store i32 2, ptr %elem_ptr1, align 4
-  %elem_ptr2 = getelementptr i32, ptr %arr_malloc, i32 3
-  store i32 3, ptr %elem_ptr2, align 4
-  %elem_ptr3 = getelementptr i32, ptr %arr_malloc, i32 4
-  store i32 4, ptr %elem_ptr3, align 4
-  store ptr %arr_malloc, ptr %arr, align 8
-  %obj = alloca ptr, align 8
-  %obj_malloc = call ptr @malloc(i64 ptrtoint (ptr getelementptr ({ i32, ptr, ptr }, ptr null, i32 1) to i64))
-  %keys_malloc = call ptr @malloc(i64 mul (i64 ptrtoint (ptr getelementptr (i32, ptr null, i32 1) to i64), i64 2))
-  %vals_malloc = call ptr @malloc(i64 mul (i64 ptrtoint (ptr getelementptr (i32, ptr null, i32 1) to i64), i64 2))
-  %key_slot = getelementptr ptr, ptr %keys_malloc, i32 0
-  store ptr @objkey_0, ptr %key_slot, align 8
-  %val_slot = getelementptr i32, ptr %vals_malloc, i32 0
-  store i32 10, ptr %val_slot, align 4
-  %key_slot4 = getelementptr ptr, ptr %keys_malloc, i32 1
-  store ptr @objkey_1, ptr %key_slot4, align 8
-  %val_slot5 = getelementptr i32, ptr %vals_malloc, i32 1
-  store i32 20, ptr %val_slot5, align 4
-  %f0 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc, i32 0, i32 0
-  store i32 2, ptr %f0, align 4
-  %f1 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc, i32 0, i32 1
-  store ptr %keys_malloc, ptr %f1, align 8
-  %f2 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc, i32 0, i32 2
-  store ptr %vals_malloc, ptr %f2, align 8
-  store ptr %obj_malloc, ptr %obj, align 8
-  %load_arr = load ptr, ptr %arr, align 8
-  call void @wpp_print_value(ptr %load_arr, i32 1)
-  %load_obj = load ptr, ptr %obj, align 8
-  call void @wpp_print_value(ptr %load_obj, i32 2)
+  call void @wpp_register_endpoint(ptr @strlit_2, ptr @hello)
+  call void @wpp_start_server(i32 8080)
+  %res = alloca i32, align 4
+  %call_http_get = call i32 @wpp_http_get(ptr @strlit_3)
+  store i32 %call_http_get, ptr %res, align 4
+  %load_res = load i32, ptr %res, align 4
+  %int_as_ptr = inttoptr i32 %load_res to ptr
+  call void @wpp_print_value(ptr %int_as_ptr, i32 0)
   ret i32 0
 }
 
-declare ptr @malloc(i64)
+define i32 @hello() {
+entry:
+  call void @wpp_print_value(ptr @strlit_0, i32 0)
+  ret i32 0
+
+entry1:                                           ; No predecessors!
+  call void @wpp_print_value(ptr @strlit_1, i32 0)
+  ret i32 0
+}
 
 define i32 @main() {
 entry:

@@ -118,6 +118,7 @@ impl<'ctx> Codegen<'ctx> {
 
     // ✅ Register runtime externs right after initialization
     codegen.init_runtime_support();
+    codegen.init_network_support(); // ✅ new
 
     // ✅ Return ready-to-use codegen
     codegen
@@ -125,6 +126,26 @@ impl<'ctx> Codegen<'ctx> {
 
 
 
+pub fn init_network_support(&self) {
+    use inkwell::AddressSpace;
+
+    let void_ty = self.context.void_type();
+    let i32_ty = self.context.i32_type();
+    let i8_ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let fn_ptr = void_ty.fn_type(&[], false).ptr_type(AddressSpace::default());
+
+    // === HTTP GET ===
+    let http_get_ty = i32_ty.fn_type(&[i8_ptr.into()], false);
+    self.module.add_function("wpp_http_get", http_get_ty, None);
+
+    // === Register Endpoint ===
+    let register_ty = void_ty.fn_type(&[i8_ptr.into(), fn_ptr.into()], false);
+    self.module.add_function("wpp_register_endpoint", register_ty, None);
+
+    // === Start Server ===
+    let start_ty = void_ty.fn_type(&[i32_ty.into()], false);
+    self.module.add_function("wpp_start_server", start_ty, None);
+}
 
     pub fn create_engine(&self) -> ExecutionEngine<'ctx> {
         self.module
@@ -457,6 +478,93 @@ result
         .unwrap();
 
     // === Return dummy i32 ===
+    return self.i32_type.const_int(0, false).into();
+}
+// === HTTP GET ===
+else if name == "http.get" {
+    // Expect one argument: a string literal or variable containing URL
+    if args.len() != 1 {
+        panic!("http.get() expects 1 argument (URL)");
+    }
+
+    let url_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    // Ensure extern is declared
+    let http_get_fn = self.module.get_function("wpp_http_get").unwrap_or_else(|| {
+        let ty = i32_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_http_get", ty, None)
+    });
+
+    // Call the extern function
+    let call = self.builder
+        .build_call(http_get_fn, &[url_val.into()], "call_http_get")
+        .unwrap();
+
+    return call.try_as_basic_value().left().unwrap_or_else(|| {
+        i32_ty.const_int(0, false).into()
+    });
+}
+
+// === SERVER REGISTER ===
+else if name == "server.register" {
+    if args.len() != 2 {
+        panic!("server.register() expects 2 arguments (path, handler)");
+    }
+
+    let path_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let void_ty = self.context.void_type();
+
+    let register_fn = self.module.get_function("wpp_register_endpoint").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("wpp_register_endpoint", ty, None)
+    });
+
+    // Handler must be a function name (variable)
+    let handler_name = if let Expr::Variable(ref s) = args[1] {
+        s.clone()
+    } else {
+        panic!("Expected function name as second argument in server.register");
+    };
+
+    let handler_fn = self.functions.get(&handler_name)
+        .unwrap_or_else(|| panic!("Unknown handler function `{}`", handler_name));
+
+    self.builder
+        .build_call(
+            register_fn,
+            &[
+                path_val.into(),
+                handler_fn.as_global_value().as_pointer_value().into(),
+            ],
+            "call_server_register",
+        )
+        .unwrap();
+
+    return self.i32_type.const_int(0, false).into();
+}
+
+// === SERVER START ===
+else if name == "server.start" {
+    if args.len() != 1 {
+        panic!("server.start() expects 1 argument (port)");
+    }
+
+    let port_val = self.compile_expr(&args[0]);
+    let i32_ty = self.context.i32_type();
+    let void_ty = self.context.void_type();
+
+    let start_fn = self.module.get_function("wpp_start_server").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i32_ty.into()], false);
+        self.module.add_function("wpp_start_server", ty, None)
+    });
+
+    self.builder
+        .build_call(start_fn, &[port_val.into()], "call_server_start")
+        .unwrap();
+
     return self.i32_type.const_int(0, false).into();
 }
 
@@ -1666,6 +1774,23 @@ function
         if let Some(spawn) = self.module.get_function("wpp_spawn") {
             engine.add_global_mapping(&spawn, wpp_spawn_stub as usize);
         }
+        
+    unsafe extern "C" {
+        fn wpp_http_get(ptr: *const std::os::raw::c_char) -> i32;
+        fn wpp_register_endpoint(path: *const std::os::raw::c_char, handler: *const ());
+        fn wpp_start_server(port: i32);
+    }
+
+    if let Some(func) = self.module.get_function("wpp_http_get") {
+        engine.add_global_mapping(&func, wpp_http_get as usize);
+    }
+    if let Some(func) = self.module.get_function("wpp_register_endpoint") {
+        engine.add_global_mapping(&func, wpp_register_endpoint as usize);
+    }
+    if let Some(func) = self.module.get_function("wpp_start_server") {
+        engine.add_global_mapping(&func, wpp_start_server as usize);
+    }
+
 
         if let Some(yield_fn) = self.module.get_function("wpp_yield") {
             engine.add_global_mapping(&yield_fn, wpp_yield_stub as usize);

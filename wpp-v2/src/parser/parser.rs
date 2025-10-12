@@ -644,23 +644,36 @@ impl Parser {
     match self.advance().clone() {
         TokenKind::Number { raw, ty } => Expr::TypedLiteral { value: raw, ty },
         TokenKind::String(s) => Expr::StringLiteral(s),
-        TokenKind::Identifier(name) => {
-            if self.matches(&[TokenKind::Symbol("(".into())]) {
-                let mut args = Vec::new();
-                if !self.check(TokenKind::Symbol(")".into())) {
-                    loop {
-                        args.push(self.parse_expr());
-                        if !self.matches(&[TokenKind::Symbol(",".into())]) {
-                            break;
-                        }
-                    }
+        TokenKind::Identifier(mut name) => {
+    // 🔗 Merge dotted identifiers like "server.register" or "http.get"
+    while self.check(TokenKind::Symbol(".".into())) {
+        self.advance(); // consume '.'
+        match self.advance().clone() {
+            TokenKind::Identifier(next) => {
+                name = format!("{}.{}", name, next);
+            }
+            other => panic!("Expected identifier after '.', got {:?}", other),
+        }
+    }
+
+    // 📞 Handle function calls (after full name is built)
+    if self.matches(&[TokenKind::Symbol("(".into())]) {
+        let mut args = Vec::new();
+        if !self.check(TokenKind::Symbol(")".into())) {
+            loop {
+                args.push(self.parse_expr());
+                if !self.matches(&[TokenKind::Symbol(",".into())]) {
+                    break;
                 }
-                self.expect(TokenKind::Symbol(")".into()), "Expected ')' after function args");
-                Expr::Call { name, args }
-            } else {
-                Expr::Variable(name)
             }
         }
+        self.expect(TokenKind::Symbol(")".into()), "Expected ')' after function args");
+        Expr::Call { name, args }
+    } else {
+        Expr::Variable(name)
+    }
+}
+
         TokenKind::Keyword(k) if k == "true" => Expr::BoolLiteral(true),
         TokenKind::Keyword(k) if k == "false" => Expr::BoolLiteral(false),
         TokenKind::Symbol(sym) if sym == "(".to_string() => {

@@ -1,5 +1,9 @@
-let arr = [1, 2, 3, 4];
-let obj = { "x": 10, "y": 20 };
+funcy hello() {
+    print("hello from W++ endpoint!")
+}
 
-print(arr);
-print(obj);
+server.register("/hi", hello)
+server.start(8080)
+
+let res = http.get("https://example.com")
+print(res)

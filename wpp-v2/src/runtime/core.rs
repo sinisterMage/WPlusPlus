@@ -193,3 +193,5 @@ pub extern "C" fn wpp_shutdown() {
     TASK_QUEUE.lock().unwrap().clear();
     println!("🧹 [runtime] Scheduler cleared all tasks, shutdown complete");
 }
+pub use crate::runtime::server::{register_endpoint, start_server};
+

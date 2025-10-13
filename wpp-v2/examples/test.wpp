@@ -1,7 +1,5 @@
-let res1 = http.get("https://example.com")
-let res2 = http.post("https://httpbin.org/post", "{ 'msg': 'hello gamer' }")
-let res3 = http.put("https://httpbin.org/put", "{ 'update': true }")
-let res4 = http.patch("https://httpbin.org/patch", "{ 'patching': true }")
-let res5 = http.delete("https://httpbin.org/delete")
-
-print("done making requests")
+let res = http.post("https://httpbin.org/post", "{ \"msg\": \"hello\" }");
+print("status:");
+print(http.status(res));
+print("body:");
+print(http.body(res));

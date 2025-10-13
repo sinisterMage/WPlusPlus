@@ -2,7 +2,7 @@ use inkwell::{
     builder::Builder,
     context::Context,
     execution_engine::ExecutionEngine,
-    module::{Linkage, Module},
+    module::{self, Linkage, Module},
     types::BasicTypeEnum,
     values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, IntValue, PointerValue},
     AddressSpace,
@@ -404,9 +404,16 @@ result
     let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
     let i32_ty = self.context.i32_type();
 
+    // Existing: print_value(ptr, i32)
     let wpp_print_value = self.module.get_function("wpp_print_value").unwrap_or_else(|| {
         let ty = void_ty.fn_type(&[i8ptr.into(), i32_ty.into()], false);
         self.module.add_function("wpp_print_value", ty, None)
+    });
+
+    // 🆕 New: print_i32(i32)
+    let wpp_print_i32 = self.module.get_function("wpp_print_i32").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i32_ty.into()], false);
+        self.module.add_function("wpp_print_i32", ty, None)
     });
 
     // === Compile argument ===
@@ -416,70 +423,70 @@ result
 
     let val = self.compile_expr(&args[0]);
 
-    // === Convert the value into a pointer to pass to C ===
-    let casted_ptr = match val {
-        BasicValueEnum::PointerValue(pv) => pv,
+    // === Handle based on value type ===
+    match val {
+        // 🧮 Case 1: Integer — call wpp_print_i32 directly
         BasicValueEnum::IntValue(iv) => {
-            // Treat numbers as generic pointer (not dereferenced)
             self.builder
-                .build_int_to_ptr(
-                    iv,
-                    i8ptr,
-                    "int_as_ptr",
-                )
-                .unwrap()
+                .build_call(wpp_print_i32, &[iv.into()], "call_print_i32")
+                .unwrap();
         }
+
+        // 🧵 Case 2: Pointer / array / struct — use wpp_print_value
+        BasicValueEnum::PointerValue(pv) => {
+            let type_id = i32_ty.const_int(0, false);
+            self.builder
+                .build_call(
+                    wpp_print_value,
+                    &[pv.into(), type_id.into()],
+                    "call_print_value_ptr",
+                )
+                .unwrap();
+        }
+
         BasicValueEnum::ArrayValue(av) => {
-            // Store the array temporarily
             let tmp = self.builder.build_alloca(av.get_type(), "tmp_arr").unwrap();
             self.builder.build_store(tmp, av).unwrap();
+            let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_arr").unwrap();
             self.builder
-                .build_pointer_cast(tmp, i8ptr, "casted_arr")
-                .unwrap()
+                .build_call(
+                    wpp_print_value,
+                    &[casted.into(), i32_ty.const_int(1, false).into()],
+                    "call_print_value_arr",
+                )
+                .unwrap();
         }
+
         BasicValueEnum::StructValue(sv) => {
-            // Store the struct temporarily
             let tmp = self.builder.build_alloca(sv.get_type(), "tmp_obj").unwrap();
             self.builder.build_store(tmp, sv).unwrap();
+            let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_obj").unwrap();
             self.builder
-                .build_pointer_cast(tmp, i8ptr, "casted_obj")
-                .unwrap()
+                .build_call(
+                    wpp_print_value,
+                    &[casted.into(), i32_ty.const_int(2, false).into()],
+                    "call_print_value_obj",
+                )
+                .unwrap();
         }
+
         _ => {
             println!("⚠️ Unsupported print type — using null");
-            i8ptr.const_null()
-        }
-    };
-
-    // === Infer runtime type_id ===
-    // 1 = array, 2 = object, 0 = other
-    let type_id = match &args[0] {
-    Expr::Variable(name) => {
-        if name == "arr" {
-            i32_ty.const_int(1, false) // array
-        } else if name == "obj" {
-            i32_ty.const_int(2, false) // object
-        } else {
-            i32_ty.const_int(0, false)
+            let null_ptr = i8ptr.const_null();
+            self.builder
+                .build_call(
+                    wpp_print_value,
+                    &[null_ptr.into(), i32_ty.const_int(0, false).into()],
+                    "call_print_value_null",
+                )
+                .unwrap();
         }
     }
-    Expr::ArrayLiteral(_) => i32_ty.const_int(1, false),
-    Expr::ObjectLiteral(_) => i32_ty.const_int(2, false),
-    _ => i32_ty.const_int(0, false),
-};
-
-    // === Call the C runtime function ===
-    self.builder
-        .build_call(
-            wpp_print_value,
-            &[casted_ptr.into(), type_id.into()],
-            "call_wpp_print_value",
-        )
-        .unwrap();
 
     // === Return dummy i32 ===
     return self.i32_type.const_int(0, false).into();
 }
+
 // === HTTP GET ===
 else if name == "http.get" {
     // Expect one argument: a string literal or variable containing URL
@@ -550,6 +557,70 @@ else if name == "http.post" || name == "http.put" || name == "http.patch" || nam
     return call.try_as_basic_value().left().unwrap_or_else(|| {
         i32_ty.const_int(0, false).into()
     });
+}
+// === HTTP STATUS ===
+else if name == "http.status" {
+    if args.len() != 1 {
+        panic!("http.status(handle) expects 1 argument");
+    }
+
+    let i32_ty = self.context.i32_type();
+    let handle = self.compile_expr(&args[0]);
+
+    let fnc = self.module.get_function("wpp_http_status").unwrap_or_else(|| {
+        let ty = i32_ty.fn_type(&[i32_ty.into()], false);
+        self.module.add_function("wpp_http_status", ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fnc, &[handle.into()], "call_http_status")
+        .unwrap();
+
+    return call.try_as_basic_value().left().unwrap();
+}
+
+// === HTTP BODY ===
+else if name == "http.body" {
+    if args.len() != 1 {
+        panic!("http.body(handle) expects 1 argument");
+    }
+
+    let i32_ty = self.context.i32_type();
+    let i8ptr_ty = self.context.i8_type().ptr_type(inkwell::AddressSpace::default());
+    let handle = self.compile_expr(&args[0]);
+
+    let fnc = self.module.get_function("wpp_http_body").unwrap_or_else(|| {
+        let ty = i8ptr_ty.fn_type(&[i32_ty.into()], false);
+        self.module.add_function("wpp_http_body", ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fnc, &[handle.into()], "call_http_body")
+        .unwrap();
+
+    return call.try_as_basic_value().left().unwrap();
+}
+
+// === HTTP HEADERS ===
+else if name == "http.headers" {
+    if args.len() != 1 {
+        panic!("http.headers(handle) expects 1 argument");
+    }
+
+    let i32_ty = self.context.i32_type();
+    let i8ptr_ty = self.context.i8_type().ptr_type(inkwell::AddressSpace::default());
+    let handle = self.compile_expr(&args[0]);
+
+    let fnc = self.module.get_function("wpp_http_headers").unwrap_or_else(|| {
+        let ty = i8ptr_ty.fn_type(&[i32_ty.into()], false);
+        self.module.add_function("wpp_http_headers", ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fnc, &[handle.into()], "call_http_headers")
+        .unwrap();
+
+    return call.try_as_basic_value().left().unwrap();
 }
 
 // === SERVER REGISTER ===
@@ -1794,6 +1865,7 @@ function
     use std::mem;
     use libc::printf;
     use crate::runtime;
+    use inkwell::execution_engine::ExecutionEngine;
 
     let engine: ExecutionEngine<'_> = self.create_engine();
 
@@ -1806,10 +1878,18 @@ function
     println!("✅ [jit] Execution engine registered globally");
 
     unsafe {
-        // printf (system)
-        if let Some(func) = self.module.get_function("printf") {
-            engine.add_global_mapping(&func, printf as usize);
-        }
+        // === printf (system) ===
+        unsafe extern "C" {
+     fn printf(fmt: *const std::os::raw::c_char, ...) -> i32;
+}
+if let Some(func) = self.module.get_function("printf") {
+    let addr = printf as *const () as usize;
+    engine.add_global_mapping(&func, addr);
+    println!("🔗 [jit] Bound printf @ {:#x}", addr);
+} else {
+    println!("⚠️ [jit] Missing declaration for printf");
+}
+
 
         // === Runtime: spawn / yield / return ===
         extern "C" fn wpp_spawn_stub(ptr: *const std::ffi::c_void) {
@@ -1828,87 +1908,95 @@ function
             runtime::wpp_get_last_result()
         }
 
-        if let Some(spawn) = self.module.get_function("wpp_spawn") {
-            engine.add_global_mapping(&spawn, wpp_spawn_stub as usize);
+        if let Some(f) = self.module.get_function("wpp_spawn") {
+            engine.add_global_mapping(&f, wpp_spawn_stub as usize);
         }
-        
-    unsafe extern "C" {
-        fn wpp_http_get(ptr: *const std::os::raw::c_char) -> i32;
-        fn wpp_register_endpoint(path: *const std::os::raw::c_char, handler: *const ());
-        fn wpp_start_server(port: i32);
-    }
-
-    if let Some(func) = self.module.get_function("wpp_http_get") {
-        engine.add_global_mapping(&func, wpp_http_get as usize);
-    }
-    if let Some(func) = self.module.get_function("wpp_register_endpoint") {
-        engine.add_global_mapping(&func, wpp_register_endpoint as usize);
-    }
-    if let Some(func) = self.module.get_function("wpp_start_server") {
-        engine.add_global_mapping(&func, wpp_start_server as usize);
-    }
-
-
-        if let Some(yield_fn) = self.module.get_function("wpp_yield") {
-            engine.add_global_mapping(&yield_fn, wpp_yield_stub as usize);
+        if let Some(f) = self.module.get_function("wpp_yield") {
+            engine.add_global_mapping(&f, wpp_yield_stub as usize);
+        }
+        if let Some(f) = self.module.get_function("wpp_return") {
+            engine.add_global_mapping(&f, wpp_return_stub as usize);
+        }
+        if let Some(f) = self.module.get_function("wpp_get_last_result") {
+            engine.add_global_mapping(&f, wpp_get_last_result_stub as usize);
         }
 
-        if let Some(ret_fn) = self.module.get_function("wpp_return") {
-            engine.add_global_mapping(&ret_fn, wpp_return_stub as usize);
-        }
-
-        if let Some(get_last_fn) = self.module.get_function("wpp_get_last_result") {
-            engine.add_global_mapping(&get_last_fn, wpp_get_last_result_stub as usize);
-        }
-
+        // === malloc ===
         if let Some(func) = self.module.get_function("malloc") {
             engine.add_global_mapping(&func, libc::malloc as usize);
         }
 
-        // === 🔗 NEW: connect print runtime ===
-        // === 🔗 NEW: connect print runtime ===
-unsafe extern "C" {
-    fn wpp_print_value(ptr: *const std::ffi::c_void, type_id: i32);
-    fn wpp_print_array(ptr: *const std::ffi::c_void);
-    fn wpp_print_object(ptr: *const std::ffi::c_void);
-}
-
-unsafe extern "C" {
-    fn wpp_http_post(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
-    fn wpp_http_put(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
-    fn wpp_http_patch(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
-    fn wpp_http_delete(url: *const std::os::raw::c_char) -> i32;
-}
-
-if let Some(func) = self.module.get_function("wpp_http_post") {
-    engine.add_global_mapping(&func, wpp_http_post as usize);
-}
-if let Some(func) = self.module.get_function("wpp_http_put") {
-    engine.add_global_mapping(&func, wpp_http_put as usize);
-}
-if let Some(func) = self.module.get_function("wpp_http_patch") {
-    engine.add_global_mapping(&func, wpp_http_patch as usize);
-}
-if let Some(func) = self.module.get_function("wpp_http_delete") {
-    engine.add_global_mapping(&func, wpp_http_delete as usize);
-}
-
-
-        if let Some(func) = self.module.get_function("wpp_print_value") {
-            engine.add_global_mapping(&func, wpp_print_value as usize);
+        // === Printing subsystem ===
+        unsafe extern "C" {
+            fn wpp_print_value(ptr: *const std::ffi::c_void, type_id: i32);
+            fn wpp_print_array(ptr: *const std::ffi::c_void);
+            fn wpp_print_object(ptr: *const std::ffi::c_void);
         }
-        if let Some(func) = self.module.get_function("wpp_print_array") {
-            engine.add_global_mapping(&func, wpp_print_array as usize);
+
+        for (name, addr) in [
+            ("wpp_print_value", wpp_print_value as usize),
+            ("wpp_print_array", wpp_print_array as usize),
+            ("wpp_print_object", wpp_print_object as usize),
+        ] {
+            if let Some(func) = self.module.get_function(name) {
+                engine.add_global_mapping(&func, addr);
+                println!("🔗 [jit] Bound {}", name);
+            } else {
+                println!("⚠️ [jit] Missing declaration for {}", name);
+            }
         }
-        if let Some(func) = self.module.get_function("wpp_print_object") {
-            engine.add_global_mapping(&func, wpp_print_object as usize);
+
+        // === HTTP subsystem ===
+        unsafe extern "C" {
+            fn wpp_http_get(ptr: *const std::os::raw::c_char) -> i32;
+            fn wpp_http_post(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
+            fn wpp_http_put(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
+            fn wpp_http_patch(url: *const std::os::raw::c_char, body: *const std::os::raw::c_char) -> i32;
+            fn wpp_http_delete(url: *const std::os::raw::c_char) -> i32;
+            fn wpp_http_status(handle: i32) -> i32;
+            fn wpp_http_body(handle: i32) -> *mut std::ffi::c_void;
+            fn wpp_http_headers(handle: i32) -> *mut std::ffi::c_void;
+            fn wpp_http_free_all();
+            fn wpp_register_endpoint(path: *const std::os::raw::c_char, handler: *const ());
+            fn wpp_start_server(port: i32);
+        }
+
+        let http_funcs = [
+            ("wpp_http_get", wpp_http_get as usize),
+            ("wpp_http_post", wpp_http_post as usize),
+            ("wpp_http_put", wpp_http_put as usize),
+            ("wpp_http_patch", wpp_http_patch as usize),
+            ("wpp_http_delete", wpp_http_delete as usize),
+            ("wpp_http_status", wpp_http_status as usize),
+            ("wpp_http_body", wpp_http_body as usize),
+            ("wpp_http_headers", wpp_http_headers as usize),
+            ("wpp_http_free_all", wpp_http_free_all as usize),
+            ("wpp_register_endpoint", wpp_register_endpoint as usize),
+            ("wpp_start_server", wpp_start_server as usize),
+        ];
+
+        for (name, addr) in http_funcs {
+            if let Some(func) = self.module.get_function(name) {
+                engine.add_global_mapping(&func, addr);
+                println!("🔗 [jit] Bound {}", name);
+            } else {
+                println!("⚠️ [jit] Missing declaration for {}", name);
+            }
+        }
+
+        // === runtime_wait ===
+        unsafe extern "C" {
+            fn wpp_runtime_wait();
+        }
+        if let Some(func) = self.module.get_function("wpp_runtime_wait") {
+            engine.add_global_mapping(&func, wpp_runtime_wait as usize);
         }
         unsafe extern "C" {
-    fn wpp_runtime_wait();
+    fn wpp_print_i32(value: i32);
 }
-
-if let Some(func) = self.module.get_function("wpp_runtime_wait") {
-    engine.add_global_mapping(&func, wpp_runtime_wait as usize);
+if let Some(func) = self.module.get_function("wpp_print_i32") {
+    engine.add_global_mapping(&func, wpp_print_i32 as usize);
+    println!("🔗 [jit] Bound wpp_print_i32");
 }
 
     }

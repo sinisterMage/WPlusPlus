@@ -31,20 +31,61 @@ static int is_probably_valid_string(const char *s) {
 // =====================================================
 // === SAFE PRINT
 // =====================================================
+static int is_probably_valid_utf8(const unsigned char *s) {
+    if (!s) return 0;
+    uintptr_t addr = (uintptr_t)s;
+
+    if (addr < 0x1000) return 0;
+    if (addr > 0x7fffffffffff) return 0;
+
+    size_t i = 0;
+    while (i < 1024) {
+        unsigned char c = s[i];
+        if (c == 0) return 1; // null terminator found
+
+        // Single-byte (ASCII)
+        if (c < 0x80) { i++; continue; }
+
+        // Multi-byte UTF-8 checks
+        if ((c & 0xE0) == 0xC0) { // 2-byte sequence
+            if ((s[i+1] & 0xC0) != 0x80) return 0;
+            i += 2; continue;
+        }
+        if ((c & 0xF0) == 0xE0) { // 3-byte sequence
+            if ((s[i+1] & 0xC0) != 0x80 || (s[i+2] & 0xC0) != 0x80) return 0;
+            i += 3; continue;
+        }
+        if ((c & 0xF8) == 0xF0) { // 4-byte sequence
+            if ((s[i+1] & 0xC0) != 0x80 || (s[i+2] & 0xC0) != 0x80 || (s[i+3] & 0xC0) != 0x80) return 0;
+            i += 4; continue;
+        }
+
+        // Invalid byte
+        return 0;
+    }
+
+    return 1;
+}
+
 static void safe_print_string_checked(const char *s) {
     if (!s) {
         printf("(null)\n");
         return;
     }
-    if (!is_probably_valid_string(s)) {
-        printf("(invalid ptr=%p)\n", s);
+
+    if (!is_probably_valid_utf8((const unsigned char *)s)) {
+        printf("(invalid UTF-8 or ptr=%p)\n", s);
         return;
     }
+
     size_t len = strlen(s);
-    if (len > 300)
-        printf("%.*s... [truncated %zu bytes]\n", 300, s, len - 300);
-    else
-        printf("%s\n", s);
+    if (len > 300) {
+        fwrite(s, 1, 300, stdout);
+        printf("... [truncated %zu bytes]\n", len - 300);
+    } else {
+        fwrite(s, 1, len, stdout);
+        fputc('\n', stdout);
+    }
 }
 
 // =====================================================

@@ -9,6 +9,9 @@ use wpp_v2::{run_file, build_ir};
 use wpp_v2::lexer::Lexer;
 use wpp_v2::codegen::Codegen;
 use inkwell::context::Context;
+mod config;
+use crate::config::WppConfig;
+
 
 /// 🦥 Ingot CLI — Chaos meets LLVM
 #[derive(Parser)]
@@ -95,15 +98,34 @@ fn run_file_command(path: &str, optimize: bool) {
         println!("🔮 Detected wpp.config.hs → loading functional configuration...");
 
         // Try to extract entrypoint from config
-        let config_text = fs::read_to_string(&config_path).unwrap_or_default();
-        let entry_re = Regex::new(r#"entrypoint\s+"([^"]+)""#).unwrap();
-        let entry_path = entry_re
-            .captures(&config_text)
-            .and_then(|cap| cap.get(1))
-            .map(|m| m.as_str().to_string())
-            .unwrap_or_else(|| "src/main.wpp".to_string());
+        // 🔧 Load functional config through structured parser
+match WppConfig::load(&config_path) {
+    Ok(cfg) => {
 
+        if let Some(name) = &cfg.project_name {
+            println!("📦 Package: {name}");
+        }
+        if let Some(ver) = &cfg.version {
+            println!("🧩 Version: {ver}");
+        }
+        if let Some(lic) = &cfg.license {
+            println!("📜 License: {lic}");
+        }
+        if let Some(auth) = &cfg.author {
+            println!("👤 Author: {auth}");
+        }
+
+        for msg in &cfg.messages {
+            println!("💬 {msg}");
+        }
+
+        for flag in &cfg.flags {
+            println!("🧠 Applied flag from config: {flag}");
+        }
+
+        let entry_path = cfg.entrypoint.unwrap_or_else(|| "src/main.wpp".to_string());
         let entry_full = current_dir.join(&entry_path);
+
         if !entry_full.exists() {
             eprintln!("❌ Entrypoint not found: {}", entry_full.display());
             return;
@@ -116,6 +138,11 @@ fn run_file_command(path: &str, optimize: bool) {
             Ok(source) => run_with_codegen(&source, optimize),
             Err(e) => eprintln!("❌ Could not read entrypoint: {e}"),
         }
+    }
+    Err(e) => eprintln!("❌ Failed to load wpp.config.hs: {e}"),
+}
+
+
 
         return;
     }

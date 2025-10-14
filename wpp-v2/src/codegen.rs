@@ -159,13 +159,15 @@ pub fn init_network_support(&self) {
         // === Integer literal ===
         Expr::Literal(value) => self.i32_type.const_int(*value as u64, false).into(),
 
-        // === String literal ===
-        // === String literal ===
-Expr::StringLiteral(s) => {
-    // Create a null-terminated string constant
-    let str_val = self.context.const_string(s.as_bytes(), true);
+      Expr::StringLiteral(s) => {
+    use inkwell::values::BasicValueEnum;
 
-    // Create a unique global name (optional but avoids collisions)
+    // ✅ Create null-terminated bytes
+    let cstring = std::ffi::CString::new(s.as_str()).unwrap();
+    let bytes = cstring.as_bytes_with_nul();
+    let array_type = self.context.i8_type().array_type(bytes.len() as u32);
+
+    // ✅ Unique global name
     static mut STRING_ID: usize = 0;
     let name = unsafe {
         let id = STRING_ID;
@@ -173,14 +175,35 @@ Expr::StringLiteral(s) => {
         format!("strlit_{}", id)
     };
 
-    // Add it as a global constant
-    let global = self.module.add_global(str_val.get_type(), None, &name);
-    global.set_initializer(&str_val);
+    // ✅ Create global constant
+    let global = self.module.add_global(array_type, None, &name);
+    let init = self.context.i8_type().const_array(
+        &bytes
+            .iter()
+            .map(|&b| self.context.i8_type().const_int(b as u64, false))
+            .collect::<Vec<_>>(),
+    );
+    global.set_initializer(&init);
     global.set_constant(true);
     global.set_linkage(inkwell::module::Linkage::Private);
 
-    global.as_pointer_value().into()
+    // ✅ Get a pointer to the first byte
+    let zero = self.context.i32_type().const_zero();
+    let ptr = unsafe {
+        self.builder
+            .build_in_bounds_gep(
+                self.context.i8_type(),         // element type
+                global.as_pointer_value(),      // pointer to [N x i8]
+                &[zero, zero],                  // get element [0][0]
+                "strptr",                       // name hint
+            )
+            .expect("Failed to GEP string pointer")
+    };
+
+    // ✅ Return as a BasicValueEnum (i8*)
+    ptr.as_basic_value_enum()
 }
+
 
 
 
@@ -1692,40 +1715,40 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
 /// Create main(), compile nodes, and return i32.
 pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     let fn_type = self.i32_type.fn_type(&[], false);
-    let function_name = "main_async";
-    let function = self.module.add_function(function_name, fn_type, None);
-let entry = self.context.append_basic_block(function, "entry");
-self.builder.position_at_end(entry);
+    let async_fn = self.module.add_function("main_async", fn_type, None);
+    let entry = self.context.append_basic_block(async_fn, "entry");
+    self.builder.position_at_end(entry);
 
-// Keep handle for later verification
-let main_entry_block = entry;
+    // === Use a dedicated temporary builder for the entry ===
+    let entry_builder = self.context.create_builder();
+    entry_builder.position_at_end(entry);
 
-    // === Exception slots ===
-    let flag_ptr = self.builder.build_alloca(self.i32_type, "exc_flag").unwrap();
-    self.builder.build_store(flag_ptr, self.i32_type.const_int(0, false)).unwrap();
+    // === Exception slots (kept global) ===
+    let flag_ptr = entry_builder.build_alloca(self.i32_type, "exc_flag").unwrap();
+    entry_builder.build_store(flag_ptr, self.i32_type.const_int(0, false)).unwrap();
 
-    let val_i32_ptr = self.builder.build_alloca(self.i32_type, "exc_val_i32").unwrap();
-    self.builder.build_store(val_i32_ptr, self.i32_type.const_int(0, false)).unwrap();
+    let val_i32_ptr = entry_builder.build_alloca(self.i32_type, "exc_val_i32").unwrap();
+    entry_builder.build_store(val_i32_ptr, self.i32_type.const_int(0, false)).unwrap();
 
     let str_ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
-    let val_str_ptr = self.builder.build_alloca(str_ptr_ty, "exc_val_str").unwrap();
-    self.builder.build_store(val_str_ptr, str_ptr_ty.const_null()).unwrap();
+    let val_str_ptr = entry_builder.build_alloca(str_ptr_ty, "exc_val_str").unwrap();
+    entry_builder.build_store(val_str_ptr, str_ptr_ty.const_null()).unwrap();
 
     self.exception_flag = Some(flag_ptr);
     self.exception_value_i32 = Some(val_i32_ptr);
     self.exception_value_str = Some(val_str_ptr);
 
-    // === Pass 1: predeclare all function signatures ===
+    // === Predeclare functions ===
     for node in nodes {
         if let Node::Expr(Expr::Funcy { name, params, .. }) = node {
             let param_types: Vec<_> = params.iter().map(|_| self.i32_type.into()).collect();
-            let fn_type = self.i32_type.fn_type(&param_types, false);
-            let f = self.module.add_function(name, fn_type, None);
+            let fn_ty = self.i32_type.fn_type(&param_types, false);
+            let f = self.module.add_function(name, fn_ty, None);
             self.functions.insert(name.clone(), f);
         }
     }
 
-    // === Pass 2: compile all function bodies ===
+    // === Compile function bodies ===
     for node in nodes {
         if let Node::Expr(Expr::Funcy { name, params, body, is_async }) = node {
             if *is_async {
@@ -1735,124 +1758,93 @@ let main_entry_block = entry;
             }
         }
     }
-// === Ensure main_async has a proper terminator ===
-// (Do NOT insert return yet — we’ll do it after top-level compilation)
 
-// === Detect async entry (prefer async funcy main) ===
-let async_entry = nodes.iter().find_map(|n| {
-    if let Node::Expr(Expr::Funcy { name, is_async: true, .. }) = n {
-        if name == "main" { Some(name.clone()) } else { None }
-    } else { None }
-}).or_else(|| {
-    nodes.iter().find_map(|n| {
+    // === Detect async entry ===
+    let async_entry = nodes.iter().find_map(|n| {
         if let Node::Expr(Expr::Funcy { name, is_async: true, .. }) = n {
-            Some(name.clone())
+            if name == "main" { Some(name.clone()) } else { None }
         } else { None }
-    })
-});
+    }).or_else(|| {
+        nodes.iter().find_map(|n| {
+            if let Node::Expr(Expr::Funcy { name, is_async: true, .. }) = n {
+                Some(name.clone())
+            } else { None }
+        })
+    });
 
-// === Async bootstrap ===
-if let Some(ref entry_name) = async_entry {
-    if let Some(fn_val) = self.module.get_function(entry_name) {
-        println!("⚡ Injecting async entry `{}` via bootstrap", entry_name);
+    // === Async bootstrap main() ===
+    if let Some(ref entry_name) = async_entry {
+        if let Some(fn_val) = self.module.get_function(entry_name) {
+            println!("⚡ Injecting async entry `{}` via bootstrap", entry_name);
 
-        let fn_type = self.i32_type.fn_type(&[], false);
-        let bootstrap = self.module.add_function("main", fn_type, None);
-        let entry_block = self.context.append_basic_block(bootstrap, "entry");
-        self.builder.position_at_end(entry_block);
+            let bootstrap = self.module.add_function("main", fn_type, None);
+            let boot_block = self.context.append_basic_block(bootstrap, "entry");
+            let boot_builder = self.context.create_builder();
+            boot_builder.position_at_end(boot_block);
 
-        // externs
-        let void_ty = self.context.void_type();
-        let fn_ptr_ty = void_ty.fn_type(&[], false).ptr_type(AddressSpace::default());
-        let spawn_ty = void_ty.fn_type(&[fn_ptr_ty.into()], false);
-        let yield_ty = void_ty.fn_type(&[], false);
+            let void_ty = self.context.void_type();
+            let fn_ptr_ty = void_ty.fn_type(&[], false).ptr_type(AddressSpace::default());
+            let spawn_ty = void_ty.fn_type(&[fn_ptr_ty.into()], false);
+            let yield_ty = void_ty.fn_type(&[], false);
 
-        let spawn_fn = self.module.get_function("wpp_spawn").unwrap_or_else(|| {
-            self.module.add_function("wpp_spawn", spawn_ty, None)
-        });
-        let yield_fn = self.module.get_function("wpp_yield").unwrap_or_else(|| {
-            self.module.add_function("wpp_yield", yield_ty, None)
-        });
+            let spawn_fn = self.module.get_function("wpp_spawn").unwrap_or_else(|| {
+                self.module.add_function("wpp_spawn", spawn_ty, None)
+            });
+            let yield_fn = self.module.get_function("wpp_yield").unwrap_or_else(|| {
+                self.module.add_function("wpp_yield", yield_ty, None)
+            });
 
-        // spawn and start scheduler
-        self.builder
-            .build_call(
-                spawn_fn,
-                &[fn_val.as_global_value().as_pointer_value().into()],
-                "spawn_main_task",
-            )
-            .unwrap();
-        self.builder.build_call(yield_fn, &[], "start_scheduler").unwrap();
+            boot_builder
+                .build_call(spawn_fn, &[fn_val.as_global_value().as_pointer_value().into()], "spawn_main_task")
+                .unwrap();
+            boot_builder.build_call(yield_fn, &[], "start_scheduler").unwrap();
 
-        let ret_val = self.i32_type.const_int(0, false);
-        self.builder.build_return(Some(&ret_val)).unwrap();
-
-        // move builder safely again
-        let safe_block = self.context.append_basic_block(bootstrap, "after_return");
-        self.builder.position_at_end(safe_block);
-
-        return bootstrap;
-    }
-}
-
-// === No async entry: compile top-level ===
-let mut last_int: Option<IntValue> = None;
-for node in nodes {
-    println!("🧱 Compiling top-level node: {:?}", node);
-    if let Some(v) = self.compile_node(node) {
-        if let BasicValueEnum::IntValue(iv) = v {
-            last_int = Some(iv);
+            let ret_val = self.i32_type.const_int(0, false);
+            boot_builder.build_return(Some(&ret_val)).unwrap();
+            return bootstrap;
         }
     }
-}
 
-// === Ensure main() exists BEFORE returning ===
-if self.module.get_function("main").is_none() {
-    if let Some(main_async) = self.module.get_function("main_async") {
+    // === Compile top-level code ===
+    let mut last_int: Option<IntValue> = None;
+    for node in nodes {
+        println!("🧱 Compiling top-level node: {:?}", node);
+        if let Some(v) = self.compile_node(node) {
+            if let BasicValueEnum::IntValue(iv) = v {
+                last_int = Some(iv);
+            }
+        }
+    }
+
+    // === Generate wrapper main() -> main_async ===
+    if self.module.get_function("main").is_none() {
         println!("🔗 Generating wrapper main() -> main_async");
 
-        let fn_type = self.i32_type.fn_type(&[], false);
         let wrapper = self.module.add_function("main", fn_type, None);
-        let entry = self.context.append_basic_block(wrapper, "entry");
-        self.builder.position_at_end(entry);
+        let wrap_block = self.context.append_basic_block(wrapper, "entry");
+        let wrap_builder = self.context.create_builder();
+        wrap_builder.position_at_end(wrap_block);
 
-        let call_site = self.builder.build_call(main_async, &[], "call_main_async").unwrap();
+        let call_site = wrap_builder.build_call(async_fn, &[], "call_main_async").unwrap();
         let result = call_site
             .try_as_basic_value()
             .left()
             .unwrap_or_else(|| self.i32_type.const_int(0, false).into());
 
-        self.builder.build_return(Some(&result.into_int_value())).unwrap();
-
-        // move builder safely
-        let safe_block = self.context.append_basic_block(wrapper, "after_return");
-        self.builder.position_at_end(safe_block);
+        wrap_builder.build_return(Some(&result.into_int_value())).unwrap();
     }
-}
 
-// === Final top-level return (if no async entry) ===
-if async_entry.is_none() {
-    let ret_val = last_int.unwrap_or_else(|| self.i32_type.const_int(0, false));
-    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
-        self.builder.build_return(Some(&ret_val)).unwrap();
+    // === Ensure main_async ends cleanly ===
+    if entry.get_terminator().is_none() {
+        entry_builder.position_at_end(entry);
+        let ret_val = self.i32_type.const_int(0, false);
+        entry_builder.build_return(Some(&ret_val)).unwrap();
+        println!("🟢 Added final return terminator to main_async::entry");
     }
+
+    async_fn
 }
 
-// ✅ Ensure the main function ends with a valid return instruction
-// === FINAL SAFETY: Ensure main_async's entry block is terminated ===
-if main_entry_block.get_terminator().is_none() {
-    let temp_builder = self.context.create_builder();
-    temp_builder.position_at_end(main_entry_block);
-    let ret_val = self.i32_type.const_int(0, false);
-    temp_builder.build_return(Some(&ret_val)).unwrap();
-    println!("🟢 Added final return terminator to main_async::entry");
-}
-
-
-
-function
-
-}
 
 
 

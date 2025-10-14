@@ -1,3 +1,7 @@
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
@@ -10,19 +14,18 @@ static int is_probably_valid_string(const char *s) {
     if (!s) return 0;
     uintptr_t addr = (uintptr_t)s;
 
-    // Check alignment and range sanity
-    if (addr < 0x1000) return 0;             // null / low mem
-    if (addr > 0x7fffffffffff) return 0;     // unrealistic address
+    if (addr < 0x1000) return 0;
+    if (addr > 0x7fffffffffff) return 0;
 
     size_t count = 0;
     while (count < 1024) {
         unsigned char ch = s[count];
-        if (ch == 0) return 1;               // valid null terminator
+        if (ch == 0) return 1;
         if ((ch < 9 && ch != '\n' && ch != '\r') || ch > 126)
-            return 0;                        // non-printable
+            return 0;
         count++;
     }
-    return 1; // likely valid printable string
+    return 1;
 }
 
 // =====================================================
@@ -45,8 +48,9 @@ static void safe_print_string_checked(const char *s) {
 }
 
 // =====================================================
-// === ARRAY / OBJECT PRINTERS (unchanged)
+// === ARRAY / OBJECT PRINTERS (EXPORTED)
 // =====================================================
+__attribute__((visibility("default")))
 void wpp_print_array(int32_t *arr) {
     if (!arr) { printf("(null array)\n"); return; }
     int32_t len = arr[0];
@@ -58,6 +62,7 @@ void wpp_print_array(int32_t *arr) {
     printf("]\n");
 }
 
+__attribute__((visibility("default")))
 void wpp_print_object(void *obj_ptr) {
     if (!obj_ptr) { printf("(null object)\n"); return; }
     int32_t len = *(int32_t *)obj_ptr;
@@ -73,8 +78,9 @@ void wpp_print_object(void *obj_ptr) {
 }
 
 // =====================================================
-// === UNIFIED VALUE PRINTER (diagnostic)
+// === UNIFIED VALUE PRINTER (EXPORTED)
 // =====================================================
+__attribute__((visibility("default")))
 void wpp_print_value(void *ptr, int32_t type_id) {
     printf("[C] wpp_print_value(ptr=%p, type=%d)\n", ptr, type_id);
 
@@ -96,6 +102,14 @@ void wpp_print_value(void *ptr, int32_t type_id) {
     }
 }
 
+// =====================================================
+// === INT PRINTER (EXPORTED)
+// =====================================================
+__attribute__((visibility("default")))
 void wpp_print_i32(int32_t value) {
     printf("%d\n", value);
 }
+
+#ifdef __cplusplus
+}
+#endif

@@ -1,5 +1,2 @@
-let res = http.post("https://httpbin.org/post", "{ \"msg\": \"hello\" }");
-print("status:");
-print(http.status(res));
-print("body:");
-print(http.body(res));
+print ("hello world");
+print ("something");

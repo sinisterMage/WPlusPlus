@@ -8,63 +8,119 @@ pub mod runtime;
 
 use inkwell::context::Context;
 use inkwell::execution_engine::ExecutionEngine;
+use inkwell::module::Module;
 use inkwell::passes::PassManager;
 use inkwell::OptimizationLevel;
 use crate::codegen::Codegen;
 use crate::lexer::Lexer;
 use crate::parser::Parser;
+use runtime::*;
+
+#[link(name = "wpp_runtime", kind = "static")]
+unsafe extern "C" {
+    pub fn wpp_print_value(ptr: *const std::ffi::c_void, type_id: i32);
+    pub fn wpp_print_array(ptr: *const std::ffi::c_void);
+    pub fn wpp_print_object(ptr: *const std::ffi::c_void);
+}
+fn register_runtime_symbols<'ctx>(engine: &ExecutionEngine<'ctx>, module: &Module<'ctx>) {
+    unsafe {
+        let map_fn = |name: &str, ptr: usize| {
+            if let Some(func) = module.get_function(name) {
+                engine.add_global_mapping(&func, ptr);
+                println!("🔗 Bound {}", name);
+            } else {
+                eprintln!("⚠️ Function {name} not found in module");
+            }
+        };
+
+        unsafe extern "C" {
+            fn wpp_print_value(ptr: *const std::ffi::c_void, type_id: i32);
+            fn wpp_print_array(ptr: *const std::ffi::c_void);
+            fn wpp_print_object(ptr: *const std::ffi::c_void);
+            fn wpp_print_i32(value: i32);
+            fn printf(fmt: *const std::os::raw::c_char, ...) -> i32;
+            fn malloc(size: usize) -> *mut std::ffi::c_void;
+        }
+
+        // ✅ Register all printing functions
+        map_fn("wpp_print_value", wpp_print_value as usize);
+        map_fn("wpp_print_array", wpp_print_array as usize);
+        map_fn("wpp_print_object", wpp_print_object as usize);
+        map_fn("wpp_print_i32", wpp_print_i32 as usize);
+
+        // ✅ Also map standard C functions used by LLVM backend
+        map_fn("printf", printf as usize);
+        map_fn("malloc", malloc as usize);
+    }
+}
 
 /// 🦥 Run a W++ source file using the LLVM JIT engine
-pub fn run_file(source: &str, optimize: bool) -> Result<(), String> {
-    // === Step 1: Create LLVM context ===
-    let context = Context::create();
+pub fn run_file(codegen: &mut Codegen, optimize: bool) -> Result<(), String> {
+    use inkwell::{OptimizationLevel, passes::PassManager};
+    use std::mem;
 
-    // === Step 2: Tokenize & parse ===
-    let mut lexer = Lexer::new(source);
-    let tokens = lexer.tokenize();
-    let mut parser = Parser::new(tokens);
-    let nodes = parser.parse_program();
-
-    // === Step 3: Generate LLVM IR ===
-    let mut codegen = Codegen::new(&context, "wpp_main");
-    codegen.compile_main(&nodes);
     let module = &codegen.module;
+    let context = codegen.context;
 
-    // === Step 4: Optionally apply optimization passes ===
+    // === Ensure libc symbols ===
+    let i8_ptr = context.i8_type().ptr_type(inkwell::AddressSpace::from(0));
+    let i32_type = context.i32_type();
+    let i64_type = context.i64_type();
+
+    if module.get_function("printf").is_none() {
+        module.add_function("printf", i32_type.fn_type(&[i8_ptr.into()], true), None);
+    }
+    if module.get_function("malloc").is_none() {
+        module.add_function("malloc", i8_ptr.fn_type(&[i64_type.into()], false), None);
+    }
+
+    // === Apply optimizations (optional) ===
     if optimize {
-        // ✅ Create a module-level pass manager
-        let pass_manager = PassManager::create(());
-
-        // Add optimization passes
-        pass_manager.add_instruction_combining_pass();
-        pass_manager.add_reassociate_pass();
-        pass_manager.add_gvn_pass();
-        pass_manager.add_cfg_simplification_pass();
-        pass_manager.add_basic_alias_analysis_pass();
-        pass_manager.add_promote_memory_to_register_pass();
-
-        // ✅ Run on the entire module
-        pass_manager.run_on(module);
+        let pm = PassManager::create(());
+        pm.add_instruction_combining_pass();
+        pm.add_reassociate_pass();
+        pm.add_gvn_pass();
+        pm.add_cfg_simplification_pass();
+        pm.add_promote_memory_to_register_pass();
+        pm.run_on(module);
         println!("✨ Applied LLVM optimization passes.");
     }
 
-    // === Step 5: Create JIT execution engine ===
-    let execution_engine = module
+    // === Create and register engine ===
+    let engine = module
         .create_jit_execution_engine(OptimizationLevel::None)
         .map_err(|e| format!("JIT init failed: {e:?}"))?;
 
-    // === Step 6: Find and execute main() ===
     unsafe {
-        let func_addr = execution_engine
-            .get_function_address("main")
-            .map_err(|_| "❌ No main() function found")?;
+        crate::runtime::set_engine(mem::transmute::<_, ExecutionEngine<'static>>(engine.clone()));
+    }
 
-        let main: extern "C" fn() = std::mem::transmute(func_addr);
-        main();
+    register_runtime_symbols(&engine, module);
+
+    // === Find entrypoint ===
+    let entry_name = if module.get_function("bootstrap_main").is_some() {
+        "bootstrap_main"
+    } else if module.get_function("main").is_some() {
+        "main"
+    } else {
+        "main_async"
+    };
+
+    println!("🚀 Launching entrypoint: {}", entry_name);
+
+    // === Execute ===
+    unsafe {
+        let addr = engine
+            .get_function_address(entry_name)
+            .map_err(|_| format!("❌ No entrypoint function found: {entry_name}"))?;
+        let func: extern "C" fn() -> i32 = std::mem::transmute(addr);
+        let result = func();
+        println!("🏁 Finished running {}, result = {}", entry_name, result);
     }
 
     Ok(())
 }
+
 
 /// 🏗️ Compile a W++ source file into LLVM IR (.ll)
 pub fn build_ir(source: &str, optimize: bool) -> Result<String, String> {

@@ -1,27 +1,21 @@
-name: 🪟 Build W++ LLVM CLI (Windows, Full LLVM)
+name: 🪟 Build W++ LLVM CLI (Self-Hosted, Full LLVM)
 
 on:
   workflow_dispatch:
 
 jobs:
-  build-windows:
-    name: Build W++ with Full LLVM
-    runs-on: windows-latest
+  build-selfhosted:
+    name: Build Full LLVM + W++
+    runs-on: [self-hosted, windows, x64]
 
     steps:
       - name: 🧱 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🦀 Install Rust
+      - name: 🦀 Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-
-      - name: ⚙️ Install dependencies
-        shell: pwsh
-        run: |
-          choco install cmake ninja git python3 visualstudio2022buildtools -y
-          Write-Host "✅ Installed CMake, Ninja, Git, Python, and VS Build Tools"
 
       - name: 💾 Restore LLVM build cache
         uses: actions/cache@v4
@@ -31,91 +25,83 @@ jobs:
             C:\llvm-build
             C:\LLVM
           key: llvm15-full-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
-      - name: 🧰 Set up MSVC environment
+
+      - name: 🧰 Locate and init MSVC
         shell: pwsh
         run: |
-          Write-Host "🧠 Locating Visual Studio Build Tools..."
+          Write-Host "🔍 Locating Visual Studio Build Tools..."
           $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
             -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           if (-not $vsPath) {
             Write-Error "❌ Visual Studio Build Tools not found!"
             exit 1
           }
-
-          Write-Host "✅ Found Visual Studio at: $vsPath"
-          $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
-          if (!(Test-Path $vcvarsPath)) {
-            Write-Error "❌ Could not locate vcvars64.bat!"
-            exit 1
-          }
-
-          Write-Host "🧩 Initializing MSVC build environment..."
-          cmd /c "`"$vcvarsPath`" && set" | ForEach-Object {
-            if ($_ -match "^(.*?)=(.*)$") {
-              [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+          Write-Host "✅ Found Visual Studio at $vsPath"
+          $vcvars = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+          cmd /c "`"$vcvars`" && set" | ForEach-Object {
+            if ($_ -match '^(.*?)=(.*)$') {
+              [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
             }
           }
+          & cl.exe /? | Out-Null
+          Write-Host "✅ MSVC toolchain ready"
 
-          Write-Host "🧠 Verifying compiler availability..."
-          & cl.exe /?
-
-      - name: 🧩 Build Full LLVM from source
+      - name: 🧩 Build LLVM 15 from source
         shell: pwsh
         run: |
-              $ErrorActionPreference = "Stop"
-              $srcDir = "C:\llvm-src"
-              $buildDir = "C:\llvm-build"
-              $installDir = "C:\LLVM"
+          $ErrorActionPreference = "Stop"
+          $srcDir = "C:\llvm-src"
+          $buildDir = "C:\llvm-build"
+          $installDir = "C:\LLVM"
 
-              if (!(Test-Path "$installDir\bin\llvm-config.exe")) {
-                Write-Host "⬇️ Cloning LLVM 15.0.7 source..."
-                if (!(Test-Path $srcDir)) {
-                  git clone https://github.com/llvm/llvm-project.git $srcDir --branch llvmorg-15.0.7 --depth 1
-                } else {
-                  Write-Host "📦 LLVM source already cached."
-                }
+          if (!(Test-Path "$installDir\bin\llvm-config.exe")) {
+            if (!(Test-Path $srcDir)) {
+              Write-Host "⬇️ Cloning LLVM 15.0.7..."
+              git clone https://github.com/llvm/llvm-project.git $srcDir --branch llvmorg-15.0.7 --depth 1
+            }
+            Write-Host "🛠️ Configuring LLVM..."
+            cmake -S "$srcDir\llvm" -B $buildDir `
+              -G "Ninja" `
+              -DCMAKE_BUILD_TYPE=Release `
+              -DCMAKE_INSTALL_PREFIX=$installDir `
+              -DCMAKE_C_COMPILER=cl.exe `
+              -DCMAKE_CXX_COMPILER=cl.exe `
+              -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;lldb;mlir;polly;openmp" `
+              -DLLVM_TARGETS_TO_BUILD="all" `
+              -DLLVM_BUILD_TOOLS=ON `
+              -DLLVM_INCLUDE_EXAMPLES=ON `
+              -DLLVM_INCLUDE_TESTS=OFF `
+              -DLLVM_ENABLE_RTTI=ON `
+              -DLLVM_ENABLE_EH=ON `
+              -DLLVM_ENABLE_ASSERTIONS=ON `
+              -DLLVM_ENABLE_TERMINFO=ON `
+              -DLLVM_ENABLE_ZLIB=ON `
+              -DPYTHON_EXECUTABLE="C:\Python311\python.exe" `
+              2>&1 | Tee-Object -FilePath cmake_configure.log
 
-                Write-Host "🛠️ Configuring LLVM with full dependency tree enabled..."
-                cmake -S "$srcDir\llvm" -B $buildDir `
-                  -G "Ninja" `
-                  -DCMAKE_BUILD_TYPE=Release `
-                  -DCMAKE_INSTALL_PREFIX=$installDir `
-                  -DCMAKE_C_COMPILER="cl.exe" `
-                  -DCMAKE_CXX_COMPILER="cl.exe" `
-                  -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;lldb;mlir;polly;openmp" `
-                  -DLLVM_TARGETS_TO_BUILD="all" `
-                  -DLLVM_BUILD_TOOLS=ON `
-                  -DLLVM_INCLUDE_BENCHMARKS=ON `
-                  -DLLVM_INCLUDE_DOCS=OFF `
-                  -DLLVM_INCLUDE_EXAMPLES=ON `
-                  -DLLVM_INCLUDE_TESTS=OFF `
-                  -DLLVM_ENABLE_RTTI=ON `
-                  -DLLVM_ENABLE_EH=ON `
-                  -DLLVM_ENABLE_ASSERTIONS=ON `
-                  -DLLVM_ENABLE_LIBXML2=ON `
-                  -DLLVM_ENABLE_TERMINFO=ON `
-                  -DLLVM_ENABLE_ZLIB=ON `
-                  -DLLVM_ENABLE_BINDINGS=ON `
-                  -DLLVM_USE_CRT_RELEASE=MT `
-                  -DPYTHON_EXECUTABLE="C:\Python311\python.exe" `
-                  2>&1 | Tee-Object -FilePath cmake_configure.log
+            if (!(Test-Path "$buildDir\build.ninja")) {
+              Write-Host "❌ LLVM configure failed."
+              Get-Content cmake_configure.log -TotalCount 40
+              exit 1
+            }
 
-                if (!(Test-Path "$buildDir\build.ninja")) {
-                  Write-Host "❌ CMake configuration failed. Dumping first 50 lines of cmake_configure.log..."
-                  Get-Content cmake_configure.log -TotalCount 50
-                  exit 1
-                }
+            Write-Host "⚙️ Building and installing LLVM (may take ~1-2 hours)..."
+            cmake --build $buildDir --target install --config Release
+          } else {
+            Write-Host "✅ Using cached LLVM build."
+          }
 
-                Write-Host "⚙️ Building LLVM (this will take ~2–3h)..."
-                cmake --build $buildDir --target install --config Release
-              } else {
-                Write-Host "✅ Using cached LLVM build."
-              }
-
-      - name: ⚙️ Build W++ for Windows
+      - name: 🔧 Configure environment
         shell: pwsh
         run: |
-          cargo build --release -p wpp-cli --target x86_64-pc-windows-msvc
+          echo "LLVM_SYS_150_PREFIX=C:\LLVM" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "LLVM_CONFIG_PATH=C:\LLVM\bin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
+          echo "C:\LLVM\bin" | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "✅ LLVM environment ready"
+
+      - name: ⚙️ Build W++
+        shell: pwsh
+        run: cargo build --release -p wpp-cli --target x86_64-pc-windows-msvc
 
       - name: 📦 Package binary
         shell: pwsh

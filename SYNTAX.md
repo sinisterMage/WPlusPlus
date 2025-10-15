@@ -1,389 +1,321 @@
-# ⚡ W++ Syntax Guide (updated edtion)
+# 🦥 W++ Language Syntax Guide
 
-> *Built with the OOPSIE™ Framework. Fueled by chaos, memes, and questionable design choices.*
+*(Current Version: LLVM Backend Beta)*
 
----
-
-## 📦 Variables
-W++ supports `let` and `const` for declaring variables.
-
-```wpp
-let name = "Wloth";
-const chaos = 9001;
-````
-
-* `let` = reassignable
-* `const` = no take-backs
+> W++ — the chaotic, async-enabled, heap-happy scripting language for those who believe pointers deserve love too.
+> This guide defines all syntax forms currently supported by the compiler and backend.
 
 ---
 
-## 🔁 Control Flow
+## 🗨️ Comments
 
-### If / Else
+Single-line comments begin with `//`.
 
 ```wpp
-if (hungry) {
-  print("Eat.");
+// This is a comment
+let x = 10  // Another comment
+```
+
+Block comments are not yet supported.
+
+---
+
+## 🧾 Keywords
+
+| Category           | Keywords                                                                       |
+| ------------------ | ------------------------------------------------------------------------------ |
+| **Control flow**   | `if`, `else`, `while`, `for`, `break`, `continue`, `switch`, `case`, `default` |
+| **Declarations**   | `let`, `const`, `funcy`, `return`                                              |
+| **Error handling** | `try`, `catch`, `throw`, `finally`                                             |
+| **Async ops**      | `async`, `await`                                                               |
+| **Booleans**       | `true`, `false`                                                                |
+
+---
+
+## 🆔 Identifiers
+
+Identifiers name variables or functions.
+They must start with a **letter** or **underscore**, followed by letters, digits, or underscores.
+
+```wpp
+let name = "Ofek"
+let _temp = 123
+
+funcy greet() {
+    print("Hello")
+}
+```
+
+---
+
+## 🔢 Numbers
+
+```wpp
+let x = 10
+let y = 255i32
+let big = 100000u64
+let pi = 3.14
+let ratio = 2.5f64
+```
+
+Defaults:
+
+* Integer → `i32`
+* Float → `f64`
+
+Supported suffixes: `i8`, `i16`, `i32`, `i64`, `u8`, `u16`, `u32`, `u64`, `f32`, `f64`
+
+---
+
+## 🔤 Strings
+
+Strings use **double quotes** and are **raw** — escape sequences like `\n` or `\t` are not interpreted yet.
+
+```wpp
+let s = "Hello\nWorld"
+print(s) // prints literally: Hello\nWorld
+```
+
+---
+
+## 🔣 Symbols & Operators
+
+| Symbol            | Meaning                   |
+| ----------------- | ------------------------- |
+| `{ }`             | Code block                |
+| `( )`             | Function call or grouping |
+| `[ ]`             | Array literal             |
+| `;`               | Statement separator       |
+| `,`               | Argument separator        |
+| `=`               | Assignment                |
+| `+ - * /`         | Arithmetic                |
+| `== != <= >= < >` | Comparison                |
+
+---
+
+## 🧩 Variables
+
+```wpp
+let name = "W++"
+const version = 2
+```
+
+Heap-allocated types (arrays, objects) are stored as pointers (`i8*` internally).
+
+---
+
+## 🧮 Arrays
+
+W++ supports array literals that allocate heap memory using `malloc`.
+
+```wpp
+let arr = [1, 2, 3, 4]
+print(arr)
+```
+
+**How arrays work internally:**
+
+* Stored as contiguous `i32` values in memory
+* The **first slot** holds the array length
+* Supported element types: integers and floats (pointers not yet supported)
+* Allocated automatically on the heap
+
+For example, `[1, 2, 3]` creates:
+
+```
+[ len=3 | 1 | 2 | 3 ]
+```
+
+---
+
+## 🧱 Object Literals
+
+Object literals allocate a structured heap object containing:
+
+* a field count (`i32`)
+* an array of key pointers (`i8**`)
+* an array of values (`i32*`)
+
+Example:
+
+```wpp
+let person = { "age": 30, "score": 99 }
+print(person)
+```
+
+Each key is stored as a constant string in LLVM’s global data section.
+
+Internally:
+
+```
+struct Object {
+    i32 field_count;
+    i8** keys;
+    i32* values;
+}
+```
+
+> Values default to `i32` or are converted from `f64` to `i32`.
+> Future versions will support nested objects and pointer values.
+
+---
+
+## ⚙️ Functions
+
+### Declaring a function
+
+```wpp
+funcy add(a, b) {
+    return a + b
+}
+```
+
+### Calling a function
+
+```wpp
+let result = add(3, 7)
+print(result)
+```
+
+Functions return `i32` by default.
+
+---
+
+## 💬 Built-in Functions
+
+### `print(value)`
+
+Prints integers, strings, arrays, or object pointers.
+
+```wpp
+print("Hello, World!")
+print(42)
+print([1, 2, 3])
+```
+
+---
+
+## 🌐 HTTP API
+
+| Function                | Description                      |
+| ----------------------- | -------------------------------- |
+| `http.get(url)`         | Performs an HTTP GET request     |
+| `http.post(url, body)`  | Sends a POST request             |
+| `http.put(url, body)`   | Sends a PUT request              |
+| `http.patch(url, body)` | Sends a PATCH request            |
+| `http.delete(url)`      | Sends a DELETE request           |
+| `http.status(handle)`   | Gets HTTP status code            |
+| `http.body(handle)`     | Returns response body pointer    |
+| `http.headers(handle)`  | Returns response headers pointer |
+
+Example:
+
+```wpp
+let h = http.get("https://api.example.com")
+print(http.status(h))
+```
+
+---
+
+## 🧭 Server API
+
+```wpp
+funcy hello() {
+    print("Hello endpoint!")
+}
+
+server.register("/hello", hello)
+server.start(8080)
+```
+
+Internally uses `wpp_register_endpoint` and `wpp_start_server`.
+
+---
+
+## 🧠 Control Flow
+
+### `if` / `else`
+
+```wpp
+if x > 10 {
+    print("big")
 } else {
-  print("Keep coding.");
+    print("small")
 }
 ```
 
-### While Loop
+### `while`
 
 ```wpp
-let i = 0;
-while (i < 3) {
-  print("W++ is weird");
-  i = i + 1;
+let i = 0
+while i < 5 {
+    print(i)
+    i = i + 1
 }
 ```
 
-### For Loop
+### `for`
 
 ```wpp
-for (let i = 0; i < 5; i = i + 1) {
-  print(i);
+for i = 0; i < 3; i = i + 1 {
+    print("loop")
 }
 ```
 
-### Switch
+### `switch`
 
 ```wpp
-switch (mood) {
-  case "happy":
-    print("yay!");
-    break;
-  case "chaotic":
-    print("oh no...");
-    break;
-  default:
-    print("neutral sloth");
-}
-```
-
-### Break / Continue
-
-```wpp
-while (true) {
-  if (chaos > 10) break;
-  if (chaos < 0) continue;
-  chaos = chaos + 1;
-}
-```
-
-### Return
-
-```wpp
-let add = (x, y) => {
-  return x + y;
-};
-```
-
----
-
-## 🖨️ Print
-
-`print` can be used with or without parentheses:
-
-```wpp
-print("Hello chaos!");
-print "multiple", "args", 123;
-```
-
----
-
-## ⏳ Async & Await
-
-Asynchronous code is fully supported.
-
-```wpp
-let res = await http.get("https://slothapi.dev");
-print(res.status);
-```
-
-Async lambdas work too:
-
-```wpp
-let fetch = async (url) => await http.get(url);
-```
-
----
-
-## 🧱 Entities (OOPSIE Framework™)
-
-Entities are W++’s version of classes — but cursed.
-
-```wpp
-entity Human {
-  alters {
-    speak => { print("Hello, I'm " + me.name); }
-  }
-}
-```
-
-* `alters` = defines methods
-* `disown` = breaks inheritance
-* `me` = like `this`
-* `ancestor` = like `super`
-
-### Inheritance
-
-```wpp
-entity Dog inherits Human {
-  alters {
-    speak => { ancestor.speak(); print("woof!"); }
-  }
-}
-```
-
-### Alters Outside an Entity
-
-```wpp
-Dog alters Human {
-  bark => { print("woof!"); }
+switch x {
+    case 1: print("one")
+    case 2: print("two")
+    default: print("other")
 }
 ```
 
 ---
 
-## 🧩 Object Literals
-
-Objects can be created inline.
+## 🧵 Async Functions
 
 ```wpp
-let obj = {
-  name: "Sloth",
-  energy: 100,
-  cute: true
-};
+async funcy fetch() {
+    let res = await http.get("https://api.com")
+    print(http.body(res))
+}
 ```
+
+*(currently requires async runtime support)*
 
 ---
 
-## 🧪 Expressions
-
-Dot-chaining and calls are supported:
-
-```wpp
-dev.work().sleep().repeat();
-```
-
-Assignment works too:
-
-```wpp
-me.energy = 42;
-```
-
----
-
-## 🛠️ Error Handling
+## ⚠️ Error Handling
 
 ```wpp
 try {
-  risky();
-} catch (err) {
-  print("Something broke:", err);
-}
-```
-
-Throwing errors:
-
-```wpp
-throw "No coffee left!";
-```
-
----
-
-## 🌍 Imports
-
-Code can be split into files and imported.
-
-```wpp
-import "utils.wpp";
-```
-
----
-
-## 🔌 Interop
-
-Call external methods using `externcall`.
-
-```wpp
-externcall("System.Console", "WriteLine", ["Hello from W++"]);
-```
-
-Get type info with `typeof`.
-
-```wpp
-let t = typeof("System.String");
-```
-
----
-
-## 🔢 Operators
-
-| Category   | Operators                        |   |         |
-| ---------- | -------------------------------- | - | ------- |
-| Arithmetic | `+`, `-`, `*`, `/`               |   |         |
-| Comparison | `==`, `!=`, `<`, `<=`, `>`, `>=` |   |         |
-| Logical    | `&&`, `                          |   | `, `??` |
-| Assignment | `=`                              |   |         |
-| Unary      | `!`                              |   |         |
-| Special    | `=>` (for methods/lambdas)       |   |         |
-
----
-
-## 💀 Literals
-
-```wpp
-let yes = true;
-let no = false;
-let nothing = null;
-let number = 123;
-let text = "sloth powered";
-```
-
----
-
-## 🧃 Example Program
-
-```wpp
-entity Developer {
-  alters {
-    work => {
-      me.energy = me.energy - 10;
-      if (me.energy <= 0) {
-        return "Out of energy!";
-      }
-      print("Energy left:", me.energy);
-    }
-  }
-}
-
-let dev = new Developer();
-dev.work();
-```
-
----
-
-## 🧠 Built-in Objects (a.k.a. “Stuff that magically works somehow”)
-
-W++ includes several built-in objects that make it feel like a fullstack language —  
-yes, you can literally make HTTP requests, JSON operations, or even spin up an API server.  
-Because why not?
-
----
-
-### 🌐 `http` — The Chaos Web Client
-
-All HTTP methods are async, so don’t forget to use `await`.
-
-```wpp
-let response = await http.get("https://example.com");
-print response.status;  // → 200
-print response.body;
-
-await http.post("https://api.example.com", "{ \"msg\": \"Hello\" }");
-````
-
-#### Available Methods:
-
-| Method                             | Parameters                      | Description                  |
-| ---------------------------------- | ------------------------------- | ---------------------------- |
-| `http.get(url, [headers])`         | string, optional object         | Sends a GET request          |
-| `http.post(url, body, [headers])`  | string, string, optional object | Sends a POST request         |
-| `http.put(url, body, [headers])`   | string, string, optional object | Updates a resource           |
-| `http.patch(url, body, [headers])` | string, string, optional object | Partially updates a resource |
-| `http.delete(url, [headers])`      | string, optional object         | Deletes a resource           |
-
-All methods return an object:
-
-```wpp
-{
-  "status": 200,
-  "body": "response body here",
-  "headers": { "Content-Type": "application/json" }
+    risky_call()
+} catch {
+    print("oops!")
+} finally {
+    print("cleanup")
 }
 ```
 
 ---
 
-### 🧩 `json` — JSON Without the Tears
-
-For working with structured data, you get two helpers:
-
-| Method                   | Description                        |
-| ------------------------ | ---------------------------------- |
-| `json.parse(string)`     | Converts JSON text to a W++ object |
-| `json.stringify(object)` | Converts an object to JSON text    |
+## 🧪 Example Program
 
 ```wpp
-let data = await json.parse("{\"hello\": \"world\"}");
-print data.hello; // world
+funcy main() {
+    let arr = [10, 20, 30]
+    let user = { "id": 1, "score": 99 }
 
-let str = await json.stringify({ "ping": "pong" });
-print str; // {"ping":"pong"}
+    print(arr)
+    print(user)
+
+    server.register("/hello", hello)
+    server.start(8080)
+}
+
+funcy hello() {
+    print("Hello from W++!")
+}
 ```
-
----
-
-### ⚡ `api` — Make Servers Like a Madman
-
-Yes, you can host a local HTTP API *from inside W++*.
-Because who needs sanity anyway?
-
-#### Example:
-
-```wpp
-api.start(8080);
-
-api.endpoint("/hello", "GET", async (req, res) => {
-  res.status(200);
-  res.json({ message: "Hello from W++!" });
-});
-```
-
-#### Available Methods:
-
-| Method                                | Description                     |
-| ------------------------------------- | ------------------------------- |
-| `api.start(port)`                     | Starts the built-in HTTP server |
-| `api.endpoint(path, method, handler)` | Registers a new API route       |
-
-Handler functions receive `(req, res)` objects.
-
-#### `req` (Request)
-
-* `req.method` → HTTP method (GET, POST, etc.)
-* `req.path` → The request path
-* `req.query` → Query string
-* `req.body` → Request body
-* `req.headers` → Headers dictionary
-
-#### `res` (Response)
-
-* `res.status(code)` → Set response status
-* `res.text(string)` → Send plain text response
-* `res.json(object)` → Send JSON response
-
----
-
-### 📝 `text` — A Debug Function That Does… Something
-
-```wpp
-text("Hello, sloths!");
-```
-
-Technically it prints stuff to the console.
-Realistically, it’s just there because Ofek said so.
-
----
-
-
-
-## ☕ Fun Fact
-
-W++ might be powered by chaos, memes, and coffee,  
-but it *mostly* works.  
-Wait— JERRY!!! Did you actually test this build?!

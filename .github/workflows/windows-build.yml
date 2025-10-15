@@ -17,10 +17,16 @@ jobs:
           setx CMAKE_GENERATOR_PLATFORM x64
           setx CMAKE_SH "CMAKE_SH-NOTFOUND"
 
-      - name: 🦀 Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
+      - name: 🦀 Install Rust (Native Windows)
+        shell: powershell
+        run: |
+          Write-Host "⬇️ Installing Rust for Windows..."
+          Invoke-WebRequest https://static.rust-lang.org/rustup/init.exe -OutFile rustup-init.exe
+          Start-Process -Wait -FilePath .\rustup-init.exe -ArgumentList "-y --default-toolchain stable --default-host x86_64-pc-windows-msvc"
+          refreshenv
+          rustc --version
+          cargo --version
+
 
       - name: 💾 Restore LLVM build cache
         uses: actions/cache@v4

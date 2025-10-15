@@ -31,6 +31,33 @@ jobs:
             C:\llvm-build
             C:\LLVM
           key: llvm15-full-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+      - name: 🧰 Set up MSVC environment
+        shell: pwsh
+        run: |
+          Write-Host "🧠 Locating Visual Studio Build Tools..."
+          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
+            -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if (-not $vsPath) {
+            Write-Error "❌ Visual Studio Build Tools not found!"
+            exit 1
+          }
+
+          Write-Host "✅ Found Visual Studio at: $vsPath"
+          $vcvarsPath = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
+          if (!(Test-Path $vcvarsPath)) {
+            Write-Error "❌ Could not locate vcvars64.bat!"
+            exit 1
+          }
+
+          Write-Host "🧩 Initializing MSVC build environment..."
+          cmd /c "`"$vcvarsPath`" && set" | ForEach-Object {
+            if ($_ -match "^(.*?)=(.*)$") {
+              [System.Environment]::SetEnvironmentVariable($matches[1], $matches[2])
+            }
+          }
+
+          Write-Host "🧠 Verifying compiler availability..."
+          & cl.exe /?
 
       - name: 🧩 Build Full LLVM from source
         shell: pwsh

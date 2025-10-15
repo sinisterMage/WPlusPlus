@@ -53,19 +53,17 @@ jobs:
           }
           & cl.exe /? | Out-Null
           Write-Host "MSVC toolchain ready"
-      - name: Ensure CMake is on PATH
+      - name: Persist CMake PATH for all steps
         shell: powershell
         run: |
-          Write-Host "Adding CMake to PATH..."
           $cmakePath = "${env:ProgramFiles}\CMake\bin"
           if (!(Test-Path $cmakePath)) {
-            Write-Error "CMake not found in $cmakePath. Please verify installation."
+            Write-Error "CMake not found at $cmakePath"
             exit 1
           }
-          $env:PATH = "$cmakePath;$env:PATH"
-          [Environment]::SetEnvironmentVariable("PATH", $env:PATH, [EnvironmentVariableTarget]::Process)
-          Write-Host "CMake path added. Version info:"
-          & cmake --version
+          Write-Host "Registering CMake in machine PATH..."
+          setx PATH "$env:PATH;$cmakePath" /M
+
 
       - name: Build LLVM 15 from source
         shell: powershell

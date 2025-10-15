@@ -53,18 +53,7 @@ jobs:
           }
           & cl.exe /? | Out-Null
           Write-Host "MSVC toolchain ready"
-      - name: Persist CMake PATH for all steps
-        shell: powershell
-        run: |
-          $cmakePath = "${env:ProgramFiles}\CMake\bin"
-          if (!(Test-Path $cmakePath)) {
-            Write-Error "CMake not found at $cmakePath"
-            exit 1
-          }
-          Write-Host "Registering CMake in machine PATH..."
-          setx PATH "$env:PATH;$cmakePath" /M
-
-
+          
       - name: Build LLVM 15 from source
         shell: powershell
         run: |
@@ -73,13 +62,18 @@ jobs:
           $buildDir = "C:\llvm-build"
           $installDir = "C:\LLVM"
 
+          # Ensure CMake is visible for this step
+          $env:PATH = "${env:ProgramFiles}\CMake\bin;$env:PATH"
+          Write-Host "Using cmake at:"
+          & cmake --version
+
           if (!(Test-Path "$installDir\bin\llvm-config.exe")) {
             if (!(Test-Path $srcDir)) {
               Write-Host "Cloning LLVM 15.0.7..."
               git clone https://github.com/llvm/llvm-project.git $srcDir --branch llvmorg-15.0.7 --depth 1
             }
             Write-Host "Configuring LLVM..."
-            cmake -S "$srcDir\llvm" -B $buildDir `
+            & cmake -S "$srcDir\llvm" -B $buildDir `
               -G "Ninja" `
               -DCMAKE_BUILD_TYPE=Release `
               -DCMAKE_INSTALL_PREFIX=$installDir `
@@ -104,8 +98,8 @@ jobs:
               exit 1
             }
 
-            Write-Host "Building and installing LLVM (may take 1-2 hours)..."
-            cmake --build $buildDir --target install --config Release
+            Write-Host "Building and installing LLVM..."
+            & cmake --build $buildDir --target install --config Release
           } else {
             Write-Host "Using cached LLVM build."
           }

@@ -12,7 +12,7 @@ jobs:
       - name: 🧱 Checkout repository
         uses: actions/checkout@v4
       - name: 🧩 Disable CMake WSL auto-detection
-        shell: pwsh
+        shell: powershell
         run: |
           setx CMAKE_GENERATOR_PLATFORM x64
           setx CMAKE_SH "CMAKE_SH-NOTFOUND"
@@ -32,7 +32,7 @@ jobs:
           key: llvm15-full-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
       - name: 🧰 Locate and init MSVC
-        shell: pwsh
+        shell: powershell
         run: |
           Write-Host "🔍 Locating Visual Studio Build Tools..."
           $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
@@ -52,7 +52,7 @@ jobs:
           Write-Host "✅ MSVC toolchain ready"
 
       - name: 🧩 Build LLVM 15 from source
-        shell: pwsh
+        shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
           $srcDir = "C:\llvm-src"
@@ -97,7 +97,7 @@ jobs:
           }
 
       - name: 🔧 Configure environment
-        shell: pwsh
+        shell: powershell
         run: |
           echo "LLVM_SYS_150_PREFIX=C:\LLVM" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo "LLVM_CONFIG_PATH=C:\LLVM\bin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
@@ -109,7 +109,7 @@ jobs:
         run: cargo build --release -p wpp-cli --target x86_64-pc-windows-msvc
 
       - name: 📦 Package binary
-        shell: pwsh
+        shell: powershell
         run: |
           mkdir dist
           Copy-Item target\x86_64-pc-windows-msvc\release\wpp-cli.exe dist\

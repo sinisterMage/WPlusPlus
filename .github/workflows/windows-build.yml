@@ -1,4 +1,4 @@
-name: 🪟 Build W++ LLVM CLI (Self-Hosted, Full LLVM)
+name: Build W++ LLVM CLI (Self-Hosted, Full LLVM)
 
 on:
   workflow_dispatch:
@@ -9,24 +9,23 @@ jobs:
     runs-on: [self-hosted, windows, x64]
 
     steps:
-      - name: 🧱 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
-      - name: 🧩 Disable CMake WSL auto-detection
+
+      - name: Disable CMake WSL auto-detection
         shell: powershell
         run: |
           setx CMAKE_GENERATOR_PLATFORM x64
           setx CMAKE_SH "CMAKE_SH-NOTFOUND"
 
-      - name: 🦀 Verify Rust installation
+      - name: Verify Rust installation
         shell: powershell
         run: |
-          Write-Host "🔍 Checking existing Rust installation..."
+          Write-Host "Checking existing Rust installation..."
           rustc --version
           cargo --version
 
-
-
-      - name: 💾 Restore LLVM build cache
+      - name: Restore LLVM build cache
         uses: actions/cache@v4
         with:
           path: |
@@ -35,17 +34,17 @@ jobs:
             C:\LLVM
           key: llvm15-full-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
 
-      - name: 🧰 Locate and init MSVC
+      - name: Locate and init MSVC
         shell: powershell
         run: |
-          Write-Host "🔍 Locating Visual Studio Build Tools..."
+          Write-Host "Locating Visual Studio Build Tools..."
           $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
             -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
           if (-not $vsPath) {
-            Write-Error "❌ Visual Studio Build Tools not found!"
+            Write-Error "Visual Studio Build Tools not found!"
             exit 1
           }
-          Write-Host "✅ Found Visual Studio at $vsPath"
+          Write-Host "Found Visual Studio at $vsPath"
           $vcvars = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
           cmd /c "`"$vcvars`" && set" | ForEach-Object {
             if ($_ -match '^(.*?)=(.*)$') {
@@ -53,9 +52,9 @@ jobs:
             }
           }
           & cl.exe /? | Out-Null
-          Write-Host "✅ MSVC toolchain ready"
+          Write-Host "MSVC toolchain ready"
 
-      - name: 🧩 Build LLVM 15 from source
+      - name: Build LLVM 15 from source
         shell: powershell
         run: |
           $ErrorActionPreference = "Stop"
@@ -65,10 +64,10 @@ jobs:
 
           if (!(Test-Path "$installDir\bin\llvm-config.exe")) {
             if (!(Test-Path $srcDir)) {
-              Write-Host "⬇️ Cloning LLVM 15.0.7..."
+              Write-Host "Cloning LLVM 15.0.7..."
               git clone https://github.com/llvm/llvm-project.git $srcDir --branch llvmorg-15.0.7 --depth 1
             }
-            Write-Host "🛠️ Configuring LLVM..."
+            Write-Host "Configuring LLVM..."
             cmake -S "$srcDir\llvm" -B $buildDir `
               -G "Ninja" `
               -DCMAKE_BUILD_TYPE=Release `
@@ -89,30 +88,30 @@ jobs:
               2>&1 | Tee-Object -FilePath cmake_configure.log
 
             if (!(Test-Path "$buildDir\build.ninja")) {
-              Write-Host "❌ LLVM configure failed."
+              Write-Host "LLVM configure failed."
               Get-Content cmake_configure.log -TotalCount 40
               exit 1
             }
 
-            Write-Host "⚙️ Building and installing LLVM (may take ~1-2 hours)..."
+            Write-Host "Building and installing LLVM (may take 1-2 hours)..."
             cmake --build $buildDir --target install --config Release
           } else {
-            Write-Host "✅ Using cached LLVM build."
+            Write-Host "Using cached LLVM build."
           }
 
-      - name: 🔧 Configure environment
+      - name: Configure environment
         shell: powershell
         run: |
           echo "LLVM_SYS_150_PREFIX=C:\LLVM" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo "LLVM_CONFIG_PATH=C:\LLVM\bin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
           echo "C:\LLVM\bin" | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
-          Write-Host "✅ LLVM environment ready"
+          Write-Host "LLVM environment ready"
 
-      - name: ⚙️ Build W++
-        shell: pwsh
+      - name: Build W++
+        shell: powershell
         run: cargo build --release -p wpp-cli --target x86_64-pc-windows-msvc
 
-      - name: 📦 Package binary
+      - name: Package binary
         shell: powershell
         run: |
           mkdir dist
@@ -121,7 +120,7 @@ jobs:
           Get-FileHash dist\wpp-cli-x86_64-pc-windows-msvc.zip -Algorithm SHA256 | ForEach-Object {
             $_.Hash + "  wpp-cli-x86_64-pc-windows-msvc.zip" } > dist\wpp-cli-x86_64-pc-windows-msvc.sha256
 
-      - name: 🆙 Upload artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
           name: wpp-cli-x86_64-pc-windows-msvc

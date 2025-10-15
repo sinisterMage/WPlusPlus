@@ -11,6 +11,11 @@ jobs:
     steps:
       - name: 🧱 Checkout repository
         uses: actions/checkout@v4
+      - name: 🧩 Disable CMake WSL auto-detection
+        shell: pwsh
+        run: |
+          setx CMAKE_GENERATOR_PLATFORM x64
+          setx CMAKE_SH "CMAKE_SH-NOTFOUND"
 
       - name: 🦀 Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable

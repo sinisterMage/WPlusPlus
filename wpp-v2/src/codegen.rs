@@ -119,6 +119,8 @@ impl<'ctx> Codegen<'ctx> {
     // ✅ Register runtime externs right after initialization
     codegen.init_runtime_support();
     codegen.init_network_support(); // ✅ new
+    codegen.init_thread_support(); // ✅ new
+
 
     // ✅ Return ready-to-use codegen
     codegen
@@ -146,6 +148,43 @@ pub fn init_network_support(&self) {
     let start_ty = void_ty.fn_type(&[i32_ty.into()], false);
     self.module.add_function("wpp_start_server", start_ty, None);
 }
+pub fn init_thread_support(&self) {
+    let void_ty = self.context.void_type();
+    let i8_ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    // === Thread spawn (GC-managed) ===
+    // void* wpp_thread_spawn_gc(void* fn_ptr)
+    let spawn_gc_ty = i8_ptr.fn_type(&[i8_ptr.into()], false);
+    self.module.add_function("wpp_thread_spawn_gc", spawn_gc_ty, None);
+
+    // === Thread join ===
+    // void wpp_thread_join(void* handle)
+    let join_ty = void_ty.fn_type(&[i8_ptr.into()], false);
+    self.module.add_function("wpp_thread_join", join_ty, None);
+
+    // === Thread poll ===
+    // i32 wpp_thread_poll(void* handle)
+    let poll_ty = i32_ty.fn_type(&[i8_ptr.into()], false);
+    self.module.add_function("wpp_thread_poll", poll_ty, None);
+
+    // === ThreadState new ===
+    // void* wpp_thread_state_new(i32 initial)
+    let state_new_ty = i8_ptr.fn_type(&[i32_ty.into()], false);
+    self.module.add_function("wpp_thread_state_new", state_new_ty, None);
+
+    // === ThreadState get ===
+    // i32 wpp_thread_state_get(void* ptr)
+    let state_get_ty = i32_ty.fn_type(&[i8_ptr.into()], false);
+    self.module.add_function("wpp_thread_state_get", state_get_ty, None);
+
+    // === ThreadState set ===
+    // void wpp_thread_state_set(void* ptr, i32 val)
+    let state_set_ty = void_ty.fn_type(&[i8_ptr.into(), i32_ty.into()], false);
+    self.module.add_function("wpp_thread_state_set", state_set_ty, None);
+}
+
+
 
     pub fn create_engine(&self) -> ExecutionEngine<'ctx> {
         self.module
@@ -208,16 +247,39 @@ pub fn init_network_support(&self) {
 
 
         // === Variable lookup ===
-        Expr::Variable(name) => {
-    let var = self.vars.get(name)
-        .or_else(|| self.globals.get(name)) // ✅ fallback
-        .unwrap_or_else(|| panic!("Unknown variable '{}'", name));
+       Expr::Variable(name) => {
+    // 🧭 Try local or global variable first
+    if let Some(var) = self.vars.get(name).or_else(|| self.globals.get(name)) {
+        let val = self
+            .builder
+            .build_load(var.ty, var.ptr, &format!("load_{}", name))
+            .unwrap();
 
-    self.builder
-        .build_load(var.ty, var.ptr, &format!("load_{}", name))
-        .unwrap()
-        .into()
+        // 🧵 If this variable is a thread state pointer, call wpp_thread_state_get()
+        if let BasicTypeEnum::PointerType(_) = var.ty {
+            if let Some(get_fn) = self.module.get_function("wpp_thread_state_get") {
+                let call = self
+                    .builder
+                    .build_call(get_fn, &[val.into()], "call_thread_state_get")
+                    .unwrap();
+                return call.try_as_basic_value().left().unwrap();
+            }
+        }
+
+        // Normal load return
+        return val.into();
+    }
+
+    // 🌐 Fallback: treat as function reference (for useThread, server.register, etc.)
+    if let Some(func) = self.functions.get(name) {
+        let fn_ptr = func.as_global_value().as_pointer_value();
+        return fn_ptr.as_basic_value_enum();
+    }
+
+    panic!("Unknown variable or function: {}", name);
 }
+
+
 
 Expr::TypedLiteral { value, ty } => {
     match ty.as_str() {
@@ -238,7 +300,7 @@ Expr::TypedLiteral { value, ty } => {
 
     if let Expr::Variable(var_name) = left.as_ref() {
         println!("➡️ Assigning to variable: {}", var_name);
-        let value = self.compile_expr(right.as_ref());
+        let rhs_val = self.compile_expr(right.as_ref());
 
         // Lookup variable info (either local or global)
         if let Some(var) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
@@ -249,9 +311,44 @@ Expr::TypedLiteral { value, ty } => {
 
             let var_ty = var.ty;
 
-            // ✅ Step 1: type-aware casting
-            let casted_val: BasicValueEnum<'ctx> = match (value, var_ty) {
-                // === Integer → Integer ===
+            // ✅ Special case: Thread state pointer
+            if let BasicTypeEnum::PointerType(_) = var_ty {
+                println!("🧵 Detected thread state pointer assignment for {}", var_name);
+
+                if let Some(set_fn) = self.module.get_function("wpp_thread_state_set") {
+                    // Load pointer value (this is the actual thread-state handle)
+                    let ptr_val = self
+                        .builder
+                        .build_load(var_ty, var.ptr, "load_thread_ptr")
+                        .unwrap();
+
+                    // Ensure RHS is integer (thread state stores i32s)
+                    let rhs_int = match rhs_val {
+                        BasicValueEnum::IntValue(iv) => iv,
+                        _ => panic!(
+                            "❌ Thread state set expected i32, got {:?}",
+                            rhs_val.get_type()
+                        ),
+                    };
+
+                    // Emit: call void @wpp_thread_state_set(ptr, i32)
+                    self.builder
+                        .build_call(
+                            set_fn,
+                            &[ptr_val.into(), rhs_int.into()],
+                            "call_thread_state_set",
+                        )
+                        .unwrap();
+
+                    return self.i32_type.const_int(0, false).into();
+                } else {
+                    panic!("❌ Missing runtime function: wpp_thread_state_set");
+                }
+            }
+
+            // ✅ Normal value assignment (non-thread variables)
+            let casted_val: BasicValueEnum<'ctx> = match (rhs_val, var_ty) {
+                // Integer → Integer
                 (BasicValueEnum::IntValue(iv), BasicTypeEnum::IntType(int_ty)) => {
                     let rhs_bits = iv.get_type().get_bit_width();
                     let lhs_bits = int_ty.get_bit_width();
@@ -259,13 +356,11 @@ Expr::TypedLiteral { value, ty } => {
                     if rhs_bits == lhs_bits {
                         iv.as_basic_value_enum()
                     } else if rhs_bits < lhs_bits {
-                        // smaller → larger
                         self.builder
                             .build_int_z_extend(iv, int_ty, "assign_zext")
                             .unwrap()
                             .as_basic_value_enum()
                     } else {
-                        // larger → smaller
                         self.builder
                             .build_int_truncate(iv, int_ty, "assign_trunc")
                             .unwrap()
@@ -273,33 +368,28 @@ Expr::TypedLiteral { value, ty } => {
                     }
                 }
 
-                // === Float → Float ===
-                (BasicValueEnum::FloatValue(fv), BasicTypeEnum::FloatType(_)) => {
-                    fv.as_basic_value_enum()
-                }
+                // Float → Float
+                (BasicValueEnum::FloatValue(fv), BasicTypeEnum::FloatType(_)) => fv.into(),
 
-                // === Int → Float ===
+                // Int → Float
                 (BasicValueEnum::IntValue(iv), BasicTypeEnum::FloatType(f_ty)) => {
                     self.builder
                         .build_signed_int_to_float(iv, f_ty, "assign_int2float")
                         .unwrap()
-                        .as_basic_value_enum()
+                        .into()
                 }
 
-                // === Float → Int ===
+                // Float → Int
                 (BasicValueEnum::FloatValue(fv), BasicTypeEnum::IntType(i_ty)) => {
                     self.builder
                         .build_float_to_signed_int(fv, i_ty, "assign_float2int")
                         .unwrap()
-                        .as_basic_value_enum()
+                        .into()
                 }
 
-                // === Pointer → Pointer ===
-                (BasicValueEnum::PointerValue(pv), BasicTypeEnum::PointerType(_)) => {
-                    pv.as_basic_value_enum()
-                }
+                // Pointer → Pointer
+                (BasicValueEnum::PointerValue(pv), BasicTypeEnum::PointerType(_)) => pv.into(),
 
-                // === Type mismatch ===
                 (val, _) => panic!(
                     "❌ Type mismatch assigning {:?} to {:?}",
                     val.get_type(),
@@ -307,10 +397,7 @@ Expr::TypedLiteral { value, ty } => {
                 ),
             };
 
-            // ✅ Step 2: Store the casted value
             self.builder.build_store(var.ptr, casted_val).unwrap();
-
-            // ✅ Step 3: return i32(0) for consistency
             return self.i32_type.const_int(0, false).into();
         } else {
             panic!("Unknown variable in assignment: {}", var_name);
@@ -319,6 +406,7 @@ Expr::TypedLiteral { value, ty } => {
         panic!("Left-hand side of assignment must be a variable");
     }
 }
+
 
 
 
@@ -718,6 +806,78 @@ else if name == "server.start" {
     return self.i32_type.const_int(0, false).into();
 }
 
+// === THREAD: useThread(fn) ===
+// === THREAD: useThread(fn) ===
+else if name == "useThread" {
+    if args.len() != 1 {
+        panic!("useThread(fn) requires one argument");
+    }
+
+    // === Compile the function reference ===
+    let fn_ptr_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let void_ty = self.context.void_type();
+
+    // === Declare externs ===
+    let spawn_fn = self.module.get_function("wpp_thread_spawn_gc").unwrap_or_else(|| {
+        let ty = i8ptr.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_thread_spawn_gc", ty, None)
+    });
+
+    let join_fn = self.module.get_function("wpp_thread_join").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_thread_join", ty, None)
+    });
+
+    // === Cast the function pointer ===
+    let casted_ptr = if let BasicValueEnum::PointerValue(pv) = fn_ptr_val {
+        self.builder
+            .build_pointer_cast(pv, i8ptr, "thread_fn_cast")
+            .unwrap()
+    } else {
+        panic!("useThread() expects a function reference, got {:?}", fn_ptr_val);
+    };
+
+    // === Spawn the GC-managed thread ===
+    let thread_handle = self.builder
+        .build_call(spawn_fn, &[casted_ptr.into()], "call_thread_spawn_gc")
+        .unwrap()
+        .try_as_basic_value()
+        .left()
+        .expect("thread_spawn_gc must return handle");
+
+    // === Immediately join to ensure worker completes ===
+    self.builder
+        .build_call(join_fn, &[thread_handle.into()], "call_thread_join")
+        .unwrap();
+
+    // ✅ Return dummy i32 (so W++ keeps type consistency)
+    return self.i32_type.const_int(0, false).into();
+}
+
+
+
+// === THREAD: useThreadState(initial) ===
+else if name == "useThreadState" {
+    if args.len() != 1 {
+        panic!("useThreadState(initial) requires one argument");
+    }
+
+    let init_val = self.compile_expr(&args[0]);
+    let i32_ty = self.context.i32_type();
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let state_new_fn = self.module.get_function("wpp_thread_state_new").unwrap_or_else(|| {
+        let ty = i8ptr.fn_type(&[i32_ty.into()], false);
+        self.module.add_function("wpp_thread_state_new", ty, None)
+    });
+
+    let call = self.builder
+        .build_call(state_new_fn, &[init_val.into()], "call_thread_state_new")
+        .unwrap();
+
+    return call.try_as_basic_value().left().unwrap();
+}
 
 
             else if let Some(func_val) = self.functions.get(name).cloned() {
@@ -1569,26 +1729,43 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
     }
 
     // === Determine variable type ===
-    let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
-        // All heap structures are stored as pointers (i8*)
+    // === Determine variable type ===
+let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
+    // 💾 All heap structures are stored as pointers (i8*)
+    self.context
+        .i8_type()
+        .ptr_type(inkwell::AddressSpace::default())
+        .as_basic_type_enum()
+
+// 🧵 Special case: if RHS is a useThreadState() call, allocate as pointer
+} else if let Expr::Call { name, .. } = value {
+    if name == "useThreadState" {
         self.context
             .i8_type()
-            .ptr_type(AddressSpace::default())
+            .ptr_type(inkwell::AddressSpace::default())
             .as_basic_type_enum()
-    } else if let Some(t) = ty {
-        // Explicit type annotation
-        self.resolve_basic_type(t)
     } else {
-        // 🔍 Type inference from RHS
-        match value {
-            Expr::TypedLiteral { value: val, ty: lit_ty } => match lit_ty.as_str() {
-                "i1" | "bool" => self.context.bool_type().into(),
-                "i8" => self.context.i8_type().into(),
-                "i32" => self.context.i32_type().into(),
-                "i64" => self.context.i64_type().into(),
-                "f64" => self.context.f64_type().into(),
-                _ => self.infer_type_from_literal(val, lit_ty == "f64"),
-            },
+        // otherwise just treat as i32 (default scalar)
+        self.context.i32_type().as_basic_type_enum()
+    }
+
+// 🧩 Explicit type annotation
+} else if let Some(t) = ty {
+    self.resolve_basic_type(t)
+
+// 🧠 Type inference from RHS (literal-based)
+} else {
+    match value {
+        Expr::TypedLiteral { value: val, ty: lit_ty } => match lit_ty.as_str() {
+            "i1" | "bool" => self.context.bool_type().into(),
+            "i8" => self.context.i8_type().into(),
+            "i32" => self.context.i32_type().into(),
+            "i64" => self.context.i64_type().into(),
+            "f64" => self.context.f64_type().into(),
+            _ => self.infer_type_from_literal(val, lit_ty == "f64"),
+        },
+        
+ 
 
             Expr::Literal(v) => self.infer_type_from_literal(&v.to_string(), false),
 
@@ -1917,7 +2094,7 @@ if let Some(func) = self.module.get_function("printf") {
         if let Some(func) = self.module.get_function("malloc") {
             engine.add_global_mapping(&func, libc::malloc as usize);
         }
-
+        
         // === Printing subsystem ===
         unsafe extern "C" {
             fn wpp_print_value(ptr: *const std::ffi::c_void, type_id: i32);
@@ -1975,6 +2152,31 @@ if let Some(func) = self.module.get_function("printf") {
                 println!("⚠️ [jit] Missing declaration for {}", name);
             }
         }
+       unsafe extern "C" {
+    fn wpp_thread_spawn_gc(ptr: *const std::ffi::c_void) -> *mut std::ffi::c_void;
+    fn wpp_thread_join(ptr: *mut std::ffi::c_void);
+    fn wpp_thread_poll(ptr: *mut std::ffi::c_void) -> i32;
+    fn wpp_thread_state_new(initial: i32) -> *mut std::ffi::c_void;
+    fn wpp_thread_state_get(ptr: *mut std::ffi::c_void) -> i32;
+    fn wpp_thread_state_set(ptr: *mut std::ffi::c_void, val: i32);
+}
+
+for (name, addr) in [
+    ("wpp_thread_spawn_gc", wpp_thread_spawn_gc as usize),
+    ("wpp_thread_join", wpp_thread_join as usize),
+    ("wpp_thread_poll", wpp_thread_poll as usize),
+    ("wpp_thread_state_new", wpp_thread_state_new as usize),
+    ("wpp_thread_state_get", wpp_thread_state_get as usize),
+    ("wpp_thread_state_set", wpp_thread_state_set as usize),
+] {
+    if let Some(func) = self.module.get_function(name) {
+        engine.add_global_mapping(&func, addr);
+        println!("🔗 [jit] Bound {}", name);
+    } else {
+        println!("⚠️ [jit] Missing declaration for {}", name);
+    }
+}
+
 
         // === runtime_wait ===
         unsafe extern "C" {

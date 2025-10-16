@@ -62,7 +62,7 @@ pub fn set_engine(engine: ExecutionEngine<'static>) {
     println!("🧠 [runtime] ENGINE stored globally");
 }
 
-unsafe fn get_engine<'a>() -> &'a ExecutionEngine<'static> {
+pub unsafe fn get_engine<'a>() -> &'a ExecutionEngine<'static> {
     let EnginePtr(ptr) = ENGINE.get().expect("ENGINE not initialized");
     &**ptr
 }

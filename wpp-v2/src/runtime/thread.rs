@@ -257,3 +257,42 @@ pub fn start_thread_gc_daemon() {
         thread::sleep(Duration::from_secs(3));
     });
 }
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_thread_join_all() {
+    let mut threads = ThreadGC::global().threads.lock().unwrap();
+    if threads.is_empty() {
+        println!("🧵 [thread] no threads to join");
+        return;
+    }
+
+    println!("🧵 [thread] joining all remaining GC threads ({} total)", threads.len());
+    let mut joined = 0;
+
+    for (id, handle) in threads.drain() {
+    // Clone Arc before attempting to unwrap
+    let handle_clone = handle.clone();
+
+    if let Ok(mut h) = Arc::try_unwrap(handle) {
+        // Owned handle – can take join handle directly
+        if let Some(join_handle) = h.join_handle.take() {
+            println!("🧵 [thread] joining thread #{id}");
+            let _ = join_handle.join();
+            joined += 1;
+        }
+    } else {
+        // Still referenced somewhere else (detached or shared)
+        if !handle_clone.is_finished() {
+            println!("💤 [thread] waiting on active thread #{id}");
+
+            unsafe {
+                let raw = Arc::as_ptr(&handle_clone) as *mut ThreadHandle;
+                (*raw).join();
+            }
+
+            joined += 1;
+        }
+    }
+}
+
+    println!("✅ [thread] all GC threads joined ({joined})");
+}

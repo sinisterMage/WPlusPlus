@@ -182,6 +182,8 @@ pub fn init_thread_support(&self) {
     // void wpp_thread_state_set(void* ptr, i32 val)
     let state_set_ty = void_ty.fn_type(&[i8_ptr.into(), i32_ty.into()], false);
     self.module.add_function("wpp_thread_state_set", state_set_ty, None);
+    let join_all_ty = self.context.void_type().fn_type(&[], false);
+self.module.add_function("wpp_thread_join_all", join_all_ty, None);
 }
 
 
@@ -809,50 +811,94 @@ else if name == "server.start" {
 // === THREAD: useThread(fn) ===
 // === THREAD: useThread(fn) ===
 else if name == "useThread" {
-    if args.len() != 1 {
-        panic!("useThread(fn) requires one argument");
+    if args.is_empty() {
+        panic!("useThread(fn [, detached]) requires at least one argument");
     }
 
-    // === Compile the function reference ===
     let fn_ptr_val = self.compile_expr(&args[0]);
     let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
     let void_ty = self.context.void_type();
+    let i32_ty = self.context.i32_type();
 
-    // === Declare externs ===
+    // Optional detached flag
+    let detached_flag = if args.len() > 1 {
+        let val = self.compile_expr(&args[1]);
+        match val {
+            BasicValueEnum::IntValue(iv) => iv,
+            _ => panic!("useThread(fn, detached) expects bool/int flag"),
+        }
+    } else {
+        i32_ty.const_int(0, false) // default join = false
+    };
+
+    // externs
     let spawn_fn = self.module.get_function("wpp_thread_spawn_gc").unwrap_or_else(|| {
         let ty = i8ptr.fn_type(&[i8ptr.into()], false);
         self.module.add_function("wpp_thread_spawn_gc", ty, None)
     });
-
     let join_fn = self.module.get_function("wpp_thread_join").unwrap_or_else(|| {
         let ty = void_ty.fn_type(&[i8ptr.into()], false);
         self.module.add_function("wpp_thread_join", ty, None)
     });
 
-    // === Cast the function pointer ===
+    // cast
     let casted_ptr = if let BasicValueEnum::PointerValue(pv) = fn_ptr_val {
         self.builder
             .build_pointer_cast(pv, i8ptr, "thread_fn_cast")
             .unwrap()
     } else {
-        panic!("useThread() expects a function reference, got {:?}", fn_ptr_val);
+        panic!("useThread() expects a function reference");
     };
 
-    // === Spawn the GC-managed thread ===
+    // spawn thread
     let thread_handle = self.builder
         .build_call(spawn_fn, &[casted_ptr.into()], "call_thread_spawn_gc")
         .unwrap()
         .try_as_basic_value()
         .left()
-        .expect("thread_spawn_gc must return handle");
+        .expect("spawn must return handle");
 
-    // === Immediately join to ensure worker completes ===
+    // === Conditional join ===
+    let current_block = self.builder.get_insert_block().unwrap();
+    let parent_fn = current_block.get_parent().unwrap();
+
+    let join_block = self.context.append_basic_block(parent_fn, "join_thread");
+    let cont_block = self.context.append_basic_block(parent_fn, "cont_thread");
+
+    let zero = i32_ty.const_int(0, false);
+    let cond = self.builder
+        .build_int_compare(inkwell::IntPredicate::EQ, detached_flag, zero, "should_join")
+        .unwrap();
+
+    // Branch into join or continue
+    self.builder
+        .build_conditional_branch(cond, join_block, cont_block)
+        .unwrap();
+
+    // === join_thread ===
+    self.builder.position_at_end(join_block);
     self.builder
         .build_call(join_fn, &[thread_handle.into()], "call_thread_join")
         .unwrap();
+    // this block *must* end with a branch to cont_thread
+    self.builder.build_unconditional_branch(cont_block).unwrap();
 
-    // ✅ Return dummy i32 (so W++ keeps type consistency)
-    return self.i32_type.const_int(0, false).into();
+   // === cont_thread ===
+self.builder.position_at_end(cont_block);
+
+// ✅ Guarantee this block is terminated
+let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
+if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+    let ret_val = self.i32_type.const_int(0, false);
+    self.builder.build_return(Some(&ret_val)).unwrap();
+}
+
+// 🚫 Do NOT create another block afterward.
+// The return above already ends the function path cleanly.
+
+// ✅ Return dummy i32 to satisfy Rust type
+return self.i32_type.const_int(0, false).into();
+
 }
 
 
@@ -2010,11 +2056,18 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
 
         wrap_builder.build_return(Some(&result.into_int_value())).unwrap();
     }
-
+    
     // === Ensure main_async ends cleanly ===
     if entry.get_terminator().is_none() {
         entry_builder.position_at_end(entry);
         let ret_val = self.i32_type.const_int(0, false);
+        // === Auto join all threads before exit ===
+if let Some(join_all_fn) = self.module.get_function("wpp_thread_join_all") {
+    entry_builder
+        .build_call(join_all_fn, &[], "auto_thread_join_all")
+        .unwrap();
+}
+
         entry_builder.build_return(Some(&ret_val)).unwrap();
         println!("🟢 Added final return terminator to main_async::entry");
     }
@@ -2175,6 +2228,13 @@ for (name, addr) in [
     } else {
         println!("⚠️ [jit] Missing declaration for {}", name);
     }
+}
+unsafe extern "C" {
+    fn wpp_thread_join_all();
+}
+if let Some(func) = self.module.get_function("wpp_thread_join_all") {
+    engine.add_global_mapping(&func, wpp_thread_join_all as usize);
+    println!("🔗 [jit] Bound wpp_thread_join_all");
 }
 
 

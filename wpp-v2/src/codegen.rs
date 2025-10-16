@@ -120,6 +120,7 @@ impl<'ctx> Codegen<'ctx> {
     codegen.init_runtime_support();
     codegen.init_network_support(); // ✅ new
     codegen.init_thread_support(); // ✅ new
+    codegen.init_mutex_support(); // ✅ new
 
 
     // ✅ Return ready-to-use codegen
@@ -174,18 +175,42 @@ pub fn init_thread_support(&self) {
     self.module.add_function("wpp_thread_state_new", state_new_ty, None);
 
     // === ThreadState get ===
-    // i32 wpp_thread_state_get(void* ptr)
-    let state_get_ty = i32_ty.fn_type(&[i8_ptr.into()], false);
+    // void* wpp_thread_state_get(void* ptr)
+    let state_get_ty = i8_ptr.fn_type(&[i8_ptr.into()], false);
     self.module.add_function("wpp_thread_state_get", state_get_ty, None);
 
     // === ThreadState set ===
     // void wpp_thread_state_set(void* ptr, i32 val)
     let state_set_ty = void_ty.fn_type(&[i8_ptr.into(), i32_ty.into()], false);
     self.module.add_function("wpp_thread_state_set", state_set_ty, None);
-    let join_all_ty = self.context.void_type().fn_type(&[], false);
-self.module.add_function("wpp_thread_join_all", join_all_ty, None);
+
+    // === Thread join all ===
+    // void wpp_thread_join_all(void)
+    let join_all_ty = void_ty.fn_type(&[], false);
+    self.module.add_function("wpp_thread_join_all", join_all_ty, None);
 }
 
+
+pub fn init_mutex_support(&self) {
+    let void_ty = self.context.void_type();
+    let i8ptr  = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    // === GC-aware mutex new ===
+    // void* wpp_mutex_new(i32 initial)
+    let new_ty = i8ptr.fn_type(&[i32_ty.into()], false);
+    self.module.add_function("wpp_mutex_new", new_ty, None);
+
+    // === GC-aware mutex lock ===
+    // void wpp_mutex_lock(void* handle, i32 thread_id)
+    let lock_ty = void_ty.fn_type(&[i8ptr.into(), i32_ty.into()], false);
+    self.module.add_function("wpp_mutex_lock", lock_ty, None);
+
+    // === GC-aware mutex unlock ===
+    // void wpp_mutex_unlock(void* handle)
+    let unlock_ty = void_ty.fn_type(&[i8ptr.into()], false);
+    self.module.add_function("wpp_mutex_unlock", unlock_ty, None);
+}
 
 
     pub fn create_engine(&self) -> ExecutionEngine<'ctx> {
@@ -808,7 +833,7 @@ else if name == "server.start" {
     return self.i32_type.const_int(0, false).into();
 }
 
-// === THREAD: useThread(fn) ===
+
 // === THREAD: useThread(fn) ===
 else if name == "useThread" {
     if args.is_empty() {
@@ -828,7 +853,7 @@ else if name == "useThread" {
             _ => panic!("useThread(fn, detached) expects bool/int flag"),
         }
     } else {
-        i32_ty.const_int(0, false) // default join = false
+        i32_ty.const_int(0, false)
     };
 
     // externs
@@ -841,7 +866,7 @@ else if name == "useThread" {
         self.module.add_function("wpp_thread_join", ty, None)
     });
 
-    // cast
+    // cast function pointer
     let casted_ptr = if let BasicValueEnum::PointerValue(pv) = fn_ptr_val {
         self.builder
             .build_pointer_cast(pv, i8ptr, "thread_fn_cast")
@@ -870,7 +895,6 @@ else if name == "useThread" {
         .build_int_compare(inkwell::IntPredicate::EQ, detached_flag, zero, "should_join")
         .unwrap();
 
-    // Branch into join or continue
     self.builder
         .build_conditional_branch(cond, join_block, cont_block)
         .unwrap();
@@ -880,26 +904,17 @@ else if name == "useThread" {
     self.builder
         .build_call(join_fn, &[thread_handle.into()], "call_thread_join")
         .unwrap();
-    // this block *must* end with a branch to cont_thread
     self.builder.build_unconditional_branch(cont_block).unwrap();
 
-   // === cont_thread ===
-self.builder.position_at_end(cont_block);
+    // === cont_thread ===
+    self.builder.position_at_end(cont_block);
 
-// ✅ Guarantee this block is terminated
-let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
-if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
-    let ret_val = self.i32_type.const_int(0, false);
-    self.builder.build_return(Some(&ret_val)).unwrap();
+    // 🚫 DO NOT insert a return here!
+    // Leave this block open so the next AST nodes (sleep, print, etc.) can continue.
+
+    return self.i32_type.const_int(0, false).into();
 }
 
-// 🚫 Do NOT create another block afterward.
-// The return above already ends the function path cleanly.
-
-// ✅ Return dummy i32 to satisfy Rust type
-return self.i32_type.const_int(0, false).into();
-
-}
 
 
 
@@ -924,6 +939,92 @@ else if name == "useThreadState" {
 
     return call.try_as_basic_value().left().unwrap();
 }
+else if name == "getThreadState" {
+    if args.len() != 1 {
+        panic!("getThreadState(ptr) requires one argument");
+    }
+
+    let ptr_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let fn_get = self.module.get_function("wpp_thread_state_get")
+        .expect("wpp_thread_state_get should exist in module");
+
+    let call = self.builder
+        .build_call(fn_get, &[ptr_val.into()], "call_thread_state_get")
+        .unwrap();
+
+    return call.try_as_basic_value().left().unwrap();
+}
+
+// === MUTEX: useMutex(initial) ===
+else if name == "useMutex" {
+    if args.len() != 1 {
+        panic!("useMutex(initial) requires one argument");
+    }
+
+    let init_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_new = self.module.get_function("wpp_mutex_new").unwrap_or_else(|| {
+        let ty = i8ptr.fn_type(&[i32_ty.into()], false);
+        self.module.add_function("wpp_mutex_new", ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_new, &[init_val.into()], "call_mutex_new")
+        .unwrap();
+
+    return call.try_as_basic_value().left().unwrap();
+}
+
+// === MUTEX: lock(mtx, threadId) ===
+else if name == "lock" {
+    if args.len() != 2 {
+        panic!("lock(mutex, threadId) requires 2 arguments");
+    }
+
+    let mtx_val = self.compile_expr(&args[0]);
+    let tid_val = self.compile_expr(&args[1]);
+    let void_ty = self.context.void_type();
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_lock = self.module.get_function("wpp_mutex_lock").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i8ptr.into(), i32_ty.into()], false);
+        self.module.add_function("wpp_mutex_lock", ty, None)
+    });
+
+    self.builder
+        .build_call(fn_lock, &[mtx_val.into(), tid_val.into()], "call_mutex_lock")
+        .unwrap();
+
+    return self.i32_type.const_int(0, false).into();
+}
+
+// === MUTEX: unlock(mtx) ===
+else if name == "unlock" {
+    if args.len() != 1 {
+        panic!("unlock(mutex) requires one argument");
+    }
+
+    let mtx_val = self.compile_expr(&args[0]);
+    let void_ty = self.context.void_type();
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let fn_unlock = self.module.get_function("wpp_mutex_unlock").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_mutex_unlock", ty, None)
+    });
+
+    self.builder
+        .build_call(fn_unlock, &[mtx_val.into()], "call_mutex_unlock")
+        .unwrap();
+
+    return self.i32_type.const_int(0, false).into();
+}
+
 
 
             else if let Some(func_val) = self.functions.get(name).cloned() {
@@ -1785,18 +1886,23 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
 
 // 🧵 Special case: if RHS is a useThreadState() call, allocate as pointer
 } else if let Expr::Call { name, .. } = value {
-    if name == "useThreadState" {
+    if name == "useThreadState"
+        || name == "useMutex"
+        || name == "useThread"
+        || name == "http.body"
+        || name == "http.headers"
+    {
+        // These builtins return pointers
         self.context
             .i8_type()
             .ptr_type(inkwell::AddressSpace::default())
             .as_basic_type_enum()
     } else {
-        // otherwise just treat as i32 (default scalar)
+        // Default scalar
         self.context.i32_type().as_basic_type_enum()
     }
-
-// 🧩 Explicit type annotation
-} else if let Some(t) = ty {
+}
+ else if let Some(t) = ty {
     self.resolve_basic_type(t)
 
 // 🧠 Type inference from RHS (literal-based)
@@ -2058,19 +2164,22 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     }
     
     // === Ensure main_async ends cleanly ===
-    if entry.get_terminator().is_none() {
-        entry_builder.position_at_end(entry);
-        let ret_val = self.i32_type.const_int(0, false);
-        // === Auto join all threads before exit ===
-if let Some(join_all_fn) = self.module.get_function("wpp_thread_join_all") {
-    entry_builder
-        .build_call(join_all_fn, &[], "auto_thread_join_all")
-        .unwrap();
+let current_block = self.builder.get_insert_block().unwrap();
+if current_block.get_terminator().is_none() {
+    self.builder.position_at_end(current_block);
+    let ret_val = self.i32_type.const_int(0, false);
+
+    // === Auto join all threads before exit ===
+    if let Some(join_all_fn) = self.module.get_function("wpp_thread_join_all") {
+        self.builder
+            .build_call(join_all_fn, &[], "auto_thread_join_all")
+            .unwrap();
+    }
+
+    self.builder.build_return(Some(&ret_val)).unwrap();
+    println!("🟢 Added final return terminator to main_async::{:?}", current_block);
 }
 
-        entry_builder.build_return(Some(&ret_val)).unwrap();
-        println!("🟢 Added final return terminator to main_async::entry");
-    }
 
     async_fn
 }
@@ -2210,7 +2319,7 @@ if let Some(func) = self.module.get_function("printf") {
     fn wpp_thread_join(ptr: *mut std::ffi::c_void);
     fn wpp_thread_poll(ptr: *mut std::ffi::c_void) -> i32;
     fn wpp_thread_state_new(initial: i32) -> *mut std::ffi::c_void;
-    fn wpp_thread_state_get(ptr: *mut std::ffi::c_void) -> i32;
+    fn wpp_thread_state_get(ptr: *mut std::ffi::c_void) -> *mut std::ffi::c_void;
     fn wpp_thread_state_set(ptr: *mut std::ffi::c_void, val: i32);
 }
 
@@ -2235,6 +2344,24 @@ unsafe extern "C" {
 if let Some(func) = self.module.get_function("wpp_thread_join_all") {
     engine.add_global_mapping(&func, wpp_thread_join_all as usize);
     println!("🔗 [jit] Bound wpp_thread_join_all");
+}
+unsafe extern "C" {
+    fn wpp_mutex_new(initial: i32) -> *mut std::ffi::c_void;
+    fn wpp_mutex_lock(ptr: *mut std::ffi::c_void, thread_id: i32);
+    fn wpp_mutex_unlock(ptr: *mut std::ffi::c_void);
+}
+
+for (name, addr) in [
+    ("wpp_mutex_new", wpp_mutex_new as usize),
+    ("wpp_mutex_lock", wpp_mutex_lock as usize),
+    ("wpp_mutex_unlock", wpp_mutex_unlock as usize),
+] {
+    if let Some(func) = self.module.get_function(name) {
+        engine.add_global_mapping(&func, addr);
+        println!("🔗 [jit] Bound {}", name);
+    } else {
+        println!("⚠️ [jit] Missing declaration for {}", name);
+    }
 }
 
 

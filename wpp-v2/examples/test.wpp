@@ -1,15 +1,10 @@
 funcy worker() {
-    let counter = useThreadState(0)
-    while (counter < 3) {
-        counter = counter + 1
-    }
-    print(counter)
+    let m = useMutex(0)
+    lock(m, 1)
+    print("Thread acquired lock and crashed!")
+    // intentionally do not unlock()
+    // the GC should clean this up automatically
 }
-
-funcy bgTask() {
-    print("Running in background...")
-}
-
-useThread(worker)
-useThread(bgTask, true)
-print("Main continues!")
+print("Before spawn")
+useThread(worker);
+print("Main thread alive after worker crash!")

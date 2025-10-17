@@ -1,5 +1,7 @@
 use std::iter::Peekable;
 use std::str::Chars;
+use unicode_normalization::UnicodeNormalization;
+
 
 /// Kinds of tokens in W++
 #[derive(Debug, Clone, PartialEq)]
@@ -59,8 +61,8 @@ impl<'a> Lexer<'a> {
                 }
 
                 // --- Identifiers & keywords ---
-                c if c.is_alphabetic() || c == '_' => {
-                    let ident = self.consume_identifier();
+                c if is_identifier_start(c) => {
+                     let ident = self.consume_identifier();
                     let kind = match ident.as_str() {
     "let" | "if" | "else" | "while" | "for"
     | "break" | "continue" | "true" | "false"
@@ -143,23 +145,28 @@ _ => {
         tokens
     }
 
+
     // ===========================
     // === Helper subroutines ===
     // ===========================
 
     fn consume_identifier(&mut self) -> String {
-        let mut ident = String::new();
-        while let Some(&c) = self.input.peek() {
-            if c.is_alphanumeric() || c == '_' {
-                ident.push(c);
-                self.input.next();
-                self.col += 1;
-            } else {
-                break;
-            }
+    let mut ident = String::new();
+
+    while let Some(&c) = self.input.peek() {
+        if is_identifier_continue(c) {
+            ident.push(c);
+            self.input.next();
+            self.col += 1;
+        } else {
+            break;
         }
-        ident
     }
+
+    // Normalize to NFC to ensure consistent representation
+    ident.nfc().collect::<String>()
+}
+
 
     fn consume_number(&mut self) -> String {
         let mut number = String::new();
@@ -264,6 +271,26 @@ _ => {
 }
 
 }
+// =======================================
+// === Identifier helper functions =======
+// =======================================
+
+fn is_identifier_start(ch: char) -> bool {
+    // Allow underscore, letters, and most emoji / symbol codepoints
+    ch == '_'
+        || ch.is_alphabetic()
+        || (ch >= '\u{1F300}' && ch <= '\u{1FAFF}') // emoji & pictographs
+        || (ch >= '\u{2600}' && ch <= '\u{27BF}')   // misc symbols
+        || (ch >= '\u{1F900}' && ch <= '\u{1F9FF}') // supplemental symbols
+}
+
+fn is_identifier_continue(ch: char) -> bool {
+    // Same as start + digits + joiners
+    is_identifier_start(ch)
+        || ch.is_alphanumeric()
+        || ch == '\u{200C}' // Zero-width non-joiner
+        || ch == '\u{200D}' // Zero-width joiner
+}
 
 #[cfg(test)]
 mod tests {
@@ -290,4 +317,16 @@ mod tests {
         assert!(tokens.iter().any(|t| matches!(t.kind, TokenKind::Symbol(ref s) if s == "}")));
         assert!(matches!(tokens.last().unwrap().kind, TokenKind::EOF));
     }
+    #[test]
+fn test_utf8_identifiers() {
+    let mut lexer = Lexer::new(r#"let 🦥 = 1; let 変数 = 2; let привет = 3;"#);
+    let tokens = lexer.tokenize();
+
+    let idents: Vec<_> = tokens.iter().filter_map(|t| {
+        if let TokenKind::Identifier(s) = &t.kind { Some(s.clone()) } else { None }
+    }).collect();
+
+    assert_eq!(idents, vec!["🦥", "変数", "привет"]);
+}
+
 }

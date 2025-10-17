@@ -1,10 +1,1 @@
-funcy worker() {
-    let m = useMutex(0)
-    lock(m, 1)
-    print("Thread acquired lock and crashed!")
-    // intentionally do not unlock()
-    // the GC should clean this up automatically
-}
-print("Before spawn")
-useThread(worker);
-print("Main thread alive after worker crash!")
+let 🦥 = 1

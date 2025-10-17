@@ -4,7 +4,7 @@ use inkwell::{
     execution_engine::ExecutionEngine,
     module::{self, Linkage, Module},
     types::BasicTypeEnum,
-    values::{BasicMetadataValueEnum, BasicValueEnum, FunctionValue, IntValue, PointerValue},
+    values::{BasicMetadataValueEnum, BasicValueEnum, CallSiteValue, FunctionValue, IntValue, PointerValue},
     AddressSpace,
     OptimizationLevel,
 };
@@ -25,12 +25,18 @@ use inkwell::types::IntType;
 
 
 
+#[derive(Hash, Eq, PartialEq, Clone, Debug)]
+pub struct FunctionSignature {
+    pub name: String,
+    pub param_types: Vec<String>,
+}
 
 #[derive(Clone)]
 pub struct VarInfo<'ctx> {
     pub ptr: PointerValue<'ctx>,
     pub ty: BasicTypeEnum<'ctx>,
     pub is_const: bool,
+        pub is_thread_state: bool, // 👈 new field
 }
 /// The core LLVM code generator for W++
 pub struct Codegen <'ctx> {
@@ -47,7 +53,8 @@ pub struct Codegen <'ctx> {
     exception_flag: Option<PointerValue<'ctx>>,
     exception_value_i32: Option<PointerValue<'ctx>>,
     exception_value_str: Option<PointerValue<'ctx>>,
-        pub functions: HashMap<String, FunctionValue<'ctx>>,
+    pub functions: HashMap<FunctionSignature, FunctionValue<'ctx>>,
+    pub reverse_func_index: HashMap<String, Vec<FunctionSignature>>,
 }
 fn get_or_declare_fn<'ctx>(
     module: &Module<'ctx>,
@@ -80,6 +87,13 @@ impl<'ctx> Codegen<'ctx> {
         // void wpp_print_object(void* ptr)
         let obj_ty = void_ty.fn_type(&[i8_ptr_ty.into()], false);
         self.module.add_function("wpp_print_object", obj_ty, None);
+        // Add wpp_str_concat declaration if missing
+let ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+if self.module.get_function("wpp_str_concat").is_none() {
+    let fn_ty = ptr_ty.fn_type(&[ptr_ty.into(), ptr_ty.into()], false);
+    self.module.add_function("wpp_str_concat", fn_ty, None);
+}
+
     }
 }
 
@@ -100,32 +114,37 @@ impl<'ctx> Codegen<'ctx> {
     let exc_str_global = module.add_global(context.i8_type().ptr_type(AddressSpace::default()), None, "_wpp_exc_str");
     exc_str_global.set_initializer(&context.i8_type().ptr_type(AddressSpace::default()).const_null());
 
-    // ✅ Build struct once
-    let codegen = Self {
+    // ✅ Initialize Codegen struct
+    let mut codegen = Self {
         context,
         module,
         builder,
         i32_type,
         vars: HashMap::new(),
+        globals: HashMap::new(),
         loop_stack: Vec::new(),
         switch_stack: Vec::new(),
         exception_flag: Some(flag_global.as_pointer_value()),
         exception_value_i32: Some(exc_i32_global.as_pointer_value()),
         exception_value_str: Some(exc_str_global.as_pointer_value()),
+
+        // 🧩 Multiple dispatch maps
         functions: HashMap::new(),
-        globals: HashMap::new(),
+        reverse_func_index: HashMap::new(),
     };
 
-    // ✅ Register runtime externs right after initialization
+    // ✅ Register runtime externs immediately after initialization
     codegen.init_runtime_support();
-    codegen.init_network_support(); // ✅ new
-    codegen.init_thread_support(); // ✅ new
-    codegen.init_mutex_support(); // ✅ new
+    codegen.init_network_support();
+    codegen.init_thread_support();
+    codegen.init_mutex_support();
 
+    println!("🧠 [init] Codegen ready with multiple dispatch support");
 
-    // ✅ Return ready-to-use codegen
+    // ✅ Return ready-to-use Codegen instance
     codegen
 }
+
 
 
 
@@ -254,17 +273,18 @@ pub fn init_mutex_support(&self) {
     global.set_linkage(inkwell::module::Linkage::Private);
 
     // ✅ Get a pointer to the first byte
-    let zero = self.context.i32_type().const_zero();
-    let ptr = unsafe {
-        self.builder
-            .build_in_bounds_gep(
-                self.context.i8_type(),         // element type
-                global.as_pointer_value(),      // pointer to [N x i8]
-                &[zero, zero],                  // get element [0][0]
-                "strptr",                       // name hint
-            )
-            .expect("Failed to GEP string pointer")
-    };
+    // ✅ Get a pointer to the first byte
+let zero = self.context.i32_type().const_zero();
+let ptr = unsafe {
+    self.builder
+        .build_in_bounds_gep(
+            array_type,                     // 🩵 Use array type here, not i8_type()
+            global.as_pointer_value(),      // pointer to [N x i8]
+            &[zero, zero],                  // get element [0][0]
+            "strptr",
+        )
+        .expect("Failed to GEP string pointer")
+};
 
     // ✅ Return as a BasicValueEnum (i8*)
     ptr.as_basic_value_enum()
@@ -282,8 +302,8 @@ pub fn init_mutex_support(&self) {
             .build_load(var.ty, var.ptr, &format!("load_{}", name))
             .unwrap();
 
-        // 🧵 If this variable is a thread state pointer, call wpp_thread_state_get()
-        if let BasicTypeEnum::PointerType(_) = var.ty {
+        // 🧵 Only call wpp_thread_state_get if this var is a thread-state handle
+        if var.is_thread_state {
             if let Some(get_fn) = self.module.get_function("wpp_thread_state_get") {
                 let call = self
                     .builder
@@ -298,13 +318,18 @@ pub fn init_mutex_support(&self) {
     }
 
     // 🌐 Fallback: treat as function reference (for useThread, server.register, etc.)
-    if let Some(func) = self.functions.get(name) {
-        let fn_ptr = func.as_global_value().as_pointer_value();
-        return fn_ptr.as_basic_value_enum();
+    if let Some(sigs) = self.reverse_func_index.get(name) {
+        if let Some(first_sig) = sigs.first() {
+            if let Some(func) = self.functions.get(first_sig) {
+                let fn_ptr: PointerValue<'_> = func.as_global_value().as_pointer_value();
+                return fn_ptr.as_basic_value_enum();
+            }
+        }
     }
 
     panic!("Unknown variable or function: {}", name);
 }
+
 
 
 
@@ -442,7 +467,32 @@ Expr::TypedLiteral { value, ty } => {
 let left_raw = self.compile_expr(left.as_ref());
 let right_raw = self.compile_expr(right.as_ref());
 
-let result: BasicValueEnum<'ctx> = match (left_raw, right_raw) {
+
+
+
+
+
+let result: BasicValueEnum<'ctx> = match (&left_raw, &right_raw) {
+    (BasicValueEnum::PointerValue(lp), BasicValueEnum::PointerValue(rp)) if op == "+" => {
+    // 🧩 Runtime string concatenation
+    let ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+    let concat_fn = self.module.get_function("wpp_str_concat").unwrap_or_else(|| {
+        let fn_ty = ptr_ty.fn_type(&[ptr_ty.into(), ptr_ty.into()], false);
+        self.module.add_function("wpp_str_concat", fn_ty, None)
+    });
+
+    // 🧠 Build the call (pass raw pointer values)
+    let call = self.builder
+        .build_call(concat_fn, &[lp.clone().into(), rp.clone().into()], "concat")
+        .expect("Failed to call wpp_str_concat");
+
+    // ✅ Extract pointer result (the concatenated string)
+    let result = call.try_as_basic_value()
+        .left()
+        .expect("wpp_str_concat should return a pointer");
+
+    result
+}
     // --- Integer + Integer ---
     (BasicValueEnum::IntValue(l), BasicValueEnum::IntValue(r)) => {
         let lhs_ty = l.get_type();
@@ -450,17 +500,17 @@ let result: BasicValueEnum<'ctx> = match (left_raw, right_raw) {
 
         // Auto-promote smaller integer → larger integer
         let (l_cast, r_cast, final_ty) = if lhs_ty.get_bit_width() == rhs_ty.get_bit_width() {
-            (l, r, lhs_ty)
+            (l.clone(), r.clone(), lhs_ty)
         } else if lhs_ty.get_bit_width() < rhs_ty.get_bit_width() {
             (
-                self.builder.build_int_z_extend(l, rhs_ty, "l_promote").unwrap(),
-                r,
+                self.builder.build_int_z_extend(*l, rhs_ty, "l_promote").unwrap(),
+                r.clone(),
                 rhs_ty,
             )
         } else {
             (
-                l,
-                self.builder.build_int_z_extend(r, lhs_ty, "r_promote").unwrap(),
+                l.clone(),
+                self.builder.build_int_z_extend(*r, lhs_ty, "r_promote").unwrap(),
                 lhs_ty,
             )
         };
@@ -484,24 +534,24 @@ let result: BasicValueEnum<'ctx> = match (left_raw, right_raw) {
 
     // --- Float + Float ---
     (BasicValueEnum::FloatValue(lf), BasicValueEnum::FloatValue(rf)) => match op.as_str() {
-        "+" => self.builder.build_float_add(lf, rf, "fadd").unwrap().as_basic_value_enum(),
-        "-" => self.builder.build_float_sub(lf, rf, "fsub").unwrap().as_basic_value_enum(),
-        "*" => self.builder.build_float_mul(lf, rf, "fmul").unwrap().as_basic_value_enum(),
-        "/" => self.builder.build_float_div(lf, rf, "fdiv").unwrap().as_basic_value_enum(),
-        "==" => self.builder.build_float_compare(inkwell::FloatPredicate::OEQ, lf, rf, "feq").unwrap().as_basic_value_enum(),
-        "!=" => self.builder.build_float_compare(inkwell::FloatPredicate::ONE, lf, rf, "fne").unwrap().as_basic_value_enum(),
-        "<"  => self.builder.build_float_compare(inkwell::FloatPredicate::OLT, lf, rf, "flt").unwrap().as_basic_value_enum(),
-        "<=" => self.builder.build_float_compare(inkwell::FloatPredicate::OLE, lf, rf, "fle").unwrap().as_basic_value_enum(),
-        ">"  => self.builder.build_float_compare(inkwell::FloatPredicate::OGT, lf, rf, "fgt").unwrap().as_basic_value_enum(),
-        ">=" => self.builder.build_float_compare(inkwell::FloatPredicate::OGE, lf, rf, "fge").unwrap().as_basic_value_enum(),
+        "+" => self.builder.build_float_add(lf.clone(), rf.clone(), "fadd").unwrap().as_basic_value_enum(),
+        "-" => self.builder.build_float_sub(lf.clone(), rf.clone(), "fsub").unwrap().as_basic_value_enum(),
+        "*" => self.builder.build_float_mul(lf.clone(), rf.clone(), "fmul").unwrap().as_basic_value_enum(),
+        "/" => self.builder.build_float_div(lf.clone(), rf.clone(), "fdiv").unwrap().as_basic_value_enum(),
+        "==" => self.builder.build_float_compare(inkwell::FloatPredicate::OEQ, lf.clone(), rf.clone(), "feq").unwrap().as_basic_value_enum(),
+        "!=" => self.builder.build_float_compare(inkwell::FloatPredicate::ONE, lf.clone(), rf.clone(), "fne").unwrap().as_basic_value_enum(),
+        "<"  => self.builder.build_float_compare(inkwell::FloatPredicate::OLT, lf.clone(), rf.clone(), "flt").unwrap().as_basic_value_enum(),
+        "<=" => self.builder.build_float_compare(inkwell::FloatPredicate::OLE, lf.clone(), rf.clone(), "fle").unwrap().as_basic_value_enum(),
+        ">"  => self.builder.build_float_compare(inkwell::FloatPredicate::OGT, lf.clone(), rf.clone(), "fgt").unwrap().as_basic_value_enum(),
+        ">=" => self.builder.build_float_compare(inkwell::FloatPredicate::OGE, lf.clone(), rf.clone(), "fge").unwrap().as_basic_value_enum(),
         _ => panic!("Unsupported float operator: {}", op),
     },
 
     // --- Mixed: Int + Float ---
     (BasicValueEnum::IntValue(iv), BasicValueEnum::FloatValue(fv)) => {
         let f_ty = fv.get_type();
-        let iv_cast = self.builder.build_signed_int_to_float(iv, f_ty, "int_to_float_lhs").unwrap();
-        let new_expr = self.builder.build_float_add(iv_cast, fv, "promoted_add").unwrap();
+        let iv_cast = self.builder.build_signed_int_to_float(iv.clone(), f_ty, "int_to_float_lhs").unwrap();
+        let new_expr = self.builder.build_float_add(iv_cast, fv.clone(), "promoted_add").unwrap();
         if ["+", "-", "*", "/"].contains(&op.as_str()) {
             new_expr.as_basic_value_enum()
         } else {
@@ -511,14 +561,18 @@ let result: BasicValueEnum<'ctx> = match (left_raw, right_raw) {
 
     (BasicValueEnum::FloatValue(fv), BasicValueEnum::IntValue(iv)) => {
         let f_ty = fv.get_type();
-        let iv_cast = self.builder.build_signed_int_to_float(iv, f_ty, "int_to_float_rhs").unwrap();
-        let new_expr = self.builder.build_float_add(fv, iv_cast, "promoted_add").unwrap();
+        let iv_cast = self.builder.build_signed_int_to_float(iv.clone(), f_ty, "int_to_float_rhs").unwrap();
+        let new_expr = self.builder.build_float_add(fv.clone(), iv_cast, "promoted_add").unwrap();
         if ["+", "-", "*", "/"].contains(&op.as_str()) {
             new_expr.as_basic_value_enum()
         } else {
             panic!("Cannot compare mixed float/int types without explicit cast")
         }
     }
+   // --- String (ptr) + String (ptr) ---
+
+
+
 
     _ => panic!("❌ Unsupported operand types for operator `{}`", op),
 };
@@ -783,8 +837,18 @@ else if name == "server.register" {
         panic!("Expected function name as second argument in server.register");
     };
 
-    let handler_fn = self.functions.get(&handler_name)
-        .unwrap_or_else(|| panic!("Unknown handler function `{}`", handler_name));
+    // 🧠 Resolve handler function via multiple dispatch table
+let handler_fn: &FunctionValue<'_> = if let Some(sigs) = self.reverse_func_index.get(&handler_name) {
+    if let Some(first_sig) = sigs.first() {
+        self.functions.get(first_sig).unwrap_or_else(|| {
+            panic!("Unknown handler function '{}'", handler_name)
+        })
+    } else {
+        panic!("No overloads registered for handler '{}'", handler_name);
+    }
+} else {
+    panic!("Unknown handler function '{}'", handler_name);
+};
 
     self.builder
         .build_call(
@@ -1055,26 +1119,108 @@ if let Some(var_info) = self.vars.get(name) {
         .unwrap_or_else(|| self.i32_type.const_zero().into());
 }
 
-            else if let Some(func_val) = self.functions.get(name).cloned() {
-    let func = func_val; // owned copy (FunctionValue is Copy internally)
+           else if self.reverse_func_index.contains_key(name) {
+    // 🧩 Collect argument types for overload resolution
+    let arg_types: Vec<String> = args
+        .iter()
+        .map(|a| {
+            match a {
+                Expr::StringLiteral(_) => "ptr".to_string(),
+                Expr::TypedLiteral { ty, .. } if ty == "f64" => "f64".to_string(),
+                Expr::TypedLiteral { ty, .. } if ty.starts_with("i") => "i32".to_string(),
+                Expr::Variable(var_name) => {
+                    // Check if it's a known variable (local or global)
+                    if let Some(var_info) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
+    let var_ty = &var_info.ty;
 
-    // Compile arguments
-    let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
-    for arg in args {
-        let val = self.compile_expr(arg);
-        compiled_args.push(val.into());
+                        if var_ty.is_int_type() {
+                            "i32".to_string()
+                        } else if var_ty.is_pointer_type() {
+                            "ptr".to_string()
+                        } else if var_ty.is_float_type() {
+                            "f64".to_string()
+                        } else {
+                            "i32".to_string()
+                        }
+                    } else {
+                        "i32".to_string()
+                    }
+                }
+                Expr::BinaryOp { left, right, .. } => {
+                    let l = self.infer_expr_type(left);
+                    let r = self.infer_expr_type(right);
+                    if l.is_float_type() || r.is_float_type() {
+                        "f64".to_string()
+                    } else {
+                        "i32".to_string()
+                    }
+                }
+                _ => "i32".to_string(),
+            }
+        })
+        .collect();
+
+    println!("💡 Inferred arg types for {}: {:?}", name, arg_types);
+
+    // 🕵️ Attempt to find an exact signature match for multiple dispatch
+    let sig_opt = {
+        if let Some(sigs) = self.reverse_func_index.get(name) {
+            sigs.iter()
+                .find(|sig| sig.param_types == arg_types)
+                .cloned()
+        } else {
+            None
+        }
+    };
+
+    if let Some(sig) = sig_opt {
+        // 🔹 Borrow function temporarily (avoids long immutable borrow)
+        let func_val = {
+            let f = self.functions.get(&sig).unwrap();
+            *f // FunctionValue<'ctx> implements Copy
+        };
+
+        // ✅ Borrow ended — safe to reuse self below
+
+        // Compile arguments
+        let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
+        for a in args {
+            let v = self.compile_expr(a);
+            compiled_args.push(v.into());
+        }
+
+        println!("💥 Resolved call {}({:?})", sig.name, sig.param_types);
+
+        // Call the correct overload
+        // Use mangled LLVM name for call
+let llvm_name = if sig.param_types.is_empty() {
+    sig.name.clone()
+} else {
+    format!("{}__{}", sig.name, sig.param_types.join("_"))
+};
+
+// Get the correct function by LLVM name
+let target_fn = self.module.get_function(&llvm_name).unwrap_or(func_val);
+
+println!("🧬 Using LLVM function: {}", llvm_name);
+
+let call_site = self
+    .builder
+    .build_call(target_fn, &compiled_args, &format!("call_{}", sig.name))
+    .unwrap();
+
+
+        // Return result or void substitute
+        call_site
+            .try_as_basic_value()
+            .left()
+            .unwrap_or_else(|| self.i32_type.const_int(0, false).into())
+    } else {
+        panic!("❌ No matching overload for {}({:?})", name, arg_types);
     }
-
-    // Call the LLVM function
-    let call_site = self.builder
-        .build_call(func, &compiled_args, &format!("call_{}", name))
-        .unwrap();
-
-    // Return the result (functions return i32)
-    call_site.try_as_basic_value().left().unwrap_or_else(|| {
-        self.i32_type.const_int(0, false).into()
-    })
 }
+
+
 
             else {
                 panic!("Unknown function: {}", name);
@@ -1438,6 +1584,7 @@ if let Some(var) = catch_var {
         ptr: alloca,
         ty: str_ty.as_basic_type_enum(),
         is_const: false,
+        is_thread_state: false,
     },
 );
 
@@ -1489,7 +1636,7 @@ Expr::Funcy { name, params, body, is_async } => {
     let func_val = if *is_async {
         self.compile_async_funcy(name, params, body)
     } else {
-        self.compile_funcy(name, params, body)
+        self.compile_funcy(name, params, body, None)
     };
 
     // 2️⃣ Return a pointer to it as a first-class value
@@ -2048,6 +2195,7 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
             ptr: alloca,
             ty: var_type,
             is_const: *is_const,
+                is_thread_state: false,
         },
     );
 
@@ -2079,8 +2227,7 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
 
 
 
-    /// Create main(), compile nodes, and return i32.
-    /// Create main(), compile nodes, and return i32.
+    
 
 /// Create main(), compile nodes, and return i32.
 pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
@@ -2108,26 +2255,145 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     self.exception_value_i32 = Some(val_i32_ptr);
     self.exception_value_str = Some(val_str_ptr);
 
-    // === Predeclare functions ===
-    for node in nodes {
-        if let Node::Expr(Expr::Funcy { name, params, .. }) = node {
-            let param_types: Vec<_> = params.iter().map(|_| self.i32_type.into()).collect();
-            let fn_ty = self.i32_type.fn_type(&param_types, false);
-            let f = self.module.add_function(name, fn_ty, None);
-            self.functions.insert(name.clone(), f);
+  // === Predeclare functions ===
+for node in nodes {
+    if let Node::Expr(Expr::Funcy { name, params, body, .. }) = node {
+        // Infer parameter types from body (minimal version)
+        let mut int_params = std::collections::HashSet::new();
+        let mut ptr_params = std::collections::HashSet::new();
+        let mut contains_string_literal = false;
+
+        fn scan_for_types(
+            nodes: &[Node],
+            int_params: &mut std::collections::HashSet<String>,
+            ptr_params: &mut std::collections::HashSet<String>,
+            contains_string_literal: &mut bool,
+        ) {
+            for node in nodes {
+                match node {
+                    Node::Expr(expr) => match expr {
+                        Expr::BinaryOp { left, right, .. } => {
+                            if let (Expr::StringLiteral(_), _) | (_, Expr::StringLiteral(_)) = (&**left, &**right) {
+                                *contains_string_literal = true;
+                            }
+                            scan_for_types(&[Node::Expr(*left.clone())], int_params, ptr_params, contains_string_literal);
+                            scan_for_types(&[Node::Expr(*right.clone())], int_params, ptr_params, contains_string_literal);
+                        }
+                        Expr::StringLiteral(_) => *contains_string_literal = true,
+                        Expr::Call { args, .. } => {
+                            for a in args {
+                                scan_for_types(&[Node::Expr(a.clone())], int_params, ptr_params, contains_string_literal);
+                            }
+                        }
+                        Expr::Return(inner) => {
+                            if let Some(inner_expr) = inner {
+                                scan_for_types(&[Node::Expr(*inner_expr.clone())], int_params, ptr_params, contains_string_literal);
+                            }
+                        }
+                        _ => {}
+                    },
+                    _ => {}
+                }
+            }
         }
+
+        scan_for_types(body, &mut int_params, &mut ptr_params, &mut contains_string_literal);
+
+        if contains_string_literal {
+            for p in params {
+                ptr_params.insert(p.clone());
+            }
+        }
+
+        // === Build parameter types ===
+        let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = params
+            .iter()
+            .map(|p| {
+                if ptr_params.contains(p) {
+                    self.context.i8_type().ptr_type(AddressSpace::default()).into()
+                } else {
+                    self.i32_type.into()
+                }
+            })
+            .collect();
+
+        let fn_ty = self.i32_type.fn_type(&param_types, false);
+
+        // 🪶 Use mangled name for overload
+        let sig = FunctionSignature {
+            name: name.clone(),
+            param_types: params.iter()
+                .map(|p| if ptr_params.contains(p) { "ptr".to_string() } else { "i32".to_string() })
+                .collect(),
+        };
+        let llvm_name = format!("{}__{}", name, sig.param_types.join("_"));
+        let f = self.module.add_function(&llvm_name, fn_ty, None);
+
+        self.functions.insert(sig.clone(), f);
+self.reverse_func_index
+    .entry(name.clone())
+    .or_default()
+    .push(sig.clone()); // ✅ clone again so sig is still usable
+
+println!(
+    "🪶 Registered funcy {}({}) as {}",
+    name,
+    sig.param_types.join(", "),
+    llvm_name
+);
+
     }
+}
+
+
+
 
     // === Compile function bodies ===
-    for node in nodes {
-        if let Node::Expr(Expr::Funcy { name, params, body, is_async }) = node {
+    // === Compile function bodies using predeclared signatures ===
+for node in nodes {
+    if let Node::Expr(Expr::Funcy { name, params, body, is_async }) = node {
+        // For each overload signature of this function name
+        if let Some(sig_list) = self.reverse_func_index.get(name).cloned() {
+    // release immutable borrow immediately by cloning the Vec<FunctionSignature>
+    for sig in sig_list {
+        let llvm_name = if sig.param_types.is_empty() {
+            name.clone()
+        } else {
+            format!("{}__{}", name, sig.param_types.join("_"))
+        };
+
+        // Skip already-defined functions
+        if let Some(f) = self.module.get_function(&llvm_name) {
+            if f.count_basic_blocks() > 0 {
+                continue;
+            }
+        }
+
+        println!(
+            "🧱 Compiling funcy {} as {} ({} overload)",
+            name,
+            llvm_name,
+            sig.param_types.join(", ")
+        );
+
+        if *is_async {
+            self.compile_async_funcy(name, params, body);
+        } else {
+            self.compile_funcy(name, params, body, Some(&sig.param_types));
+        }
+    }
+}
+ else {
+            // Fallback — normal single overload
             if *is_async {
                 self.compile_async_funcy(name, params, body);
             } else {
-                self.compile_funcy(name, params, body);
+                self.compile_funcy(name, params, body, None);
             }
         }
     }
+}
+
 
     // === Detect async entry ===
     let async_entry = nodes.iter().find_map(|n| {
@@ -2404,6 +2670,18 @@ for (name, addr) in [
         println!("⚠️ [jit] Missing declaration for {}", name);
     }
 }
+// === String subsystem ===
+unsafe extern "C" {
+    fn wpp_str_concat(a: *const std::os::raw::c_char, b: *const std::os::raw::c_char) -> *mut std::os::raw::c_char;
+}
+
+if let Some(func) = self.module.get_function("wpp_str_concat") {
+    engine.add_global_mapping(&func, wpp_str_concat as usize);
+    println!("🔗 [jit] Bound wpp_str_concat");
+} else {
+    println!("⚠️ [jit] Missing declaration for wpp_str_concat");
+}
+
 
 
         // === runtime_wait ===
@@ -2568,128 +2846,185 @@ pub fn compile_funcy(
     name: &str,
     params: &[String],
     body: &[Node],
+    param_override: Option<&[String]>, // 👈 new optional argument
 ) -> FunctionValue<'ctx> {
-    // 🧠 Infer which parameters are used in math (so they’re i32)
+    // === Step 1: Detect inferred types from body ===
     let mut int_params = std::collections::HashSet::new();
+    let mut ptr_params = std::collections::HashSet::new();
+    let mut contains_string_literal = false;
 
-    fn scan_for_ints(nodes: &[Node], int_params: &mut std::collections::HashSet<String>) {
-    for node in nodes {
-        match node {
-            Node::Expr(expr) => match expr {
-                Expr::BinaryOp { left, right, .. } => {
-                    if let Expr::Variable(name) = left.as_ref() {
-                        int_params.insert(name.clone());
+    fn scan_for_types(
+        nodes: &[Node],
+        int_params: &mut std::collections::HashSet<String>,
+        ptr_params: &mut std::collections::HashSet<String>,
+        contains_string_literal: &mut bool,
+    ) {
+        for node in nodes {
+            match node {
+                Node::Expr(expr) => match expr {
+                    Expr::BinaryOp { left, right, op } => {
+                        if let (Expr::StringLiteral(_), _) | (_, Expr::StringLiteral(_)) =
+                            (&**left, &**right)
+                        {
+                            *contains_string_literal = true;
+                            if let Expr::Variable(name) = left.as_ref() {
+                                ptr_params.insert(name.clone());
+                            }
+                            if let Expr::Variable(name) = right.as_ref() {
+                                ptr_params.insert(name.clone());
+                            }
+                        } else if ["+", "-", "*", "/", "%"].contains(&op.as_str()) {
+                            if let Expr::Variable(name) = left.as_ref() {
+                                int_params.insert(name.clone());
+                            }
+                            if let Expr::Variable(name) = right.as_ref() {
+                                int_params.insert(name.clone());
+                            }
+                        }
+
+                        scan_for_types(&[Node::Expr(*left.clone())], int_params, ptr_params, contains_string_literal);
+                        scan_for_types(&[Node::Expr(*right.clone())], int_params, ptr_params, contains_string_literal);
                     }
-                    if let Expr::Variable(name) = right.as_ref() {
-                        int_params.insert(name.clone());
+
+                    Expr::StringLiteral(_) => *contains_string_literal = true,
+
+                    Expr::Call { args, .. } => {
+                        for a in args {
+                            if let Expr::StringLiteral(_) = a {
+                                *contains_string_literal = true;
+                            }
+                            scan_for_types(&[Node::Expr(a.clone())], int_params, ptr_params, contains_string_literal);
+                        }
                     }
-                    // Recurse deeper if operands contain nested expressions
-                    scan_for_ints(&[Node::Expr(*left.clone())], int_params);
-                    scan_for_ints(&[Node::Expr(*right.clone())], int_params);
-                }
 
-                Expr::Return(inner) => {
-                    if let Some(inner_expr) = inner {
-                        scan_for_ints(&[Node::Expr(*inner_expr.clone())], int_params);
+                    Expr::Return(inner) => {
+                        if let Some(inner_expr) = inner {
+                            scan_for_types(&[Node::Expr(*inner_expr.clone())], int_params, ptr_params, contains_string_literal);
+                        }
                     }
-                }
 
-                Expr::If { cond, then_branch, else_branch } => {
-                    scan_for_ints(&[Node::Expr(*cond.clone())], int_params);
-                    scan_for_ints(then_branch, int_params);
-                    if let Some(e) = else_branch {
-                        scan_for_ints(e, int_params);
+                    Expr::If { cond, then_branch, else_branch } => {
+                        scan_for_types(&[Node::Expr(*cond.clone())], int_params, ptr_params, contains_string_literal);
+                        scan_for_types(then_branch, int_params, ptr_params, contains_string_literal);
+                        if let Some(e) = else_branch {
+                            scan_for_types(e, int_params, ptr_params, contains_string_literal);
+                        }
                     }
-                }
 
-                Expr::While { cond, body } => {
-                    scan_for_ints(&[Node::Expr(*cond.clone())], int_params);
-                    scan_for_ints(body, int_params);
-                }
+                    Expr::While { cond, body } => {
+                        scan_for_types(&[Node::Expr(*cond.clone())], int_params, ptr_params, contains_string_literal);
+                        scan_for_types(body, int_params, ptr_params, contains_string_literal);
+                    }
 
-                Expr::Funcy { body, .. } => {
-                    scan_for_ints(body, int_params);
-                }
+                    Expr::Funcy { body, .. } => {
+                        scan_for_types(body, int_params, ptr_params, contains_string_literal);
+                    }
 
+                    _ => {}
+                },
                 _ => {}
-            },
-            _ => {}
+            }
         }
     }
-}
 
+    scan_for_types(body, &mut int_params, &mut ptr_params, &mut contains_string_literal);
 
-    scan_for_ints(body, &mut int_params);
+    // === Step 2: Handle string fallback ===
+    if contains_string_literal && int_params.is_empty() {
+        for p in params {
+            ptr_params.insert(p.clone());
+        }
+    }
 
-    // 🧩 Define parameter types intelligently
+    // === Step 3: Build LLVM parameter types ===
     let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = params
         .iter()
         .map(|p| {
-            if int_params.contains(p) {
-                self.i32_type.into() // i32 for math variables
-            } else {
+            if ptr_params.contains(p) {
                 self.context.i8_type().ptr_type(AddressSpace::default()).into()
+            } else if int_params.contains(p) {
+                self.i32_type.into()
+            } else {
+                if contains_string_literal {
+                    self.context.i8_type().ptr_type(AddressSpace::default()).into()
+                } else {
+                    self.i32_type.into()
+                }
             }
         })
         .collect();
 
-    // === Create the LLVM function ===
+    // === Step 4: Determine type names (override-aware) ===
+    let param_type_names: Vec<String> = if let Some(overrides) = param_override {
+        overrides.to_vec() // forced type list from compile_main
+    } else {
+        params
+            .iter()
+            .map(|p| if int_params.contains(p) { "i32".to_string() } else { "ptr".to_string() })
+            .collect()
+    };
+
+    let llvm_name = if param_type_names.is_empty() {
+        name.to_string()
+    } else {
+        format!("{}__{}", name, param_type_names.join("_"))
+    };
+    let is_string_overload = param_type_names.iter().all(|t| t == "ptr");
+
+    // === Step 5: Create or fetch LLVM function ===
     let fn_type = self.i32_type.fn_type(&param_types, false);
-    let function = if let Some(existing) = self.module.get_function(name) {
-    existing
-} else {
-    self.module.add_function(name, fn_type, None)
-};
+    let function = if let Some(existing) = self.module.get_function(&llvm_name) {
+        existing
+    } else {
+        self.module.add_function(&llvm_name, fn_type, None)
+    };
 
+    println!("🧱 Compiling funcy {} as {}", name, llvm_name);
 
-    // === Entry block ===
+    // === Step 6: Create entry block ===
     let entry = self.context.append_basic_block(function, "entry");
     let saved_block = self.builder.get_insert_block();
     self.builder.position_at_end(entry);
 
-    // === Local scope ===
+    // === Step 7: Allocate locals (type-accurate) ===
 let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
+for (i, param_name) in params.iter().enumerate() {
+    let param = function.get_nth_param(i as u32).unwrap();
+    let param_ty = param.get_type(); // actual LLVM type from the fn signature
 
-    for (i, param_name) in params.iter().enumerate() {
-        let param = function.get_nth_param(i as u32).unwrap();
-        let param_val = param;
-let is_int_param = int_params.contains(param_name);
+    // allocate variable with correct type
+    let alloca = self.builder
+        .build_alloca(param_ty, param_name)
+        .expect("Failed to allocate local for parameter");
 
-let (alloca, ty): (PointerValue, BasicTypeEnum) = if is_int_param {
-    let ty = self.i32_type.as_basic_type_enum();
-    let alloca = self.builder.build_alloca(ty, param_name).unwrap();
-    self.builder.build_store(alloca, param_val).unwrap();
-    (alloca, ty)
-} else {
-    // Treat as string (i8*)
-    let str_ty = self.context.i8_type().ptr_type(AddressSpace::default()).as_basic_type_enum();
-    let alloca = self.builder.build_alloca(str_ty, param_name).unwrap();
-    self.builder.build_store(alloca, param_val).unwrap();
-    (alloca, str_ty)
-};
+    // store the argument into the alloca
+    self.builder
+        .build_store(alloca, param)
+        .expect("Failed to store parameter");
 
-local_vars.insert(
-    param_name.clone(),
-    VarInfo {
-        ptr: alloca,
-        ty,
-        is_const: false,
-    },
-);
+    // record in local vars
+    local_vars.insert(
+        param_name.clone(),
+        VarInfo {
+            ptr: alloca,
+            ty: param_ty,
+            is_const: false,
+                is_thread_state: false,
+        },
+    );
+}
 
 
-    }
-
-    // === Replace vars ===
+    // === Step 8: Replace current scope ===
     let old_vars = std::mem::replace(&mut self.vars, local_vars);
 
-    // === Compile body ===
+    // === Step 9: Compile body ===
     let mut last_val: Option<BasicValueEnum<'ctx>> = None;
     for node in body {
         last_val = self.compile_node(node);
     }
 
-    // === Return handling ===
+    // === Step 10: Return handling ===
     let ret_val = match last_val {
         Some(BasicValueEnum::IntValue(iv)) => iv,
         _ => self.i32_type.const_int(0, false),
@@ -2699,13 +3034,30 @@ local_vars.insert(
         self.builder.build_return(Some(&ret_val)).unwrap();
     }
 
-    // === Restore ===
+    // === Step 11: Restore previous state ===
     self.vars = old_vars;
     if let Some(block) = saved_block {
         self.builder.position_at_end(block);
     }
 
-    self.functions.insert(name.to_string(), function);
+    // === Step 12: Register overload signature ===
+    let sig = FunctionSignature {
+        name: name.to_string(),
+        param_types: param_type_names.clone(),
+    };
+    self.functions.insert(sig.clone(), function);
+    self.reverse_func_index
+        .entry(name.to_string())
+        .or_default()
+        .push(sig.clone());
+
+    println!(
+        "🪶 Registered funcy {}({}) as {}",
+        name,
+        sig.param_types.join(", "),
+        llvm_name
+    );
+
     function
 }
 
@@ -2744,6 +3096,7 @@ let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
         ptr: alloca,
         ty: self.i32_type.as_basic_type_enum(),
         is_const: false,
+            is_thread_state: false,
     },
 );
 
@@ -2802,7 +3155,17 @@ let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
 
     // === Restore outer variable scope ===
     self.vars = old_vars;
-    self.functions.insert(name.to_string(), function);
+    let sig = FunctionSignature {
+    name: name.to_string(),
+    param_types: params.iter().map(|_| "i32".to_string()).collect(), // or real inferred types
+};
+
+self.functions.insert(sig.clone(), function);
+self.reverse_func_index
+    .entry(name.to_string())
+    .or_default()
+    .push(sig);
+
 
     println!("✅ async funcy {} compiled successfully", name);
     function

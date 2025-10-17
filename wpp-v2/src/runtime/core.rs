@@ -219,3 +219,18 @@ pub extern "C" fn wpp_runtime_wait() {
     }
 }
 
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_str_concat(a: *const i8, b: *const i8) -> *mut i8 {
+    unsafe {
+        if a.is_null() || b.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        let sa = std::ffi::CStr::from_ptr(a).to_str().unwrap_or("");
+        let sb = std::ffi::CStr::from_ptr(b).to_str().unwrap_or("");
+
+        let concat = format!("{}{}", sa, sb);
+        let cstring = std::ffi::CString::new(concat).unwrap();
+        cstring.into_raw()
+    }
+}

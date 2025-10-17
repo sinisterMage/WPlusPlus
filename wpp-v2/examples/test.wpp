@@ -1,5 +1,12 @@
-let add = func(a, b) {
+funcy add(a, b) {
     return a + b;
-};
+}
+
+funcy add(a, b) {
+    print("string add called!");
+    return a + b;
+}
+
 
 print(add(2, 3));
+print(add("hi", "there"));

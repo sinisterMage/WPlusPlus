@@ -1026,6 +1026,34 @@ else if name == "unlock" {
 }
 
 
+// === INDIRECT FUNCTION CALL (lambda stored in variable) ===
+if let Some(var_info) = self.vars.get(name) {
+    let fn_ptr = self.builder
+        .build_load(var_info.ty, var_info.ptr, &format!("load_fnptr_{}", name))
+        .unwrap()
+        .into_pointer_value();
+
+    // Compile arguments
+    let compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = args
+        .iter()
+        .map(|arg| self.compile_expr(arg).into())
+        .collect();
+
+    // Assume all params are i32 for now
+    let fn_type = self.i32_type.fn_type(
+        &compiled_args.iter().map(|_| self.i32_type.into()).collect::<Vec<_>>(),
+        false,
+    );
+
+    let call_site = self.builder
+        .build_indirect_call(fn_type, fn_ptr, &compiled_args, &format!("call_indirect_{}", name))
+        .unwrap();
+
+    return call_site
+        .try_as_basic_value()
+        .left()
+        .unwrap_or_else(|| self.i32_type.const_zero().into());
+}
 
             else if let Some(func_val) = self.functions.get(name).cloned() {
     let func = func_val; // owned copy (FunctionValue is Copy internally)
@@ -1457,12 +1485,15 @@ self.i32_type.const_int(0, false).into()
 
 
 Expr::Funcy { name, params, body, is_async } => {
-    if *is_async {
-        self.compile_async_funcy(name, params, body);
+    // 1️⃣ Compile the function (async or not)
+    let func_val = if *is_async {
+        self.compile_async_funcy(name, params, body)
     } else {
-        self.compile_funcy(name, params, body);
-    }
-    self.i32_type.const_int(0, false).into()
+        self.compile_funcy(name, params, body)
+    };
+
+    // 2️⃣ Return a pointer to it as a first-class value
+    func_val.as_global_value().as_pointer_value().into()
 }
 
 
@@ -1877,8 +1908,17 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
 
     // === Determine variable type ===
     // === Determine variable type ===
+// === Determine variable type ===
 let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
     // 💾 All heap structures are stored as pointers (i8*)
+    self.context
+        .i8_type()
+        .ptr_type(inkwell::AddressSpace::default())
+        .as_basic_type_enum()
+
+// 🧩 Case: Lambda (Funcy expression)
+} else if matches!(value, Expr::Funcy { .. }) {
+    // 🧠 Lambdas are compiled functions; store as a function pointer (i8*)
     self.context
         .i8_type()
         .ptr_type(inkwell::AddressSpace::default())
@@ -1902,6 +1942,7 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
         self.context.i32_type().as_basic_type_enum()
     }
 }
+
  else if let Some(t) = ty {
     self.resolve_basic_type(t)
 

@@ -1,1 +1,5 @@
-let 🦥 = 1
+let add = func(a, b) {
+    return a + b;
+};
+
+print(add(2, 3));

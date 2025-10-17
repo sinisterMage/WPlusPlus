@@ -66,7 +66,7 @@ impl<'a> Lexer<'a> {
                     let kind = match ident.as_str() {
     "let" | "if" | "else" | "while" | "for"
     | "break" | "continue" | "true" | "false"
-    | "switch" | "case" | "default" | "try" | "catch" | "throw" | "finally" | "funcy" | "return" | "async" | "await" | "const" => {
+    | "switch" | "case" | "default" | "try" | "catch" | "throw" | "finally" | "funcy" | "return" | "async" | "await" | "const" | "func" => {
         TokenKind::Keyword(ident)
     }
     _ => TokenKind::Identifier(ident),

@@ -45,11 +45,34 @@ entry:
   store i32 0, ptr %exc_val_i32, align 4
   %exc_val_str = alloca ptr, align 8
   store ptr null, ptr %exc_val_str, align 8
-  %"\F0\9F\A6\A5" = alloca i32, align 4
-  store i32 1, ptr %"\F0\9F\A6\A5", align 4
+  %add = alloca ptr, align 8
+  store ptr @0, ptr %add, align 8
+  %load_fnptr_add = load ptr, ptr %add, align 8
+  %call_indirect_add = call i32 %load_fnptr_add(i32 2, i32 3)
+  call void @wpp_print_i32(i32 %call_indirect_add)
   call void @wpp_thread_join_all()
   ret i32 0
 }
+
+define i32 @0(i32 %0, i32 %1) {
+entry:
+  %a = alloca i32, align 4
+  store i32 %0, ptr %a, align 4
+  %b = alloca i32, align 4
+  store i32 %1, ptr %b, align 4
+  %load_a = load i32, ptr %a, align 4
+  %load_b = load i32, ptr %b, align 4
+  %addtmp = add i32 %load_a, %load_b
+  call void @wpp_return(i32 %addtmp)
+  ret i32 %addtmp
+
+after_return:                                     ; No predecessors!
+  ret i32 0
+}
+
+declare void @wpp_return(i32)
+
+declare void @wpp_print_i32(i32)
 
 define i32 @main() {
 entry:

@@ -639,6 +639,49 @@ impl Parser {
             return self.parse_object_literal();
         }
     }
+    // ✅ Handle inline anonymous lambdas
+if let TokenKind::Keyword(k) = self.peek() {
+    if k == "func" || k == "funcy" {
+        self.advance(); // consume 'func'
+
+        // Optional name — if present, it's a normal function
+        let mut name = String::new();
+        if let TokenKind::Identifier(id) = self.peek().clone() {
+            name = id.clone();
+            self.advance();
+        }
+
+        self.expect(TokenKind::Symbol("(".into()), "Expected '(' after func");
+        let mut params = Vec::new();
+
+        if !self.check(TokenKind::Symbol(")".into())) {
+            loop {
+                match self.advance().clone() {
+                    TokenKind::Identifier(p) => params.push(p),
+                    other => panic!("Expected parameter name, got {:?}", other),
+                }
+                if self.check(TokenKind::Symbol(",".into())) {
+                    self.advance();
+                    continue;
+                } else {
+                    break;
+                }
+            }
+        }
+
+        self.expect(TokenKind::Symbol(")".into()), "Expected ')' after params");
+
+        // Parse the function body
+        let body = self.parse_block();
+
+        return Expr::Funcy {
+            name,
+            params,
+            body,
+            is_async: false,
+        };
+    }
+}
 
     // ✅ fallback to existing literal/identifier logic
     match self.advance().clone() {

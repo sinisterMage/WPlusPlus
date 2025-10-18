@@ -163,11 +163,12 @@ void wpp_print_value_basic(void *ptr, int32_t type_id) {
             printf("%s\n", v ? "true" : "false");
             break;
         }
-        case 6: { // string
-            const char *s = *(const char **)ptr;
-            safe_print_string_checked(s);
-            break;
-        }
+       case 6: { // string
+    const char *s = (const char *)ptr; // ✅ no dereference
+    safe_print_string_checked(s);
+    break;
+}
+
         default:
             printf("(unknown type_id=%d, ptr=%p)\n", type_id, ptr);
             break;

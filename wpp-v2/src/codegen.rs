@@ -17,13 +17,19 @@ use inkwell::values::BasicValue;
 use libc::malloc;
 
 
-use crate::ast::{Expr, Node};
+use crate::ast::{node::{EntityMember, EntityNode}, Expr, Node};
 use crate::runtime;
 use std::mem;
 use std::ffi::c_void;
 use inkwell::types::IntType;
 
-
+pub struct OopsieEntity<'ctx> {
+    pub name: String,
+    pub base: Option<String>,
+    pub struct_type: inkwell::types::StructType<'ctx>,
+    pub fields: Vec<(String, inkwell::types::BasicTypeEnum<'ctx>)>,
+    pub methods: HashMap<String, FunctionValue<'ctx>>,
+}
 
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub struct FunctionSignature {
@@ -55,6 +61,8 @@ pub struct Codegen <'ctx> {
     exception_value_str: Option<PointerValue<'ctx>>,
     pub functions: HashMap<FunctionSignature, FunctionValue<'ctx>>,
     pub reverse_func_index: HashMap<String, Vec<FunctionSignature>>,
+        pub entities: HashMap<String, OopsieEntity<'ctx>>,
+
 }
 fn get_or_declare_fn<'ctx>(
     module: &Module<'ctx>,
@@ -122,6 +130,7 @@ impl<'ctx> Codegen<'ctx> {
         i32_type,
         vars: HashMap::new(),
         globals: HashMap::new(),
+            entities: HashMap::new(),
         loop_stack: Vec::new(),
         switch_stack: Vec::new(),
         exception_flag: Some(flag_global.as_pointer_value()),
@@ -1415,8 +1424,42 @@ let casted = self
 
 }
 
+// === ENTITY QUALIFIED CALL FALLBACK ===
+else if name.contains('.') {
+    let parts: Vec<&str> = name.split('.').collect();
+    if parts.len() == 2 {
+        let (entity_name, method_name) = (parts[0], parts[1]);
+        println!("🧭 Trying to resolve entity-qualified call: {} -> {}", entity_name, method_name);
 
+        // Try direct match for full name first (Dog.bark)
+        let full_name_sig = FunctionSignature {
+            name: name.clone(),
+            param_types: vec![],
+        };
+        if let Some(func) = self.functions.get(&full_name_sig) {
+            println!("✅ Direct entity-qualified match for {}", name);
+            let call_site = self.builder
+                .build_call(*func, &[], &format!("call_{}", name))
+                .unwrap();
+            return call_site.try_as_basic_value().left().unwrap_or_else(|| self.i32_type.const_int(0, false).into());
+        }
 
+        // Fallback: search by unqualified name
+        for (sig, func) in &self.functions {
+            if sig.name == method_name {
+                println!("🔗 Fallback matched unqualified {}.{}", entity_name, method_name);
+                let call_site = self.builder
+                    .build_call(*func, &[], &format!("call_{}", method_name))
+                    .unwrap();
+                return call_site.try_as_basic_value().left().unwrap_or_else(|| self.i32_type.const_int(0, false).into());
+            }
+        }
+    }
+
+    panic!("Unknown entity-qualified function: {}", name);
+}
+
+        
             else {
                 panic!("Unknown function: {}", name);
             }
@@ -1831,7 +1874,7 @@ Expr::Funcy { name, params, body, is_async } => {
     let func_val = if *is_async {
         self.compile_async_funcy(name, params, body)
     } else {
-        self.compile_funcy(name, params, body, None)
+        self.compile_funcy(name, params, body, None, None)
     };
 
     // 2️⃣ Return a pointer to it as a first-class value
@@ -2289,7 +2332,11 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
     }
 
     match node {
-        
+            Node::Entity(entity) => {
+        self.compile_entity(entity);
+        None // 👈 explicitly return None so the return type matches
+    }
+
         Node::Let { name, value, is_const, ty } => {
     println!("🧱 Compiling top-level node: Let {{ name: {}, ty: {:?} }}", name, ty);
 
@@ -2681,7 +2728,7 @@ for node in nodes {
         if *is_async {
             self.compile_async_funcy(name, params, body);
         } else {
-            self.compile_funcy(name, params, body, Some(&sig.param_types));
+            self.compile_funcy(name, params, body, Some(&sig.param_types), None);
         }
     }
 }
@@ -2690,7 +2737,7 @@ for node in nodes {
             if *is_async {
                 self.compile_async_funcy(name, params, body);
             } else {
-                self.compile_funcy(name, params, body, None);
+                self.compile_funcy(name, params, body, None, None);
             }
         }
     }
@@ -3166,7 +3213,9 @@ pub fn compile_funcy(
     name: &str,
     params: &[String],
     body: &[Node],
-    param_override: Option<&[String]>, // 👈 optional explicit type list
+    param_override: Option<&[String]>,
+    entity_name: Option<&str>, // 👈 added
+ // 👈 optional explicit type list
 ) -> FunctionValue<'ctx> {
     // === Step 1: Detect inferred types from body ===
     let mut int_params = std::collections::HashSet::new();
@@ -3422,17 +3471,29 @@ let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = params
         }
     })
     .collect();
+    // === 🧩 OOPSIE: inject implicit `me` for entity methods ===
+let mut effective_params = params.to_vec();
+if let Some(ent_name) = entity_name {
+    // prepend "me:ptr" if it's not already there
+    if !effective_params.iter().any(|p| p.starts_with("me")) {
+        effective_params.insert(0, "me:ptr".to_string());
+    }
+    println!("🧩 Added implicit 'me' to method of entity '{}'", ent_name);
+}
 
 // === Step 4: Apply override if present ===
 if let Some(overrides) = param_override {
     param_type_names = overrides.to_vec();
 }
 
-    let llvm_name = if param_type_names.is_empty() {
-        name.to_string()
-    } else {
-        format!("{}__{}", name, param_type_names.join("_"))
-    };
+    let llvm_name = if let Some(ent_name) = entity_name {
+    format!("{}.{}", ent_name, name)  // e.g. Dog.bark
+} else if param_type_names.is_empty() {
+    name.to_string()
+} else {
+    format!("{}__{}", name, param_type_names.join("_"))
+};
+
 
     // === Step 5: Create or fetch LLVM function ===
     // === 🧮 Step 5: Create correct LLVM function type ===
@@ -3711,7 +3772,81 @@ self.reverse_func_index
 
 
 
+pub fn compile_entity(&mut self, entity: &EntityNode) {
+        println!("🏗️ Compiling entity: {}", entity.name);
 
+        // === 1️⃣ Inherit base fields (if any) ===
+        let mut all_fields: Vec<(String, BasicTypeEnum<'ctx>)> = Vec::new();
+
+        if let Some(base_name) = &entity.base {
+            if let Some(base_entity) = self.entities.get(base_name) {
+                println!("🔗 Inheriting fields from base entity '{}'", base_name);
+                all_fields.extend(base_entity.fields.clone());
+            } else {
+                eprintln!("⚠️ Base entity '{}' not found", base_name);
+            }
+        }
+
+        // === 2️⃣ Add this entity’s fields ===
+        for member in &entity.members {
+            if let EntityMember::Field { name, .. } = member {
+                all_fields.push((name.clone(), self.i32_type.into()));
+            }
+        }
+
+        // === 3️⃣ Define LLVM struct type for the entity ===
+        let struct_type = self.context.opaque_struct_type(&entity.name);
+        let field_types: Vec<_> = all_fields.iter().map(|(_, t)| *t).collect();
+        struct_type.set_body(&field_types, false);
+
+        // === 4️⃣ Register methods ===
+        let mut methods = HashMap::new();
+
+        for member in &entity.members {
+            if let EntityMember::Method { name, func } = member {
+                if let Expr::Funcy {
+                    params,
+                    body,
+                    is_async,
+                    ..
+                } = func
+                {
+                    // 👇 compile_funcy with entity context ("Dog.bark")
+                    let full_name = format!("{}.{}", entity.name, name);
+
+// Compile with qualified name
+let func_val: FunctionValue<'_> = self.compile_funcy(
+    &full_name,              // ✅ use "Dog.bark" instead of "bark"
+    params,
+    body,
+    None,
+    Some(&entity.name),
+);
+
+// Register under both function table and entity-local map
+self.functions.insert(
+    FunctionSignature { name: full_name.clone(), param_types: vec![] },
+    func_val,
+);
+
+methods.insert(name.clone(), func_val);
+
+                }
+            }
+        }
+
+        // === 5️⃣ Register the entity in Codegen context ===
+        let oopsie = OopsieEntity {
+            name: entity.name.clone(),
+            base: entity.base.clone(),
+            struct_type,
+            fields: all_fields,
+            methods,
+        };
+
+        self.entities.insert(entity.name.clone(), oopsie);
+        println!("✅ Entity '{}' compiled successfully", entity.name);
+    }
 
 
     

@@ -1,7 +1,10 @@
-func add(a, b) => a + b
-func add(a: f32, b: f32) => a + b
-func add(a: bool, b: bool) => a or b
+entity Dog {
+    age = 5;
+    func bark() => print("woof");
+}
 
-print(add(2, 3))           
-print(add(1.5, 2.3))       
-print(add(true, false))    
+entity Husky alters Dog {
+    func bark() => print("AROOO");
+}
+Dog.bark()
+Husky.bark()

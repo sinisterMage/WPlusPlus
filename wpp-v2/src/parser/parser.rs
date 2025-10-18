@@ -1,4 +1,4 @@
-use crate::ast::{Expr, Node};
+use crate::ast::{node::{EntityMember, EntityNode}, Expr, Node};
 use std::mem;
 use crate::lexer::{Token, TokenKind};
 use std::collections::HashMap;
@@ -184,6 +184,9 @@ TokenKind::Keyword(k) if k == "return" => {
 
     Some(Node::Expr(Expr::Return(expr)))
 }
+TokenKind::Keyword(k) if k == "entity" => {
+    self.parse_entity()
+}
 
 
 
@@ -196,8 +199,96 @@ TokenKind::Keyword(k) if k == "return" => {
         }
     }
 }
+pub fn parse_entity(&mut self) -> Option<Node> {
+    self.expect(TokenKind::Keyword("entity".into()), "Expected 'entity' keyword");
 
+    // --- Parse entity name ---
+    let name = match self.advance().clone() {
+        TokenKind::Identifier(n) => n,
+        other => panic!("Expected entity name, got {:?}", other),
+    };
 
+    // --- Optional inheritance: `entity Dog alters Animal`
+    let base = if self.check(TokenKind::Keyword("alters".into())) {
+        self.advance();
+        match self.advance().clone() {
+            TokenKind::Identifier(b) => Some(b),
+            other => panic!("Expected base entity name after 'alters', got {:?}", other),
+        }
+    } else {
+        None
+    };
+
+    self.expect(TokenKind::Symbol("{".into()), "Expected '{' to start entity block");
+
+    // --- Parse members ---
+    let mut members = Vec::new();
+
+    while !self.check(TokenKind::Symbol("}".into())) && !self.check(TokenKind::EOF) {
+        match self.peek() {
+            // --- Field like: `age = 5;`
+            TokenKind::Identifier(_) => {
+                let field_name = match self.advance().clone() {
+                    TokenKind::Identifier(id) => id,
+                    other => panic!("Expected field name, got {:?}", other),
+                };
+
+                // Allow both `=` and `:` syntax
+                if self.check(TokenKind::Symbol("=".into())) || self.check(TokenKind::Symbol(":".into())) {
+                    self.advance();
+                } else {
+                    panic!("Expected '=' or ':' in field declaration");
+                }
+
+                let value = self.parse_expr();
+                members.push(EntityMember::Field { name: field_name, value });
+
+                // Optional semicolon or newline
+                if self.check(TokenKind::Symbol(";".into())) {
+                    self.advance();
+                }
+            }
+
+            // --- Method like: `func bark() => print("woof");`
+            TokenKind::Keyword(k) if k == "func" || k == "funcy" => {
+                self.advance();
+                let func_expr = self.parse_funcy(false);
+                let func_name = match &func_expr {
+                    Expr::Funcy { name, .. } => name.clone(),
+                    _ => "anonymous".to_string(),
+                };
+                members.push(EntityMember::Method { name: func_name, func: func_expr });
+            }
+
+            // --- Async methods: `async funcy bark() { ... }`
+            TokenKind::Keyword(k) if k == "async" => {
+                self.advance();
+                self.expect(TokenKind::Keyword("funcy".into()), "Expected 'funcy' after 'async'");
+                let func_expr = self.parse_funcy(true);
+                let func_name = match &func_expr {
+                    Expr::Funcy { name, .. } => name.clone(),
+                    _ => "anonymous".to_string(),
+                };
+                members.push(EntityMember::Method { name: func_name, func: func_expr });
+            }
+
+            // --- Ignore stray semicolons
+            TokenKind::Symbol(sym) if sym == ";" => {
+                self.advance();
+            }
+
+            // --- Unknown: skip token gracefully instead of panicking
+            _ => {
+                println!("⚠️ Skipping unexpected token inside entity: {:?}", self.peek());
+                self.advance();
+            }
+        }
+    }
+
+    self.expect(TokenKind::Symbol("}".into()), "Expected '}' to end entity");
+
+    Some(Node::Entity(EntityNode { name, base, members }))
+}
 
 
 

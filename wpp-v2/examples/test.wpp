@@ -1,12 +1,7 @@
-funcy add(a, b) {
-    return a + b;
-}
+func add(a, b) => a + b
+func add(a: f32, b: f32) => a + b
+func add(a: bool, b: bool) => a or b
 
-funcy add(a, b) {
-    print("string add called!");
-    return a + b;
-}
-
-
-print(add(2, 3));
-print(add("hi", "there"));
+print(add(2, 3))           
+print(add(1.5, 2.3))       
+print(add(true, false))    

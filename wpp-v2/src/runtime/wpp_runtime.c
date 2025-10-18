@@ -119,37 +119,61 @@ void wpp_print_object(void *obj_ptr) {
 }
 
 // =====================================================
-// === UNIFIED VALUE PRINTER (EXPORTED)
+// === UNIFIED BASIC TYPE PRINTER (EXPORT)
 // =====================================================
-__attribute__((visibility("default")))
-void wpp_print_value(void *ptr, int32_t type_id) {
-    printf("[C] wpp_print_value(ptr=%p, type=%d)\n", ptr, type_id);
+//  type_id mapping:
+//  1 = i32
+//  2 = i64
+//  3 = f32
+//  4 = f64
+//  5 = bool
+//  6 = string
+// =====================================================
 
+__attribute__((visibility("default")))
+void wpp_print_value_basic(void *ptr, int32_t type_id) {
     if (!ptr) {
         printf("(null)\n");
         return;
     }
 
     switch (type_id) {
-        case 1:
-            wpp_print_array((int32_t *)ptr);
+        case 1: { // i32
+            int32_t v = *(int32_t *)ptr;
+            printf("%d\n", v);
             break;
-        case 2:
-            wpp_print_object(ptr);
+        }
+        case 2: { // i64
+            int64_t v = *(int64_t *)ptr;
+            printf("%lld\n", (long long)v);
             break;
+        }
+        case 3: { // f32
+            float v = *(float *)ptr;
+            printf("%.6g\n", v);
+            break;
+        }
+        case 4: { // f64
+            double v = *(double *)ptr;
+            printf("%.6g\n", v);
+            break;
+        }
+        case 5: { // bool
+            int32_t v = *(int32_t *)ptr;
+            printf("%s\n", v ? "true" : "false");
+            break;
+        }
+        case 6: { // string
+            const char *s = *(const char **)ptr;
+            safe_print_string_checked(s);
+            break;
+        }
         default:
-            safe_print_string_checked((const char *)ptr);
+            printf("(unknown type_id=%d, ptr=%p)\n", type_id, ptr);
             break;
     }
 }
 
-// =====================================================
-// === INT PRINTER (EXPORTED)
-// =====================================================
-__attribute__((visibility("default")))
-void wpp_print_i32(int32_t value) {
-    printf("%d\n", value);
-}
 
 #ifdef __cplusplus
 }

@@ -156,11 +156,12 @@ TokenKind::Keyword(k) if k == "async" => {
     }
 }
 
-TokenKind::Keyword(k) if k == "funcy" => {
+TokenKind::Keyword(k) if k == "func" || k == "funcy" => {
     self.advance();
     let expr = self.parse_funcy(false);
     Some(Node::Expr(expr))
 }
+
 
 
 
@@ -458,14 +459,34 @@ fn parse_funcy(&mut self, is_async: bool) -> Expr {
     // expect '('
     self.expect(TokenKind::Symbol("(".into()), "Expected '(' after function name");
 
-    // parse parameters
+    // === 🧠 parse parameters (with optional types)
     let mut params = Vec::new();
+
     if !self.check(TokenKind::Symbol(")".into())) {
         loop {
-            match self.advance().clone() {
-                TokenKind::Identifier(p) => params.push(p),
+            // parameter name
+            let param_name = match self.advance().clone() {
+                TokenKind::Identifier(p) => p,
                 other => panic!("Expected parameter name, got {:?}", other),
+            };
+
+            // optional type annotation like a: f32
+            let mut param_type = "i32".to_string(); // default type
+            if self.check(TokenKind::Symbol(":".into())) {
+                self.advance(); // consume ':'
+                match self.advance().clone() {
+                    TokenKind::Identifier(ty_name) => {
+                        println!("🧩 Parsed typed parameter: {}: {}", param_name, ty_name);
+                        param_type = ty_name;
+                    }
+                    other => panic!("Expected type name after ':' in parameter, got {:?}", other),
+                }
             }
+
+            // ✅ Store full typed form ("a:f32")
+            params.push(format!("{}:{}", param_name, param_type));
+
+            // comma or end
             if self.check(TokenKind::Symbol(",".into())) {
                 self.advance();
                 continue;
@@ -477,10 +498,30 @@ fn parse_funcy(&mut self, is_async: bool) -> Expr {
 
     self.expect(TokenKind::Symbol(")".into()), "Expected ')' after parameters");
 
-    // expect '{'
+    // === 🏹 support arrow syntax: "=> expr"
+    if self.check(TokenKind::Symbol("=".into())) {
+        self.advance(); // consume '='
+        if self.check(TokenKind::Symbol(">".into())) {
+            self.advance(); // consume '>'
+
+            // parse single-expression arrow body
+            let expr = self.parse_expr();
+            let body = vec![Node::Expr(Expr::Return(Some(Box::new(expr))))];
+
+            return Expr::Funcy {
+                name,
+                params,
+                body,
+                is_async,
+            };
+        } else {
+            panic!("Expected '>' after '=' for arrow function");
+        }
+    }
+
+    // === 🧱 fallback to block-style: "{ ... }"
     self.expect(TokenKind::Symbol("{".into()), "Expected '{' to start function body");
 
-    // parse body until '}'
     let mut body = Vec::new();
     while !self.check(TokenKind::Symbol("}".into())) && !self.check(TokenKind::EOF) {
         if let Some(stmt) = self.parse_stmt() {
@@ -492,7 +533,6 @@ fn parse_funcy(&mut self, is_async: bool) -> Expr {
 
     self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close function body");
 
-    // ✅ include async flag in AST
     Expr::Funcy {
         name,
         params,
@@ -500,6 +540,7 @@ fn parse_funcy(&mut self, is_async: bool) -> Expr {
         is_async,
     }
 }
+
 
 
 
@@ -518,7 +559,8 @@ impl Parser {
 }
 
 fn parse_assignment(&mut self) -> Expr {
-    let left = self.parse_equality();
+    // 🧠 Start from logical OR, not equality
+    let left = self.parse_logical_or();
 
     if self.matches(&[TokenKind::Symbol("=".into())]) {
         let op = if let TokenKind::Symbol(op) = self.tokens[self.pos - 1].kind.clone() {
@@ -537,6 +579,7 @@ fn parse_assignment(&mut self) -> Expr {
     left
 }
 
+
 }
 impl Parser {
     fn parse_equality(&mut self) -> Expr {
@@ -553,6 +596,38 @@ impl Parser {
 
         expr
     }
+    fn parse_logical_or(&mut self) -> Expr {
+    let mut expr = self.parse_logical_and();
+
+    while self.matches(&[TokenKind::Identifier("or".into())]) {
+        let op = "or".to_string();
+        let right = self.parse_logical_and();
+        expr = Expr::BinaryOp {
+            left: Box::new(expr),
+            op,
+            right: Box::new(right),
+        };
+    }
+
+    expr
+}
+
+fn parse_logical_and(&mut self) -> Expr {
+    let mut expr = self.parse_equality();
+
+    while self.matches(&[TokenKind::Identifier("and".into())]) {
+        let op = "and".to_string();
+        let right = self.parse_equality();
+        expr = Expr::BinaryOp {
+            left: Box::new(expr),
+            op,
+            right: Box::new(right),
+        };
+    }
+
+    expr
+}
+
 }impl Parser {
     fn parse_comparison(&mut self) -> Expr {
         let mut expr = self.parse_term();

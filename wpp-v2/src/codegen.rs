@@ -4,7 +4,7 @@ use inkwell::{
     execution_engine::ExecutionEngine,
     module::{self, Linkage, Module},
     types::BasicTypeEnum,
-    values::{BasicMetadataValueEnum, BasicValueEnum, CallSiteValue, FunctionValue, IntValue, PointerValue},
+    values::{AnyValue, BasicMetadataValueEnum, BasicValueEnum, CallSiteValue, FunctionValue, IntValue, PointerValue},
     AddressSpace,
     OptimizationLevel,
 };
@@ -494,43 +494,74 @@ let result: BasicValueEnum<'ctx> = match (&left_raw, &right_raw) {
     result
 }
     // --- Integer + Integer ---
-    (BasicValueEnum::IntValue(l), BasicValueEnum::IntValue(r)) => {
-        let lhs_ty = l.get_type();
-        let rhs_ty = r.get_type();
+    // --- Integer + Integer ---
+(BasicValueEnum::IntValue(l), BasicValueEnum::IntValue(r)) => {
+    match op.as_str() {
+        // ✅ Boolean logic first
+       "and" | "or" => {
+    // 🧠 Ensure both operands are i1 for logic ops
+    let lhs_val = *l;
+    let rhs_val = *r;
 
-        // Auto-promote smaller integer → larger integer
-        let (l_cast, r_cast, final_ty) = if lhs_ty.get_bit_width() == rhs_ty.get_bit_width() {
-            (l.clone(), r.clone(), lhs_ty)
-        } else if lhs_ty.get_bit_width() < rhs_ty.get_bit_width() {
-            (
-                self.builder.build_int_z_extend(*l, rhs_ty, "l_promote").unwrap(),
-                r.clone(),
-                rhs_ty,
+    // If left operand is i32, convert to bool (i1)
+    let lhs_bool = if lhs_val.get_type().get_bit_width() != 1 {
+        self.builder
+            .build_int_compare(
+                inkwell::IntPredicate::NE,
+                lhs_val,
+                self.i32_type.const_int(0, false),
+                "lhs_bool_cast",
             )
-        } else {
-            (
-                l.clone(),
-                self.builder.build_int_z_extend(*r, lhs_ty, "r_promote").unwrap(),
-                lhs_ty,
+            .unwrap()
+    } else {
+        lhs_val
+    };
+
+    // If right operand is i32, convert to bool (i1)
+    let rhs_bool = if rhs_val.get_type().get_bit_width() != 1 {
+        self.builder
+            .build_int_compare(
+                inkwell::IntPredicate::NE,
+                rhs_val,
+                self.i32_type.const_int(0, false),
+                "rhs_bool_cast",
             )
-        };
+            .unwrap()
+    } else {
+        rhs_val
+    };
 
-        match op.as_str() {
-            "+" => self.builder.build_int_add(l_cast, r_cast, "addtmp").unwrap().as_basic_value_enum(),
-            "-" => self.builder.build_int_sub(l_cast, r_cast, "subtmp").unwrap().as_basic_value_enum(),
-            "*" => self.builder.build_int_mul(l_cast, r_cast, "multmp").unwrap().as_basic_value_enum(),
-            "/" => self.builder.build_int_signed_div(l_cast, r_cast, "divtmp").unwrap().as_basic_value_enum(),
+    // ✅ Build AND/OR using i1s
+    let result = if op == "and" {
+        self.builder.build_and(lhs_bool, rhs_bool, "andtmp").unwrap()
+    } else {
+        self.builder.build_or(lhs_bool, rhs_bool, "ortmp").unwrap()
+    };
 
-            // Comparisons return i1 → no forced i32
-            "==" => self.builder.build_int_compare(inkwell::IntPredicate::EQ, l_cast, r_cast, "eqtmp").unwrap().as_basic_value_enum(),
-            "!=" => self.builder.build_int_compare(inkwell::IntPredicate::NE, l_cast, r_cast, "netmp").unwrap().as_basic_value_enum(),
-            "<"  => self.builder.build_int_compare(inkwell::IntPredicate::SLT, l_cast, r_cast, "lttmp").unwrap().as_basic_value_enum(),
-            "<=" => self.builder.build_int_compare(inkwell::IntPredicate::SLE, l_cast, r_cast, "letmp").unwrap().as_basic_value_enum(),
-            ">"  => self.builder.build_int_compare(inkwell::IntPredicate::SGT, l_cast, r_cast, "gttmp").unwrap().as_basic_value_enum(),
-            ">=" => self.builder.build_int_compare(inkwell::IntPredicate::SGE, l_cast, r_cast, "getmp").unwrap().as_basic_value_enum(),
-            _ => panic!("Unsupported integer operator: {}", op),
-        }
+    // ✅ Extend i1 → i32 for consistent numeric behavior
+    // ✅ Keep as i1 (no extension) for proper bool return type
+return result.as_basic_value_enum();
+
+}
+
+
+        // ✅ Arithmetic and comparisons
+        "+" => self.builder.build_int_add(*l, *r, "addtmp").unwrap().as_basic_value_enum(),
+        "-" => self.builder.build_int_sub(*l, *r, "subtmp").unwrap().as_basic_value_enum(),
+        "*" => self.builder.build_int_mul(*l, *r, "multmp").unwrap().as_basic_value_enum(),
+        "/" => self.builder.build_int_signed_div(*l, *r, "divtmp").unwrap().as_basic_value_enum(),
+
+        "==" => self.builder.build_int_compare(inkwell::IntPredicate::EQ, *l, *r, "eqtmp").unwrap().as_basic_value_enum(),
+        "!=" => self.builder.build_int_compare(inkwell::IntPredicate::NE, *l, *r, "netmp").unwrap().as_basic_value_enum(),
+        "<"  => self.builder.build_int_compare(inkwell::IntPredicate::SLT, *l, *r, "lttmp").unwrap().as_basic_value_enum(),
+        "<=" => self.builder.build_int_compare(inkwell::IntPredicate::SLE, *l, *r, "letmp").unwrap().as_basic_value_enum(),
+        ">"  => self.builder.build_int_compare(inkwell::IntPredicate::SGT, *l, *r, "gttmp").unwrap().as_basic_value_enum(),
+        ">=" => self.builder.build_int_compare(inkwell::IntPredicate::SGE, *l, *r, "getmp").unwrap().as_basic_value_enum(),
+
+        _ => panic!("Unsupported integer operator: {}", op),
     }
+}
+
 
     // --- Float + Float ---
     (BasicValueEnum::FloatValue(lf), BasicValueEnum::FloatValue(rf)) => match op.as_str() {
@@ -571,6 +602,8 @@ let result: BasicValueEnum<'ctx> = match (&left_raw, &right_raw) {
     }
    // --- String (ptr) + String (ptr) ---
 
+// --- Boolean logic (and / or) ---
+
 
 
 
@@ -590,48 +623,89 @@ result
 
         // === Function call (print, etc.) ===
         Expr::Call { name, args } => {
-             if name == "print" {
+            if name == "print" {
     // === Declare runtime externs ===
     let void_ty = self.context.void_type();
     let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
     let i32_ty = self.context.i32_type();
 
-    // Existing: print_value(ptr, i32)
-    let wpp_print_value = self.module.get_function("wpp_print_value").unwrap_or_else(|| {
+    // Unified basic-type printer: wpp_print_value_basic(ptr, i32)
+    let wpp_print_value_basic = self.module.get_function("wpp_print_value_basic").unwrap_or_else(|| {
         let ty = void_ty.fn_type(&[i8ptr.into(), i32_ty.into()], false);
-        self.module.add_function("wpp_print_value", ty, None)
+        self.module.add_function("wpp_print_value_basic", ty, None)
     });
 
-    // 🆕 New: print_i32(i32)
-    let wpp_print_i32 = self.module.get_function("wpp_print_i32").unwrap_or_else(|| {
-        let ty = void_ty.fn_type(&[i32_ty.into()], false);
-        self.module.add_function("wpp_print_i32", ty, None)
+    // Specialized printers for arrays and objects
+    let wpp_print_array = self.module.get_function("wpp_print_array").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_print_array", ty, None)
+    });
+    let wpp_print_object = self.module.get_function("wpp_print_object").unwrap_or_else(|| {
+        let ty = void_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_print_object", ty, None)
     });
 
     // === Compile argument ===
     if args.is_empty() {
         panic!("print() expects at least one argument");
     }
-
     let val = self.compile_expr(&args[0]);
 
     // === Handle based on value type ===
     match val {
-        // 🧮 Case 1: Integer — call wpp_print_i32 directly
         BasicValueEnum::IntValue(iv) => {
+            // 🧮 Detect width to choose between i32/i64/bool
+            let width = iv.get_type().get_bit_width();
+            let type_id = match width {
+                1 => 5,    // bool
+                64 => 2,   // i64
+                _ => 1,    // i32 default
+            };
+
+            // Store to temporary alloca to pass by pointer
+            let tmp = self.builder.build_alloca(iv.get_type(), "tmp_int").unwrap();
+            self.builder.build_store(tmp, iv).unwrap();
+            let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_int").unwrap();
+
             self.builder
-                .build_call(wpp_print_i32, &[iv.into()], "call_print_i32")
+                .build_call(
+                    wpp_print_value_basic,
+                    &[casted.into(), i32_ty.const_int(type_id, false).into()],
+                    "call_print_basic_int",
+                )
                 .unwrap();
         }
 
-        // 🧵 Case 2: Pointer / array / struct — use wpp_print_value
-        BasicValueEnum::PointerValue(pv) => {
-            let type_id = i32_ty.const_int(0, false);
+        BasicValueEnum::FloatValue(fv) => {
+            let f64_ty = self.context.f64_type();
+let type_id: u64 = if fv.get_type() == f64_ty {
+    4 // f64
+} else {
+    3 // f32
+};
+
+
+            let tmp = self.builder.build_alloca(fv.get_type(), "tmp_float").unwrap();
+            self.builder.build_store(tmp, fv).unwrap();
+            let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_float").unwrap();
+
             self.builder
                 .build_call(
-                    wpp_print_value,
+                    wpp_print_value_basic,
+                    &[casted.into(), i32_ty.const_int(type_id, false).into()],
+                    "call_print_basic_float",
+                )
+                .unwrap();
+        }
+
+        BasicValueEnum::PointerValue(pv) => {
+            // 🔤 Assume string (C char*) by default
+            let type_id = i32_ty.const_int(6, false);
+            self.builder
+                .build_call(
+                    wpp_print_value_basic,
                     &[pv.into(), type_id.into()],
-                    "call_print_value_ptr",
+                    "call_print_basic_ptr",
                 )
                 .unwrap();
         }
@@ -642,9 +716,9 @@ result
             let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_arr").unwrap();
             self.builder
                 .build_call(
-                    wpp_print_value,
-                    &[casted.into(), i32_ty.const_int(1, false).into()],
-                    "call_print_value_arr",
+                    wpp_print_array,
+                    &[casted.into()],
+                    "call_print_array",
                 )
                 .unwrap();
         }
@@ -655,9 +729,9 @@ result
             let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_obj").unwrap();
             self.builder
                 .build_call(
-                    wpp_print_value,
-                    &[casted.into(), i32_ty.const_int(2, false).into()],
-                    "call_print_value_obj",
+                    wpp_print_object,
+                    &[casted.into()],
+                    "call_print_object",
                 )
                 .unwrap();
         }
@@ -667,7 +741,7 @@ result
             let null_ptr = i8ptr.const_null();
             self.builder
                 .build_call(
-                    wpp_print_value,
+                    wpp_print_value_basic,
                     &[null_ptr.into(), i32_ty.const_int(0, false).into()],
                     "call_print_value_null",
                 )
@@ -1092,32 +1166,70 @@ else if name == "unlock" {
 
 // === INDIRECT FUNCTION CALL (lambda stored in variable) ===
 if let Some(var_info) = self.vars.get(name) {
+    // === Load the function pointer ===
     let fn_ptr = self.builder
         .build_load(var_info.ty, var_info.ptr, &format!("load_fnptr_{}", name))
         .unwrap()
         .into_pointer_value();
 
-    // Compile arguments
+    // === Compile argument expressions ===
     let compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = args
         .iter()
         .map(|arg| self.compile_expr(arg).into())
         .collect();
 
-    // Assume all params are i32 for now
-    let fn_type = self.i32_type.fn_type(
-        &compiled_args.iter().map(|_| self.i32_type.into()).collect::<Vec<_>>(),
-        false,
-    );
+    // === Infer argument types ===
+    let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = compiled_args
+        .iter()
+        .map(|arg| {
+            let ty = arg.as_any_value_enum().get_type();
+            if ty.is_int_type() {
+                let int_ty = ty.into_int_type();
+                if int_ty.get_bit_width() == 1 {
+                    self.context.bool_type().into()
+                } else {
+                    self.i32_type.into()
+                }
+            } else if ty.is_float_type() {
+                self.context.f32_type().into()
+            } else if ty.is_pointer_type() {
+                self.context.i8_type().ptr_type(AddressSpace::default()).into()
+            } else {
+                self.i32_type.into()
+            }
+        })
+        .collect();
 
+    // === Infer return type dynamically ===
+    let ret_ty = if name.contains("f32") || name.contains("float") {
+        self.context.f32_type().as_basic_type_enum()
+    } else if name.contains("bool") {
+        self.context.bool_type().as_basic_type_enum()
+    } else if name.contains("ptr") || name.contains("string") {
+        self.context.i8_type().ptr_type(AddressSpace::default()).as_basic_type_enum()
+    } else {
+        self.i32_type.as_basic_type_enum()
+    };
+
+    let fn_type = ret_ty.fn_type(&param_types, false);
+
+    // === Build the indirect call ===
     let call_site = self.builder
         .build_indirect_call(fn_type, fn_ptr, &compiled_args, &format!("call_indirect_{}", name))
         .unwrap();
 
+    // === Return proper type ===
     return call_site
         .try_as_basic_value()
         .left()
-        .unwrap_or_else(|| self.i32_type.const_zero().into());
+        .unwrap_or_else(|| match ret_ty {
+            BasicTypeEnum::IntType(i) => i.const_int(0, false).into(),
+            BasicTypeEnum::FloatType(f) => f.const_float(0.0).into(),
+            BasicTypeEnum::PointerType(p) => p.const_null().into(),
+            _ => self.i32_type.const_zero().into(),
+        });
 }
+
 
            else if self.reverse_func_index.contains_key(name) {
     // 🧩 Collect argument types for overload resolution
@@ -1162,62 +1274,145 @@ if let Some(var_info) = self.vars.get(name) {
 
     println!("💡 Inferred arg types for {}: {:?}", name, arg_types);
 
-    // 🕵️ Attempt to find an exact signature match for multiple dispatch
-    let sig_opt = {
-        if let Some(sigs) = self.reverse_func_index.get(name) {
-            sigs.iter()
-                .find(|sig| sig.param_types == arg_types)
-                .cloned()
-        } else {
-            None
-        }
+// 🧠 Normalize for compatible overloads (f64 → f32, etc.)
+let normalized_arg_types: Vec<String> = arg_types
+    .iter()
+    .map(|t| match t.as_str() {
+        "f64" => "f32".to_string(), // auto-promote
+        _ => t.clone(),
+    })
+    .collect();
+
+println!("💡 Normalized arg types for {}: {:?}", name, normalized_arg_types);
+
+// 🕵️ Try exact match first
+let mut sig_opt = None;
+if let Some(sigs) = self.reverse_func_index.get(name) {
+    sig_opt = sigs.iter().find(|sig| sig.param_types == arg_types).cloned();
+
+    // Fallback: try normalized match if exact not found
+    if sig_opt.is_none() {
+        sig_opt = sigs.iter().find(|sig| sig.param_types == normalized_arg_types).cloned();
+    }
+}
+
+if let Some(sig) = sig_opt {
+    // 🔹 Borrow function temporarily (avoids long immutable borrow)
+    let func_val = {
+        let f = self.functions.get(&sig).unwrap();
+        *f // FunctionValue<'ctx> implements Copy
     };
 
-    if let Some(sig) = sig_opt {
-        // 🔹 Borrow function temporarily (avoids long immutable borrow)
-        let func_val = {
-            let f = self.functions.get(&sig).unwrap();
-            *f // FunctionValue<'ctx> implements Copy
-        };
+    // ✅ Borrow ended — safe to reuse self below
 
-        // ✅ Borrow ended — safe to reuse self below
+    // Compile arguments
+    let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
+    for a in args {
+        let v = self.compile_expr(a);
+        compiled_args.push(v.into());
+    }
 
-        // Compile arguments
-        let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
-        for a in args {
-            let v = self.compile_expr(a);
-            compiled_args.push(v.into());
-        }
+    println!("💥 Resolved call {}({:?})", sig.name, sig.param_types);
 
-        println!("💥 Resolved call {}({:?})", sig.name, sig.param_types);
+    // Call the correct overload (mangled name)
+    let llvm_name = if sig.param_types.is_empty() {
+        sig.name.clone()
+    } else {
+        format!("{}__{}", sig.name, sig.param_types.join("_"))
+    };
 
-        // Call the correct overload
-        // Use mangled LLVM name for call
-let llvm_name = if sig.param_types.is_empty() {
-    sig.name.clone()
-} else {
-    format!("{}__{}", sig.name, sig.param_types.join("_"))
-};
+    let target_fn = self.module.get_function(&llvm_name).unwrap_or(func_val);
+    println!("🧬 Using LLVM function: {}", llvm_name);
+    // 🧠 Ensure argument types match function signature
+let fn_param_types: Vec<_> = target_fn.get_type().get_param_types();
 
-// Get the correct function by LLVM name
-let target_fn = self.module.get_function(&llvm_name).unwrap_or(func_val);
+for (i, (arg_val, param_ty)) in compiled_args.iter_mut().zip(fn_param_types.iter()).enumerate() {
+    let arg_ty = arg_val.clone().as_any_value_enum().get_type();
 
-println!("🧬 Using LLVM function: {}", llvm_name);
+    
 
-let call_site = self
+let arg_ty_basic = arg_ty.try_into().ok();
+let param_ty_basic = Some(*param_ty);
+
+if arg_ty_basic != param_ty_basic {
+    // handle type conversion
+
+
+    // Handle float double → float
+    if arg_ty.is_float_type() && param_ty.is_float_type() {
+        let arg_float_ty = arg_ty.into_float_type();
+        let param_float_ty = param_ty.into_float_type();
+
+        // Check if it’s actually f64 → f32
+       let f32_ty = self.context.f32_type();
+let f64_ty = self.context.f64_type();
+
+if arg_float_ty == f64_ty && param_float_ty == f32_ty {
+let float_val = arg_val
+    .clone()
+    .into_float_value(); // BasicMetadataValueEnum already implements into_float_value
+
+let casted = self
     .builder
-    .build_call(target_fn, &compiled_args, &format!("call_{}", sig.name))
+    .build_float_cast(
+        float_val,
+        param_float_ty,
+        &format!("cast_f64_to_f32_arg{}", i),
+    )
     .unwrap();
 
+*arg_val = casted.into();
 
-        // Return result or void substitute
-        call_site
-            .try_as_basic_value()
-            .left()
-            .unwrap_or_else(|| self.i32_type.const_int(0, false).into())
-    } else {
-        panic!("❌ No matching overload for {}({:?})", name, arg_types);
+
+
+
+        }
     }
+
+    // Handle i1 → i32 (bool promotion)
+    else if arg_ty.is_int_type()
+        && param_ty.is_int_type()
+        && arg_ty.into_int_type().get_bit_width() == 1
+        && param_ty.into_int_type().get_bit_width() == 32
+    {
+        // Convert argument to an IntValue safely
+let int_val = arg_val
+    .clone()
+    .into_int_value(); // works for BasicMetadataValueEnum that holds int
+
+// Perform zero-extend from i1 → i32
+let casted = self
+    .builder
+    .build_int_z_extend(
+        int_val,
+        param_ty.into_int_type(),
+        &format!("bool_to_i32_arg{}", i),
+    )
+    .unwrap();
+
+// Replace the original arg with the extended version
+*arg_val = casted.into();
+
+
+
+    }
+}
+
+}
+
+    let call_site = self
+        .builder
+        .build_call(target_fn, &compiled_args, &format!("call_{}", sig.name))
+        .unwrap();
+
+    call_site
+        .try_as_basic_value()
+        .left()
+        .unwrap_or_else(|| self.i32_type.const_int(0, false).into())
+} else {
+    panic!("❌ No matching overload for {}({:?})", name, arg_types);
+}
+
 }
 
 
@@ -1649,57 +1844,108 @@ Expr::Funcy { name, params, body, is_async } => {
 Expr::Return(expr_opt) => {
     let func = self.builder.get_insert_block().unwrap().get_parent().unwrap();
     let func_name = func.get_name().to_str().unwrap_or_default().to_string();
+    let func_ret_ty = func.get_type().get_return_type();
 
-    // === Evaluate return expression (if any) ===
-    let ret_val = if let Some(expr) = expr_opt {
-        let v = self.compile_expr(expr);
-        match v {
-            BasicValueEnum::IntValue(iv) => iv,
-            BasicValueEnum::PointerValue(pv) => {
-                // Print string returns (for debugging)
-                let printf = self.module.get_function("printf").unwrap_or_else(|| {
-                    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
-                    let ty = self.context.i32_type().fn_type(&[i8ptr.into()], true);
-                    self.module.add_function("printf", ty, None)
-                });
-                let fmt = self.builder.build_global_string_ptr("%s\n", "ret_fmt").unwrap();
-                let args = vec![fmt.as_pointer_value().into(), pv.into()];
-                self.builder.build_call(printf, &args, "print_return").unwrap();
-                self.i32_type.const_int(0, false)
-            }
-            _ => self.i32_type.const_int(0, false),
+    // === Evaluate the expression ===
+    let raw_val = if let Some(expr) = expr_opt {
+        self.compile_expr(expr)
+    } else if let Some(ret_ty) = func_ret_ty {
+        match ret_ty {
+            BasicTypeEnum::IntType(i) => i.const_int(0, false).into(),
+            BasicTypeEnum::FloatType(f) => f.const_float(0.0).into(),
+            BasicTypeEnum::PointerType(p) => p.const_null().into(),
+            _ => self.i32_type.const_int(0, false).into(),
         }
     } else {
-        self.i32_type.const_int(0, false)
+        self.i32_type.const_int(0, false).into()
+    };
+
+    // === Normalize the return type ===
+    let ret_val = if let Some(ret_ty) = func_ret_ty {
+        match ret_ty {
+            BasicTypeEnum::IntType(i) => {
+                if raw_val.is_int_value() {
+                    raw_val
+                } else if raw_val.is_float_value() {
+                    self.builder
+                        .build_float_to_signed_int(raw_val.into_float_value(), i, "ftoi")
+                        .unwrap()
+                        .into()
+                } else {
+                    i.const_int(0, false).into()
+                }
+            }
+            BasicTypeEnum::FloatType(f) => {
+                if raw_val.is_float_value() {
+                    raw_val
+                } else if raw_val.is_int_value() {
+                    self.builder
+                        .build_signed_int_to_float(raw_val.into_int_value(), f, "itof")
+                        .unwrap()
+                        .into()
+                } else {
+                    f.const_float(0.0).into()
+                }
+            }
+            BasicTypeEnum::PointerType(_) => {
+                if raw_val.is_pointer_value() {
+                    raw_val
+                } else {
+                    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+                    i8ptr.const_null().into()
+                }
+            }
+            _ => raw_val,
+        }
+    } else {
+        raw_val
     };
 
     // === Async return signal ===
-    // Only call wpp_return() if this is an async function (heuristic: name != "bootstrap_main" and present in module)
-    let void_ty = self.context.void_type();
     if func_name != "bootstrap_main" {
-        if let Some(f) = self.module.get_function("wpp_return") {
-            self.builder
-                .build_call(f, &[ret_val.into()], "async_return_signal")
-                .unwrap();
-        } else {
-            let fn_ty = void_ty.fn_type(&[self.i32_type.into()], false);
-            let f = self.module.add_function("wpp_return", fn_ty, None);
-            self.builder
-                .build_call(f, &[ret_val.into()], "async_return_signal")
-                .unwrap();
-        }
+        let void_ty = self.context.void_type();
+        let i32_ty = self.i32_type;
+        let i8ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+
+        // Declare or get wpp_return(ptr, i32)
+        let wpp_return = self.module.get_function("wpp_return").unwrap_or_else(|| {
+            let fn_ty = void_ty.fn_type(&[i8ptr_ty.into(), i32_ty.into()], false);
+            self.module.add_function("wpp_return", fn_ty, None)
+        });
+
+        // 🧠 Allocate a temporary slot to hold the return value
+        let tmp_ptr = self.builder.build_alloca(ret_val.get_type(), "ret_tmp").unwrap();
+        self.builder.build_store(tmp_ptr, ret_val).unwrap();
+
+        // 🧩 Cast pointer to void*
+        let void_ptr = self.builder
+            .build_pointer_cast(tmp_ptr, i8ptr_ty, "ret_as_void_ptr")
+            .unwrap();
+
+        // 🏷️ Determine runtime type tag
+        let type_tag = match ret_val.get_type() {
+            BasicTypeEnum::IntType(i) if i.get_bit_width() == 1 => i32_ty.const_int(3, false), // bool
+            BasicTypeEnum::IntType(_) => i32_ty.const_int(1, false), // i32
+            BasicTypeEnum::FloatType(_) => i32_ty.const_int(2, false), // f32/f64
+            BasicTypeEnum::PointerType(_) => i32_ty.const_int(4, false), // string/object ptr
+            _ => i32_ty.const_int(0, false), // unknown
+        };
+
+        // 🚀 Call wpp_return(void*, i32)
+        self.builder
+            .build_call(wpp_return, &[void_ptr.into(), type_tag.into()], "async_return_signal")
+            .unwrap();
     }
 
-    // === Build actual LLVM return ===
+    // === Actual return ===
     self.builder.build_return(Some(&ret_val)).unwrap();
 
-    // === Move builder to a fresh safe block ===
+    // === Move builder to a safe continuation block ===
     let after_ret = self.context.append_basic_block(func, "after_return");
     self.builder.position_at_end(after_ret);
 
     self.i32_type.const_int(0, false).into()
 }
-
 
 
 
@@ -2317,7 +2563,55 @@ for node in nodes {
             })
             .collect();
 
-        let fn_ty = self.i32_type.fn_type(&param_types, false);
+        // === Infer return type recursively ===
+fn infer_return_type<'ctx>(
+    codegen: &crate::codegen::Codegen<'ctx>,
+    expr: &Expr,
+    locals: &std::collections::HashSet<String>,
+) -> BasicTypeEnum<'ctx> {
+    match expr {
+        Expr::TypedLiteral { ty, .. } => match ty.as_str() {
+            "f32" | "f64" => codegen.context.f32_type().into(),
+            "bool" => codegen.context.bool_type().into(),
+            "string" | "ptr" => codegen.context.i8_type().ptr_type(AddressSpace::default()).into(),
+            _ => codegen.i32_type.into(),
+        },
+        Expr::BinaryOp { left, right, .. } => {
+            let l = infer_return_type(codegen, left, locals);
+            let r = infer_return_type(codegen, right, locals);
+            if l.is_float_type() || r.is_float_type() {
+                codegen.context.f32_type().into()
+            } else if l.is_int_type() && r.is_int_type() {
+                codegen.i32_type.into()
+            } else {
+                l
+            }
+        }
+        Expr::Variable(name) => {
+            if locals.contains(name) {
+                codegen.i32_type.into() // assume int for local vars
+            } else {
+                codegen.i32_type.into()
+            }
+        }
+        _ => codegen.i32_type.into(),
+    }
+}
+
+// === Infer function return type ===
+let mut inferred_ret_ty = self.i32_type.as_basic_type_enum(); // default
+let local_params: std::collections::HashSet<String> = params.iter().cloned().collect();
+
+for stmt in body {
+    if let Node::Expr(Expr::Return(Some(inner))) = stmt {
+        inferred_ret_ty = infer_return_type(self, inner, &local_params);
+    }
+}
+
+// === Build function type using inferred return type ===
+let fn_ty = inferred_ret_ty.fn_type(&param_types, false);
+
+
 
         // 🪶 Use mangled name for overload
         let sig = FunctionSignature {
@@ -2327,6 +2621,14 @@ for node in nodes {
                 .collect(),
         };
         let llvm_name = format!("{}__{}", name, sig.param_types.join("_"));
+        // 🧠 Skip re-registering if function already exists
+if self.reverse_func_index
+    .get(name)
+    .map_or(false, |sigs| sigs.iter().any(|s| s.param_types == sig.param_types))
+{
+    continue; // Already registered
+}
+
         let f = self.module.add_function(&llvm_name, fn_ty, None);
 
         self.functions.insert(sig.clone(), f);
@@ -2471,10 +2773,13 @@ for node in nodes {
     }
     
     // === Ensure main_async ends cleanly ===
+// === Ensure main_async ends cleanly ===
 let current_block = self.builder.get_insert_block().unwrap();
 if current_block.get_terminator().is_none() {
     self.builder.position_at_end(current_block);
-    let ret_val = self.i32_type.const_int(0, false);
+
+    // === Determine actual declared return type ===
+    let fn_ret_ty = async_fn.get_type().get_return_type();
 
     // === Auto join all threads before exit ===
     if let Some(join_all_fn) = self.module.get_function("wpp_thread_join_all") {
@@ -2483,9 +2788,24 @@ if current_block.get_terminator().is_none() {
             .unwrap();
     }
 
+    // === Return 0 or null depending on declared type ===
+    let ret_val: BasicValueEnum<'ctx> = if let Some(ret_ty) = fn_ret_ty {
+    match ret_ty {
+        BasicTypeEnum::IntType(i) => i.const_int(0, false).into(),
+        BasicTypeEnum::FloatType(f) => f.const_float(0.0).into(),
+        BasicTypeEnum::PointerType(p) => p.const_null().into(),
+        BasicTypeEnum::ArrayType(_) => self.i32_type.const_int(0, false).into(),
+        _ => self.i32_type.const_int(0, false).into(),
+    }
+} else {
+    self.i32_type.const_int(0, false).into()
+};
+
+
     self.builder.build_return(Some(&ret_val)).unwrap();
     println!("🟢 Added final return terminator to main_async::{:?}", current_block);
 }
+
 
 
     async_fn
@@ -2539,8 +2859,12 @@ if let Some(func) = self.module.get_function("printf") {
         }
 
         extern "C" fn wpp_return_stub(val: i32) {
-            runtime::wpp_return(val);
-        }
+    // Allocate a temporary local copy of the value
+    let ptr: *const c_void = &val as *const i32 as *const c_void;
+
+    // Tag 1 = integer (see Option A’s type_tag table)
+    runtime::wpp_return(ptr, 1);
+}
 
         extern "C" fn wpp_get_last_result_stub() -> i32 {
             runtime::wpp_get_last_result()
@@ -2565,24 +2889,26 @@ if let Some(func) = self.module.get_function("printf") {
         }
         
         // === Printing subsystem ===
-        unsafe extern "C" {
-            fn wpp_print_value(ptr: *const std::ffi::c_void, type_id: i32);
-            fn wpp_print_array(ptr: *const std::ffi::c_void);
-            fn wpp_print_object(ptr: *const std::ffi::c_void);
-        }
+        // === Printing subsystem (Unified Basic Types) ===
+unsafe extern "C" {
+    fn wpp_print_value_basic(ptr: *const std::ffi::c_void, type_id: i32);
+    fn wpp_print_array(ptr: *const std::ffi::c_void);
+    fn wpp_print_object(ptr: *const std::ffi::c_void);
+}
 
-        for (name, addr) in [
-            ("wpp_print_value", wpp_print_value as usize),
-            ("wpp_print_array", wpp_print_array as usize),
-            ("wpp_print_object", wpp_print_object as usize),
-        ] {
-            if let Some(func) = self.module.get_function(name) {
-                engine.add_global_mapping(&func, addr);
-                println!("🔗 [jit] Bound {}", name);
-            } else {
-                println!("⚠️ [jit] Missing declaration for {}", name);
-            }
-        }
+for (name, addr) in [
+    ("wpp_print_value_basic", wpp_print_value_basic as usize),
+    ("wpp_print_array", wpp_print_array as usize),
+    ("wpp_print_object", wpp_print_object as usize),
+] {
+    if let Some(func) = self.module.get_function(name) {
+        engine.add_global_mapping(&func, addr);
+        println!("🔗 [jit] Bound {}", name);
+    } else {
+        println!("⚠️ [jit] Missing declaration for {}", name);
+    }
+}
+
 
         // === HTTP subsystem ===
         unsafe extern "C" {
@@ -2691,13 +3017,7 @@ if let Some(func) = self.module.get_function("wpp_str_concat") {
         if let Some(func) = self.module.get_function("wpp_runtime_wait") {
             engine.add_global_mapping(&func, wpp_runtime_wait as usize);
         }
-        unsafe extern "C" {
-    fn wpp_print_i32(value: i32);
-}
-if let Some(func) = self.module.get_function("wpp_print_i32") {
-    engine.add_global_mapping(&func, wpp_print_i32 as usize);
-    println!("🔗 [jit] Bound wpp_print_i32");
-}
+        
 
     }
 
@@ -2846,133 +3166,294 @@ pub fn compile_funcy(
     name: &str,
     params: &[String],
     body: &[Node],
-    param_override: Option<&[String]>, // 👈 new optional argument
+    param_override: Option<&[String]>, // 👈 optional explicit type list
 ) -> FunctionValue<'ctx> {
     // === Step 1: Detect inferred types from body ===
     let mut int_params = std::collections::HashSet::new();
     let mut ptr_params = std::collections::HashSet::new();
+    let mut float_params = std::collections::HashSet::new();
+    let mut bool_params = std::collections::HashSet::new();
     let mut contains_string_literal = false;
 
     fn scan_for_types(
-        nodes: &[Node],
-        int_params: &mut std::collections::HashSet<String>,
-        ptr_params: &mut std::collections::HashSet<String>,
-        contains_string_literal: &mut bool,
-    ) {
-        for node in nodes {
-            match node {
-                Node::Expr(expr) => match expr {
-                    Expr::BinaryOp { left, right, op } => {
-                        if let (Expr::StringLiteral(_), _) | (_, Expr::StringLiteral(_)) =
-                            (&**left, &**right)
-                        {
+    nodes: &[Node],
+    int_params: &mut std::collections::HashSet<String>,
+    ptr_params: &mut std::collections::HashSet<String>,
+    float_params: &mut std::collections::HashSet<String>,
+    bool_params: &mut std::collections::HashSet<String>,
+    contains_string_literal: &mut bool,
+) {
+    for node in nodes {
+        match node {
+            Node::Expr(expr) => match expr {
+                Expr::BinaryOp { left, right, op } => {
+                    // 🧵 detect string concatenation
+                    if let (Expr::StringLiteral(_), _) | (_, Expr::StringLiteral(_)) =
+                        (&**left, &**right)
+                    {
+                        *contains_string_literal = true;
+                        if let Expr::Variable(name) = left.as_ref() {
+                            ptr_params.insert(name.clone());
+                        }
+                        if let Expr::Variable(name) = right.as_ref() {
+                            ptr_params.insert(name.clone());
+                        }
+                    }
+
+                    // 🧮 detect arithmetic or logical types
+                    else if ["+", "-", "*", "/", "%"].contains(&op.as_str()) {
+                        // detect if either side is float literal
+                        let mut is_float = false;
+                        if let Expr::TypedLiteral { ty, .. } = &**left {
+                            if ty == "f32" {
+                                is_float = true;
+                            }
+                        }
+                        if let Expr::TypedLiteral { ty, .. } = &**right {
+                            if ty == "f32" {
+                                is_float = true;
+                            }
+                        }
+
+                        if is_float {
+                            if let Expr::Variable(name) = left.as_ref() {
+                                float_params.insert(name.clone());
+                            }
+                            if let Expr::Variable(name) = right.as_ref() {
+                                float_params.insert(name.clone());
+                            }
+                        } else {
+                            if let Expr::Variable(name) = left.as_ref() {
+                                int_params.insert(name.clone());
+                            }
+                            if let Expr::Variable(name) = right.as_ref() {
+                                int_params.insert(name.clone());
+                            }
+                        }
+                    }
+
+                    // 🔀 detect boolean expressions (comparisons, logic ops)
+                    else if ["==", "!=", "<", ">", "<=", ">=", "and", "or"].contains(&op.as_str()) {
+                        if let Expr::Variable(name) = left.as_ref() {
+                            bool_params.insert(name.clone());
+                        }
+                        if let Expr::Variable(name) = right.as_ref() {
+                            bool_params.insert(name.clone());
+                        }
+                    }
+
+                    // recursive descent into both sides
+                    scan_for_types(
+                        &[Node::Expr(*left.clone())],
+                        int_params,
+                        ptr_params,
+                        float_params,
+                        bool_params,
+                        contains_string_literal,
+                    );
+                    scan_for_types(
+                        &[Node::Expr(*right.clone())],
+                        int_params,
+                        ptr_params,
+                        float_params,
+                        bool_params,
+                        contains_string_literal,
+                    );
+                }
+
+                Expr::StringLiteral(_) => *contains_string_literal = true,
+
+                Expr::TypedLiteral { ty, .. } => {
+                    match ty.as_str() {
+                        "f32" => {
+                            float_params.insert("".to_string());
+                        }
+                        "bool" => {
+                            bool_params.insert("".to_string());
+                        }
+                        _ => {}
+                    }
+                }
+
+                Expr::Call { args, .. } => {
+                    for a in args {
+                        if let Expr::StringLiteral(_) = a {
                             *contains_string_literal = true;
-                            if let Expr::Variable(name) = left.as_ref() {
-                                ptr_params.insert(name.clone());
-                            }
-                            if let Expr::Variable(name) = right.as_ref() {
-                                ptr_params.insert(name.clone());
-                            }
-                        } else if ["+", "-", "*", "/", "%"].contains(&op.as_str()) {
-                            if let Expr::Variable(name) = left.as_ref() {
-                                int_params.insert(name.clone());
-                            }
-                            if let Expr::Variable(name) = right.as_ref() {
-                                int_params.insert(name.clone());
-                            }
                         }
-
-                        scan_for_types(&[Node::Expr(*left.clone())], int_params, ptr_params, contains_string_literal);
-                        scan_for_types(&[Node::Expr(*right.clone())], int_params, ptr_params, contains_string_literal);
+                        scan_for_types(
+                            &[Node::Expr(a.clone())],
+                            int_params,
+                            ptr_params,
+                            float_params,
+                            bool_params,
+                            contains_string_literal,
+                        );
                     }
+                }
 
-                    Expr::StringLiteral(_) => *contains_string_literal = true,
-
-                    Expr::Call { args, .. } => {
-                        for a in args {
-                            if let Expr::StringLiteral(_) = a {
-                                *contains_string_literal = true;
-                            }
-                            scan_for_types(&[Node::Expr(a.clone())], int_params, ptr_params, contains_string_literal);
-                        }
+                Expr::Return(inner) => {
+                    if let Some(inner_expr) = inner {
+                        scan_for_types(
+                            &[Node::Expr(*inner_expr.clone())],
+                            int_params,
+                            ptr_params,
+                            float_params,
+                            bool_params,
+                            contains_string_literal,
+                        );
                     }
+                }
 
-                    Expr::Return(inner) => {
-                        if let Some(inner_expr) = inner {
-                            scan_for_types(&[Node::Expr(*inner_expr.clone())], int_params, ptr_params, contains_string_literal);
-                        }
+                Expr::If { cond, then_branch, else_branch } => {
+                    scan_for_types(
+                        &[Node::Expr(*cond.clone())],
+                        int_params,
+                        ptr_params,
+                        float_params,
+                        bool_params,
+                        contains_string_literal,
+                    );
+                    scan_for_types(
+                        then_branch,
+                        int_params,
+                        ptr_params,
+                        float_params,
+                        bool_params,
+                        contains_string_literal,
+                    );
+                    if let Some(e) = else_branch {
+                        scan_for_types(
+                            e,
+                            int_params,
+                            ptr_params,
+                            float_params,
+                            bool_params,
+                            contains_string_literal,
+                        );
                     }
+                }
 
-                    Expr::If { cond, then_branch, else_branch } => {
-                        scan_for_types(&[Node::Expr(*cond.clone())], int_params, ptr_params, contains_string_literal);
-                        scan_for_types(then_branch, int_params, ptr_params, contains_string_literal);
-                        if let Some(e) = else_branch {
-                            scan_for_types(e, int_params, ptr_params, contains_string_literal);
-                        }
-                    }
+                Expr::While { cond, body } => {
+                    scan_for_types(
+                        &[Node::Expr(*cond.clone())],
+                        int_params,
+                        ptr_params,
+                        float_params,
+                        bool_params,
+                        contains_string_literal,
+                    );
+                    scan_for_types(
+                        body,
+                        int_params,
+                        ptr_params,
+                        float_params,
+                        bool_params,
+                        contains_string_literal,
+                    );
+                }
 
-                    Expr::While { cond, body } => {
-                        scan_for_types(&[Node::Expr(*cond.clone())], int_params, ptr_params, contains_string_literal);
-                        scan_for_types(body, int_params, ptr_params, contains_string_literal);
-                    }
+                Expr::Funcy { body, .. } => {
+                    scan_for_types(
+                        body,
+                        int_params,
+                        ptr_params,
+                        float_params,
+                        bool_params,
+                        contains_string_literal,
+                    );
+                }
 
-                    Expr::Funcy { body, .. } => {
-                        scan_for_types(body, int_params, ptr_params, contains_string_literal);
-                    }
-
-                    _ => {}
-                },
                 _ => {}
-            }
+            },
+            _ => {}
         }
     }
+}
 
-    scan_for_types(body, &mut int_params, &mut ptr_params, &mut contains_string_literal);
+
+    scan_for_types(
+        body,
+        &mut int_params,
+        &mut ptr_params,
+        &mut float_params,
+        &mut bool_params,
+        &mut contains_string_literal,
+    );
 
     // === Step 2: Handle string fallback ===
-    if contains_string_literal && int_params.is_empty() {
+    if contains_string_literal && int_params.is_empty() && float_params.is_empty() {
         for p in params {
             ptr_params.insert(p.clone());
         }
     }
 
-    // === Step 3: Build LLVM parameter types ===
-    let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = params
-        .iter()
-        .map(|p| {
-            if ptr_params.contains(p) {
-                self.context.i8_type().ptr_type(AddressSpace::default()).into()
-            } else if int_params.contains(p) {
-                self.i32_type.into()
-            } else {
-                if contains_string_literal {
+    // === Step 3: Build LLVM parameter types (explicit-type aware) ===
+let mut param_type_names: Vec<String> = Vec::new();
+
+let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = params
+    .iter()
+    .map(|p| {
+        // Handle explicit annotations like "a:f32"
+        let (pname, pty) = if let Some((n, t)) = p.split_once(':') {
+            (n.to_string(), t.to_string())
+        } else {
+            (p.clone(), "i32".to_string())
+        };
+
+        param_type_names.push(pty.clone());
+
+        match pty.as_str() {
+            "i32" | "int" => self.i32_type.into(),
+            "f32" | "float" | "f64" => self.context.f32_type().into(),
+            "bool" => self.context.bool_type().into(),
+            "ptr" | "string" => self.context.i8_type().ptr_type(AddressSpace::default()).into(),
+            _ => {
+                // fallback based on inferred type sets
+                if ptr_params.contains(&pname) {
                     self.context.i8_type().ptr_type(AddressSpace::default()).into()
+                } else if float_params.contains(&pname) {
+                    self.context.f32_type().into()
+                } else if bool_params.contains(&pname) {
+                    self.context.bool_type().into()
                 } else {
                     self.i32_type.into()
                 }
             }
-        })
-        .collect();
+        }
+    })
+    .collect();
 
-    // === Step 4: Determine type names (override-aware) ===
-    let param_type_names: Vec<String> = if let Some(overrides) = param_override {
-        overrides.to_vec() // forced type list from compile_main
-    } else {
-        params
-            .iter()
-            .map(|p| if int_params.contains(p) { "i32".to_string() } else { "ptr".to_string() })
-            .collect()
-    };
+// === Step 4: Apply override if present ===
+if let Some(overrides) = param_override {
+    param_type_names = overrides.to_vec();
+}
 
     let llvm_name = if param_type_names.is_empty() {
         name.to_string()
     } else {
         format!("{}__{}", name, param_type_names.join("_"))
     };
-    let is_string_overload = param_type_names.iter().all(|t| t == "ptr");
 
     // === Step 5: Create or fetch LLVM function ===
-    let fn_type = self.i32_type.fn_type(&param_types, false);
+    // === 🧮 Step 5: Create correct LLVM function type ===
+let fn_type = if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
+    // 🧠 String overload returns a pointer
+    self.context
+        .i8_type()
+        .ptr_type(AddressSpace::default())
+        .fn_type(&param_types, false)
+} else if param_type_names.iter().any(|t| t == "f32" || t == "f64" || t == "float") {
+    // 🧮 Float overload returns float
+    self.context.f32_type().fn_type(&param_types, false)
+} else if param_type_names.iter().any(|t| t == "bool") {
+    // 🧩 Bool overload returns i1
+    self.context.bool_type().fn_type(&param_types, false)
+} else {
+    // 🧱 Default integer return
+    self.i32_type.fn_type(&param_types, false)
+};
+
+
     let function = if let Some(existing) = self.module.get_function(&llvm_name) {
         existing
     } else {
@@ -2987,29 +3468,28 @@ pub fn compile_funcy(
     self.builder.position_at_end(entry);
 
     // === Step 7: Allocate locals (type-accurate) ===
-let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
-for (i, param_name) in params.iter().enumerate() {
+    let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
+    for (i, param_name) in params.iter().enumerate() {
     let param = function.get_nth_param(i as u32).unwrap();
-    let param_ty = param.get_type(); // actual LLVM type from the fn signature
+    let param_ty = param.get_type();
 
-    // allocate variable with correct type
-    let alloca = self.builder
-        .build_alloca(param_ty, param_name)
-        .expect("Failed to allocate local for parameter");
+    // 🧠 Split "a:f32" -> ("a", "f32")
+    let pure_name = if let Some((n, _)) = param_name.split_once(':') {
+        n.to_string()
+    } else {
+        param_name.clone()
+    };
 
-    // store the argument into the alloca
-    self.builder
-        .build_store(alloca, param)
-        .expect("Failed to store parameter");
+    let alloca = self.builder.build_alloca(param_ty, &pure_name).unwrap();
+    self.builder.build_store(alloca, param).unwrap();
 
-    // record in local vars
     local_vars.insert(
-        param_name.clone(),
+        pure_name,
         VarInfo {
             ptr: alloca,
             ty: param_ty,
             is_const: false,
-                is_thread_state: false,
+            is_thread_state: false,
         },
     );
 }
@@ -3024,15 +3504,72 @@ for (i, param_name) in params.iter().enumerate() {
         last_val = self.compile_node(node);
     }
 
-    // === Step 10: Return handling ===
-    let ret_val = match last_val {
-        Some(BasicValueEnum::IntValue(iv)) => iv,
-        _ => self.i32_type.const_int(0, false),
+   // === Step 10: Type-aware return handling with bool coercion ===
+if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
+    let fn_ret_ty = function.get_type().get_return_type();
+
+    // Determine correct return value
+    let ret_val: BasicValueEnum<'ctx> = if let Some(val) = last_val {
+        if let Some(rt) = fn_ret_ty {
+            match rt {
+                // int → float
+                BasicTypeEnum::FloatType(f) if val.is_int_value() => {
+                    let casted = self
+                        .builder
+                        .build_signed_int_to_float(val.into_int_value(), f, "int_to_float_ret")
+                        .unwrap();
+                    casted.into()
+                }
+                // float → int
+                BasicTypeEnum::IntType(i) if val.is_float_value() => {
+                    let casted = self
+                        .builder
+                        .build_float_to_signed_int(val.into_float_value(), i, "float_to_int_ret")
+                        .unwrap();
+                    casted.into()
+                }
+                // i32 ↔ i1 (for bool returns or accidental widening)
+                BasicTypeEnum::IntType(i) if val.is_int_value() => {
+                    let src = val.into_int_value();
+                    let src_bits = src.get_type().get_bit_width();
+                    let dst_bits = i.get_bit_width();
+                    let adjusted = if src_bits > dst_bits {
+                        self.builder
+                            .build_int_truncate(src, i, "ret_trunc_i32_to_i1")
+                            .unwrap()
+                    } else if src_bits < dst_bits {
+                        self.builder
+                            .build_int_z_extend(src, i, "ret_zext_i1_to_i32")
+                            .unwrap()
+                    } else {
+                        src
+                    };
+                    adjusted.into()
+                }
+                // match already OK
+                _ => val,
+            }
+        } else {
+            val
+        }
+    } else {
+        // default 0/null
+        if let Some(rt) = fn_ret_ty {
+            match rt {
+                BasicTypeEnum::IntType(i) => i.const_int(0, false).into(),
+                BasicTypeEnum::FloatType(f) => f.const_float(0.0).into(),
+                BasicTypeEnum::PointerType(p) => p.const_null().into(),
+                _ => self.i32_type.const_int(0, false).into(),
+            }
+        } else {
+            self.i32_type.const_int(0, false).into()
+        }
     };
 
-    if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
-        self.builder.build_return(Some(&ret_val)).unwrap();
-    }
+    self.builder.build_return(Some(&ret_val)).unwrap();
+}
+
+
 
     // === Step 11: Restore previous state ===
     self.vars = old_vars;
@@ -3060,6 +3597,7 @@ for (i, param_name) in params.iter().enumerate() {
 
     function
 }
+
 
 pub fn compile_async_funcy(
     &mut self,

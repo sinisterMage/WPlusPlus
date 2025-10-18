@@ -4,10 +4,6 @@ source_filename = "wpp_module"
 @_wpp_exc_flag = global i1 false
 @_wpp_exc_i32 = global i32 0
 @_wpp_exc_str = global ptr null
-@ret_fmt = private unnamed_addr constant [4 x i8] c"%s\0A\00", align 1
-@strlit_0 = private constant [19 x i8] c"string add called!\00"
-@strlit_1 = private constant [3 x i8] c"hi\00"
-@strlit_2 = private constant [6 x i8] c"there\00"
 
 declare void @wpp_print_value(ptr, i32)
 
@@ -52,9 +48,17 @@ entry:
   %exc_val_str = alloca ptr, align 8
   store ptr null, ptr %exc_val_str, align 8
   %call_add = call i32 @add__i32_i32(i32 2, i32 3)
-  call void @wpp_print_i32(i32 %call_add)
-  %call_add1 = call i32 @add__ptr_ptr(ptr @strlit_1, ptr @strlit_2)
-  call void @wpp_print_i32(i32 %call_add1)
+  %tmp_int = alloca i32, align 4
+  store i32 %call_add, ptr %tmp_int, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int, i32 1)
+  %call_add1 = call float @add__f32_f32(float 1.500000e+00, float 0x4002666660000000)
+  %tmp_float = alloca float, align 4
+  store float %call_add1, ptr %tmp_float, align 4
+  call void @wpp_print_value_basic(ptr %tmp_float, i32 3)
+  %call_add2 = call i32 @add__i32_i32(i32 1, i32 0)
+  %tmp_int3 = alloca i32, align 4
+  store i32 %call_add2, ptr %tmp_int3, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int3, i32 1)
   call void @wpp_thread_join_all()
   ret i32 0
 }
@@ -68,7 +72,9 @@ entry:
   %load_a = load i32, ptr %a, align 4
   %load_b = load i32, ptr %b, align 4
   %addtmp = add i32 %load_a, %load_b
-  call void @wpp_return(i32 %addtmp)
+  %ret_tmp = alloca i32, align 4
+  store i32 %addtmp, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
   ret i32 %addtmp
 
 after_return:                                     ; No predecessors!
@@ -82,50 +88,54 @@ entry1:                                           ; No predecessors!
   %load_a4 = load i32, ptr %a2, align 4
   %load_b5 = load i32, ptr %b3, align 4
   %addtmp6 = add i32 %load_a4, %load_b5
-  call void @wpp_return(i32 %addtmp6)
+  %ret_tmp7 = alloca i32, align 4
+  store i32 %addtmp6, ptr %ret_tmp7, align 4
+  call void @wpp_return(ptr %ret_tmp7, i32 1)
   ret i32 %addtmp6
 
-after_return7:                                    ; No predecessors!
-  ret i32 0
-
-entry8:                                           ; No predecessors!
-  %a9 = alloca i32, align 4
-  store i32 %0, ptr %a9, align 4
-  %b10 = alloca i32, align 4
-  store i32 %1, ptr %b10, align 4
-  call void @wpp_print_value(ptr @strlit_0, i32 0)
-  %load_a11 = load i32, ptr %a9, align 4
-  %load_b12 = load i32, ptr %b10, align 4
-  %addtmp13 = add i32 %load_a11, %load_b12
-  call void @wpp_return(i32 %addtmp13)
-  ret i32 %addtmp13
-
-after_return14:                                   ; No predecessors!
+after_return8:                                    ; No predecessors!
   ret i32 0
 }
 
-define i32 @add__ptr_ptr(ptr %0, ptr %1) {
+declare void @wpp_return(ptr, i32)
+
+define float @add__f32_f32(float %0, float %1) {
 entry:
-  %a = alloca ptr, align 8
-  store ptr %0, ptr %a, align 8
-  %b = alloca ptr, align 8
-  store ptr %1, ptr %b, align 8
-  %load_a = load ptr, ptr %a, align 8
-  %load_b = load ptr, ptr %b, align 8
-  %concat = call ptr @wpp_str_concat(ptr %load_a, ptr %load_b)
-  %print_return = call i32 (ptr, ...) @printf(ptr @ret_fmt, ptr %concat)
-  call void @wpp_return(i32 0)
-  ret i32 0
+  %a = alloca float, align 4
+  store float %0, ptr %a, align 4
+  %b = alloca float, align 4
+  store float %1, ptr %b, align 4
+  %load_a = load float, ptr %a, align 4
+  %load_b = load float, ptr %b, align 4
+  %fadd = fadd float %load_a, %load_b
+  %ret_tmp = alloca float, align 4
+  store float %fadd, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 2)
+  ret float %fadd
 
 after_return:                                     ; No predecessors!
-  ret i32 0
+  ret float 0.000000e+00
 }
 
-declare void @wpp_return(i32)
+define i1 @add__bool_bool(i1 %0, i1 %1) {
+entry:
+  %a = alloca i1, align 1
+  store i1 %0, ptr %a, align 1
+  %b = alloca i1, align 1
+  store i1 %1, ptr %b, align 1
+  %load_a = load i1, ptr %a, align 1
+  %load_b = load i1, ptr %b, align 1
+  %ortmp = or i1 %load_a, %load_b
+  %ret_tmp = alloca i1, align 1
+  store i1 %ortmp, ptr %ret_tmp, align 1
+  call void @wpp_return(ptr %ret_tmp, i32 3)
+  ret i1 %ortmp
 
-declare i32 @printf(ptr, ...)
+after_return:                                     ; No predecessors!
+  ret i1 false
+}
 
-declare void @wpp_print_i32(i32)
+declare void @wpp_print_value_basic(ptr, i32)
 
 define i32 @main() {
 entry:

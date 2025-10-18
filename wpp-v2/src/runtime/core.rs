@@ -1,11 +1,7 @@
 use inkwell::execution_engine::ExecutionEngine;
 use once_cell::sync::{Lazy, OnceCell};
 use std::{
-    collections::VecDeque,
-    mem,
-    sync::{Arc, Mutex},
-    thread,
-    time::Duration,
+    collections::VecDeque, ffi::c_void, mem, sync::{Arc, Mutex}, thread, time::Duration
 };
 use tokio::runtime::Runtime;
 
@@ -109,21 +105,37 @@ pub extern "C" fn wpp_yield() {
 
 /// === RETURN ===
 #[unsafe(no_mangle)]
-pub extern "C" fn wpp_return(value: i32) {
-    println!("✅ [runtime] Async function returned {value}");
-
-    let mut queue = TASK_QUEUE.lock().unwrap();
-    if let Some(task) = queue.front() {
-        task.mark_finished(value);
+pub extern "C" fn wpp_return(value: *const c_void, type_tag: i32) {
+    unsafe {
+        match type_tag {
+            1 => {
+                let ptr = value as *const i32;
+                println!("✅ [runtime] Returned int: {}", *ptr);
+            }
+            2 => {
+                let ptr = value as *const f32;
+                println!("✅ [runtime] Returned float: {}", *ptr);
+            }
+            3 => {
+                let ptr = value as *const bool;
+                println!("✅ [runtime] Returned bool: {}", *ptr);
+            }
+            4 => {
+                let ptr = value as *const *const i8;
+                println!("✅ [runtime] Returned string pointer: {:?}", *ptr);
+            }
+            _ => println!("⚠️ [runtime] Unknown return type tag: {type_tag}"),
+        }
     }
 
-    *LAST_RESULT.lock().unwrap() = Some(value);
-
-    // Remove finished tasks
+    // ✅ continue async scheduling
+    let mut queue = TASK_QUEUE.lock().unwrap();
+    if let Some(task) = queue.front() {
+        task.mark_finished(0);
+    }
     queue.retain(|t| !t.is_finished());
     drop(queue);
 
-    // Continue scheduling in the background
     thread::spawn(|| {
         schedule_next();
     });

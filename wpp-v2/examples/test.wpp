@@ -1,10 +1,12 @@
 entity Dog {
     age = 5;
+
+    func new(age: i32) {
+        me.age = age;
+    }
+
     func bark() => print("woof");
 }
 
-entity Husky alters Dog {
-    func bark() => print("AROOO");
-}
-Dog.bark()
-Husky.bark()
+let d = new Dog(3)
+d.bark()

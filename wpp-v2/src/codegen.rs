@@ -43,6 +43,8 @@ pub struct VarInfo<'ctx> {
     pub ty: BasicTypeEnum<'ctx>,
     pub is_const: bool,
         pub is_thread_state: bool, // 👈 new field
+            pub entity_type: Option<String>, // 👈 NEW FIELD
+
 }
 /// The core LLVM code generator for W++
 pub struct Codegen <'ctx> {
@@ -1428,36 +1430,90 @@ let casted = self
 else if name.contains('.') {
     let parts: Vec<&str> = name.split('.').collect();
     if parts.len() == 2 {
-        let (entity_name, method_name) = (parts[0], parts[1]);
-        println!("🧭 Trying to resolve entity-qualified call: {} -> {}", entity_name, method_name);
+        let (lhs, method_name) = (parts[0], parts[1]);
+        println!("🧭 Trying to resolve entity-qualified call: {} -> {}", lhs, method_name);
 
-        // Try direct match for full name first (Dog.bark)
+        // === 1️⃣ Case A: Direct static entity call (e.g. Dog.bark)
         let full_name_sig = FunctionSignature {
             name: name.clone(),
             param_types: vec![],
         };
         if let Some(func) = self.functions.get(&full_name_sig) {
             println!("✅ Direct entity-qualified match for {}", name);
-            let call_site = self.builder
+            let call_site = self
+                .builder
                 .build_call(*func, &[], &format!("call_{}", name))
                 .unwrap();
-            return call_site.try_as_basic_value().left().unwrap_or_else(|| self.i32_type.const_int(0, false).into());
+            return call_site
+                .try_as_basic_value()
+                .left()
+                .unwrap_or_else(|| self.i32_type.const_int(0, false).into());
         }
 
-        // Fallback: search by unqualified name
+       // === 2️⃣ Case B: Instance method call (e.g. d.bark)
+if let Some(var_info) = self.vars.get(lhs) {
+    if let Some(entity_type) = &var_info.entity_type {
+        let resolved = format!("{}.{}", entity_type, method_name);
+        println!("🔍 Resolved instance call '{}.{}' -> '{}'", lhs, method_name, resolved);
+
+        let sig = FunctionSignature {
+            name: resolved.clone(),
+            param_types: vec![],
+        };
+
+        if let Some(func) = self.functions.get(&sig) {
+    // ✅ Load the pointer stored in variable `lhs`
+    let instance_ptr = self
+        .builder
+        .build_load(
+            var_info.ty,             // <-- the type of what we're loading
+            var_info.ptr,            // <-- the pointer variable itself
+            &format!("{}_load", lhs) // <-- name for IR
+        )
+        .unwrap();
+
+    // ✅ Pass `me` as the first argument
+    let args: Vec<BasicMetadataValueEnum> = vec![instance_ptr.into()];
+
+    let call_site = self
+        .builder
+        .build_call(*func, &args, &format!("call_{}", resolved))
+        .unwrap();
+
+    return call_site
+        .try_as_basic_value()
+        .left()
+        .unwrap_or_else(|| self.i32_type.const_int(0, false).into());
+}
+else {
+            panic!(
+                "Method '{}' not found for entity type '{}'",
+                method_name, entity_type
+            );
+        }
+    }
+}
+
+
+        // === 3️⃣ Case C: Fallback search by unqualified name
         for (sig, func) in &self.functions {
             if sig.name == method_name {
-                println!("🔗 Fallback matched unqualified {}.{}", entity_name, method_name);
-                let call_site = self.builder
+                println!("🔗 Fallback matched unqualified {}.{}", lhs, method_name);
+                let call_site = self
+                    .builder
                     .build_call(*func, &[], &format!("call_{}", method_name))
                     .unwrap();
-                return call_site.try_as_basic_value().left().unwrap_or_else(|| self.i32_type.const_int(0, false).into());
+                return call_site
+                    .try_as_basic_value()
+                    .left()
+                    .unwrap_or_else(|| self.i32_type.const_int(0, false).into());
             }
         }
     }
 
     panic!("Unknown entity-qualified function: {}", name);
 }
+
 
         
             else {
@@ -1823,6 +1879,7 @@ if let Some(var) = catch_var {
         ty: str_ty.as_basic_type_enum(),
         is_const: false,
         is_thread_state: false,
+        entity_type: None,
     },
 );
 
@@ -2303,6 +2360,93 @@ Expr::ObjectLiteral(fields) => {
 }
 
 
+Expr::NewInstance { entity, args } => {
+    println!("🐾 Allocating new instance of entity: {}", entity);
+
+    // 1️⃣ Retrieve entity definition
+    let oopsie = self.entities.get(entity)
+        .unwrap_or_else(|| panic!("Unknown entity '{}'", entity));
+
+    let struct_ty = oopsie.struct_type;
+
+    // 2️⃣ Allocate memory (via malloc or GC)
+    let malloc_fn = self.module.get_function("malloc").unwrap_or_else(|| {
+        self.module.add_function(
+            "malloc",
+            self.context.i8_type().ptr_type(AddressSpace::default())
+                .fn_type(&[self.i32_type.into()], false),
+            None,
+        )
+    });
+
+    let size_val = struct_ty.size_of().unwrap();
+    let size_i32 = self.builder
+        .build_int_cast(size_val, self.i32_type, "size_i32")
+        .unwrap();
+
+    let raw_ptr = self.builder
+        .build_call(malloc_fn, &[size_i32.into()], "alloc_instance")
+        .unwrap()
+        .try_as_basic_value()
+        .left()
+        .unwrap()
+        .into_pointer_value();
+
+    // 3️⃣ Cast pointer to entity type
+    let typed_ptr = self.builder
+        .build_bitcast(raw_ptr, struct_ty.ptr_type(AddressSpace::default()), "as_struct")
+        .unwrap()
+        .into_pointer_value();
+
+    // 4️⃣ Initialize fields (defaults or zero)
+    for (i, (field_name, field_ty)) in oopsie.fields.iter().enumerate() {
+        let field_ptr = unsafe {
+            self.builder
+                .build_struct_gep(struct_ty, typed_ptr, i as u32, field_name)
+                .unwrap()
+        };
+
+        // TODO: default initialization from entity declaration (for now, zero)
+        let zero_val: BasicValueEnum<'ctx> = match field_ty {
+    BasicTypeEnum::IntType(i) => i.const_int(0, false).into(),
+    BasicTypeEnum::FloatType(f) => f.const_float(0.0).into(),
+    BasicTypeEnum::PointerType(p) => p.const_null().into(),
+    _ => self.i32_type.const_zero().into(),
+};
+
+        self.builder.build_store(field_ptr, zero_val);
+    }
+
+    // 5️⃣ Optional: call constructor if it exists (Dog.new)
+    let ctor_name = format!("{}.new", entity);
+    let ctor_sig = FunctionSignature {
+        name: ctor_name.clone(),
+        param_types: args.iter().map(|_| "i32".to_string()).collect(), // basic arg inference
+    };
+
+    if let Some(func_val) = self.functions.get(&ctor_sig).cloned() {
+    println!("🧩 Calling constructor '{}'", ctor_name);
+
+    let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
+    compiled_args.push(typed_ptr.into()); // 'me' argument
+
+    // ✅ Borrow self mutably again AFTER immutable borrow ended
+    for a in args {
+        let compiled = self.compile_expr(a);
+        compiled_args.push(compiled.into());
+    }
+
+    self.builder
+        .build_call(func_val, &compiled_args, &format!("call_ctor_{}", entity))
+        .unwrap();
+} else {
+    println!("⚙️ No constructor found for '{}', skipping init", entity);
+}
+
+
+    // ✅ Return pointer to the instance
+    typed_ptr.into()
+}
 
 
 
@@ -2425,6 +2569,38 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
             }
         }
     };
+    // === Special case: entity instantiation (let d = new Dog(...)) ===
+if let Expr::NewInstance { entity, args } = value {
+    println!("🐾 Allocating new instance of entity: {}", entity);
+
+    // Call helper to allocate + call constructor
+    let instance_ptr = self.compile_new_instance(entity, args);
+
+    // All entity instances are stored as i8* (generic object pointer)
+    let entity_ptr_ty = self
+        .context
+        .i8_type()
+        .ptr_type(inkwell::AddressSpace::default())
+        .as_basic_type_enum();
+
+    let alloca = self.builder.build_alloca(entity_ptr_ty, name).unwrap();
+    self.builder.build_store(alloca, instance_ptr).unwrap();
+
+    // ✅ Register variable in self.vars with entity type
+    self.vars.insert(
+        name.clone(),
+        VarInfo {
+            ptr: alloca,
+            ty: entity_ptr_ty,
+            is_const: *is_const,
+            is_thread_state: false,
+            entity_type: Some(entity.clone()), // 👈 NEW FIELD (add this to VarInfo)
+        },
+    );
+
+    // ✅ skip the rest of normal let logic
+    return None;
+}
 
     // === Allocate space for variable ===
     let alloca = self.builder.build_alloca(var_type, name).unwrap();
@@ -2489,6 +2665,8 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
             ty: var_type,
             is_const: *is_const,
                 is_thread_state: false,
+                    entity_type: None, // ✅ add this line
+
         },
     );
 
@@ -3146,6 +3324,57 @@ fn merge_types(&self, left: BasicTypeEnum<'ctx>, right: BasicTypeEnum<'ctx>) -> 
     }
 }
 
+pub fn compile_new_instance(
+    &mut self,
+    entity: &str,
+    args: &Vec<Expr>,
+) -> PointerValue<'ctx> {
+    println!("🏗️ [new_instance] Allocating entity '{}'", entity);
+
+    // === 1️⃣ Get the entity definition ===
+    let entity_info = self
+        .entities
+        .get(entity)
+        .unwrap_or_else(|| panic!("Unknown entity type: {}", entity));
+
+    let struct_ty = entity_info.struct_type;
+
+    // === 2️⃣ Allocate memory for the instance ===
+    let typed_ptr = self
+        .builder
+        .build_alloca(struct_ty, &format!("{}_ptr", entity))
+        .unwrap();
+
+    // === 3️⃣ Optional: call constructor if it exists (e.g. Dog.new) ===
+    let ctor_sig = FunctionSignature {
+        name: format!("{}.new", entity),
+        param_types: args.iter().map(|_| "i32".to_string()).collect(), // ✅ avoid infer_type lifetime
+    };
+
+    if let Some(func) = self.functions.get(&ctor_sig).cloned() {
+        println!("🧩 [new_instance] Calling constructor '{}.new'", entity);
+
+        let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
+
+        // Pass 'me' argument (the struct pointer itself)
+        compiled_args.push(typed_ptr.into());
+
+        // Compile constructor arguments
+        for a in args {
+            compiled_args.push(self.compile_expr(a).into());
+        }
+
+        // Call the constructor
+        self.builder
+            .build_call(func, &compiled_args, &format!("call_ctor_{}", entity))
+            .unwrap();
+    } else {
+        println!("⚠️ [new_instance] No constructor found for '{}', skipping init", entity);
+    }
+
+    // === 4️⃣ Return pointer to the instance ===
+    typed_ptr
+}
 
 
 
@@ -3435,11 +3664,19 @@ pub fn compile_funcy(
             ptr_params.insert(p.clone());
         }
     }
-
+    // === 🧩 OOPSIE: inject implicit `me` for entity methods ===
+let mut effective_params = params.to_vec();
+if let Some(ent_name) = entity_name {
+    // prepend "me:ptr" if it's not already there
+    if !effective_params.iter().any(|p| p.starts_with("me")) {
+        effective_params.insert(0, "me:ptr".to_string());
+    }
+    println!("🧩 Added implicit 'me' to method of entity '{}'", ent_name);
+}
     // === Step 3: Build LLVM parameter types (explicit-type aware) ===
 let mut param_type_names: Vec<String> = Vec::new();
 
-let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = params
+let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = effective_params
     .iter()
     .map(|p| {
         // Handle explicit annotations like "a:f32"
@@ -3471,15 +3708,7 @@ let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = params
         }
     })
     .collect();
-    // === 🧩 OOPSIE: inject implicit `me` for entity methods ===
-let mut effective_params = params.to_vec();
-if let Some(ent_name) = entity_name {
-    // prepend "me:ptr" if it's not already there
-    if !effective_params.iter().any(|p| p.starts_with("me")) {
-        effective_params.insert(0, "me:ptr".to_string());
-    }
-    println!("🧩 Added implicit 'me' to method of entity '{}'", ent_name);
-}
+    
 
 // === Step 4: Apply override if present ===
 if let Some(overrides) = param_override {
@@ -3530,7 +3759,7 @@ let fn_type = if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
 
     // === Step 7: Allocate locals (type-accurate) ===
     let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
-    for (i, param_name) in params.iter().enumerate() {
+    for (i, param_name) in effective_params.iter().enumerate() {
     let param = function.get_nth_param(i as u32).unwrap();
     let param_ty = param.get_type();
 
@@ -3551,6 +3780,7 @@ let fn_type = if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
             ty: param_ty,
             is_const: false,
             is_thread_state: false,
+                entity_type: None, // ✅ add this line
         },
     );
 }
@@ -3696,6 +3926,8 @@ let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
         ty: self.i32_type.as_basic_type_enum(),
         is_const: false,
             is_thread_state: false,
+                entity_type: None, // ✅ add this line
+
     },
 );
 

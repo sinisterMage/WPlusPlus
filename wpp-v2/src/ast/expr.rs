@@ -57,5 +57,9 @@ pub enum Expr {
     Await(Box<Expr>), // ✅ new expression kind
     ArrayLiteral(Vec<Expr>),
     ObjectLiteral(Vec<(String, Expr)>),
+    NewInstance {
+        entity: String,
+        args: Vec<Expr>,
+    },
 }
 

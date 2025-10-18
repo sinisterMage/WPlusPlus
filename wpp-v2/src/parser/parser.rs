@@ -542,10 +542,13 @@ fn parse_throw(&mut self) -> Expr {
 }
 fn parse_funcy(&mut self, is_async: bool) -> Expr {
     // expect function name
-    let name = match self.advance().clone() {
-        TokenKind::Identifier(n) => n,
-        other => panic!("Expected function name after 'funcy', got {:?}", other),
-    };
+    // ✅ allow both identifiers and 'new' keyword
+let name = match self.advance().clone() {
+    TokenKind::Identifier(n) => n,
+    TokenKind::Keyword(k) if k == "new" => "new".to_string(),
+    other => panic!("Expected function name after 'func' or 'funcy', got {:?}", other),
+};
+
 
     // expect '('
     self.expect(TokenKind::Symbol("(".into()), "Expected '(' after function name");
@@ -790,6 +793,33 @@ fn parse_logical_and(&mut self) -> Expr {
         self.advance();
         let inner = self.parse_primary();
         return Expr::Await(Box::new(inner));
+    }
+        // 🆕 handle 'new' keyword for entity instantiation
+    if self.check(TokenKind::Keyword("new".into())) {
+        self.advance(); // consume 'new'
+
+        // Expect an entity name next
+        let entity = match self.advance().clone() {
+            TokenKind::Identifier(id) => id,
+            other => panic!("Expected entity name after 'new', got {:?}", other),
+        };
+
+        // Parse optional argument list
+        self.expect(TokenKind::Symbol("(".into()), "Expected '(' after entity name");
+        let mut args = Vec::new();
+        if !self.check(TokenKind::Symbol(")".into())) {
+            loop {
+                args.push(self.parse_expr());
+                if self.check(TokenKind::Symbol(",".into())) {
+                    self.advance();
+                    continue;
+                }
+                break;
+            }
+        }
+        self.expect(TokenKind::Symbol(")".into()), "Expected ')' after arguments");
+
+        return Expr::NewInstance { entity, args };
     }
 
     // ✅ handle array literals

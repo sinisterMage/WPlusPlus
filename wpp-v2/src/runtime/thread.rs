@@ -13,7 +13,10 @@ use std::{
 
 use once_cell::sync::Lazy;
 use rand::Rng;
-
+static GC_LOCK: AtomicBool = AtomicBool::new(false);
+thread_local! {
+    static THREAD_ANCESTRY: std::cell::RefCell<Vec<u64>> = std::cell::RefCell::new(Vec::new());
+}
 // ===========================================================
 // 🧩 ThreadState (for useThreadState())
 // ===========================================================
@@ -48,6 +51,7 @@ pub struct GcMutex<T: Send + 'static> {
     data: Arc<Mutex<T>>,
     owner_thread: Arc<Mutex<Option<u64>>>,
     poisoned: Arc<AtomicBool>,
+        busy: AtomicBool, 
 }
 
 impl<T: Send + 'static> GcMutex<T> {
@@ -60,6 +64,7 @@ impl<T: Send + 'static> GcMutex<T> {
             data: Arc::new(Mutex::new(initial)),
             owner_thread: Arc::new(Mutex::new(None)),
             poisoned: Arc::new(AtomicBool::new(false)),
+            busy: AtomicBool::new(false), // ✅ initialize here
         });
 
         ThreadGC::register_mutex(mutex.clone());
@@ -68,22 +73,25 @@ impl<T: Send + 'static> GcMutex<T> {
     }
 
     pub fn lock(&self, thread_id: u64) -> std::sync::LockResult<std::sync::MutexGuard<'_, T>> {
-        if self.poisoned.load(Ordering::SeqCst) {
-            eprintln!("⚠️ [mutex] Attempt to lock poisoned mutex #{:?}", self.id);
-        }
+    if self.busy.swap(true, Ordering::Acquire) {
+        eprintln!("⚠️ [mutex] Race detected on mutex #{} (already busy)", self.id);
+    }
 
-        let guard = self.data.lock();
-        match guard {
-            Ok(g) => {
-                *self.owner_thread.lock().unwrap() = Some(thread_id);
-                Ok(g)
-            }
-            Err(poisoned) => {
-                self.poisoned.store(true, Ordering::SeqCst);
-                Err(poisoned)
-            }
+    let guard = self.data.lock();
+    match guard {
+        Ok(g) => {
+            *self.owner_thread.lock().unwrap() = Some(thread_id);
+            self.busy.store(false, Ordering::Release);
+            Ok(g)
+        }
+        Err(poisoned) => {
+            self.poisoned.store(true, Ordering::SeqCst);
+            self.busy.store(false, Ordering::Release);
+            Err(poisoned)
         }
     }
+}
+
 
     pub fn unlock(&self) {
         *self.owner_thread.lock().unwrap() = None;
@@ -138,13 +146,32 @@ impl ThreadHandle {
             result: Arc::new(Mutex::new(None)),
             join_handle: None,
             ref_count: Arc::new(AtomicU64::new(0)),
-            
         });
-        
     }
 
     static NEXT_ID: AtomicU64 = AtomicU64::new(1);
     let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
+
+    // 🧩 recursion prevention
+    let mut recursion_violation = false;
+    THREAD_ANCESTRY.with(|ancestry| {
+        let ancestors = ancestry.borrow();
+        if ancestors.contains(&id) {
+            recursion_violation = true;
+        }
+    });
+    if recursion_violation {
+        eprintln!("💥 [thread] recursion prevented: thread #{id} tried to spawn itself!");
+        return Arc::new(ThreadHandle {
+            id,
+            finished: Arc::new(AtomicBool::new(true)),
+            result: Arc::new(Mutex::new(None)),
+            join_handle: None,
+            ref_count: Arc::new(AtomicU64::new(0)),
+        });
+    }
+
+    THREAD_ANCESTRY.with(|ancestry| ancestry.borrow_mut().push(id));
 
     let finished = Arc::new(AtomicBool::new(false));
     let result = Arc::new(Mutex::new(None));
@@ -156,13 +183,21 @@ impl ThreadHandle {
     println!("🚀 [thread] spawning GC-managed thread #{id}");
 
     let join_handle = Some(thread::spawn(move || {
-    let result = std::panic::catch_unwind(|| func());
-    match result {
-        Ok(_) => println!("✅ [thread] thread #{id} finished normally"),
-        Err(_) => eprintln!("💥 [thread] thread #{id} panicked"),
-    }
-    fin_clone.store(true, Ordering::SeqCst);
-}));
+        let result = std::panic::catch_unwind(|| func());
+        match result {
+            Ok(_) => println!("✅ [thread] thread #{id} finished normally"),
+            Err(_) => eprintln!("💥 [thread] thread #{id} panicked"),
+        }
+        fin_clone.store(true, Ordering::SeqCst);
+
+        // 🧹 remove ancestry record when finished
+        THREAD_ANCESTRY.with(|ancestry| {
+            let mut a = ancestry.borrow_mut();
+            if let Some(pos) = a.iter().position(|x| *x == id) {
+                a.remove(pos);
+            }
+        });
+    }));
 
     let handle = Arc::new(ThreadHandle {
         id,
@@ -172,9 +207,10 @@ impl ThreadHandle {
         ref_count,
     });
 
-    ThreadGC::register(handle.clone()); // ✅ register Arc safely
+    ThreadGC::register(handle.clone());
     handle
 }
+
 
 
     pub fn join(&mut self) {
@@ -231,6 +267,8 @@ impl ThreadGC {
     }
 
     pub fn register(ptr: Arc<ThreadHandle>) {
+    // Spin-lock GC during mutation
+    while GC_LOCK.swap(true, Ordering::Acquire) {}
     let id = ptr.id;
     ThreadGC::global()
         .threads
@@ -238,6 +276,7 @@ impl ThreadGC {
         .unwrap()
         .insert(id, Arc::downgrade(&ptr));
     println!("🧠 [gc] Registered thread handle #{id}");
+    GC_LOCK.store(false, Ordering::Release);
 }
 
 pub fn register_mutex<T: Send + 'static>(ptr: Arc<GcMutex<T>>) {
@@ -252,7 +291,12 @@ pub fn register_mutex<T: Send + 'static>(ptr: Arc<GcMutex<T>>) {
 }
 
 
-     pub fn collect_now() {
+    pub fn collect_now() {
+    if GC_LOCK.swap(true, Ordering::Acquire) {
+        println!("⚠️ [gc] Skipped collect (another thread collecting)");
+        return;
+    }
+
     let mut threads = ThreadGC::global().threads.lock().unwrap();
     let mut mutexes = ThreadGC::global().mutexes.lock().unwrap();
     let mut collected = 0;
@@ -283,6 +327,8 @@ pub fn register_mutex<T: Send + 'static>(ptr: Arc<GcMutex<T>>) {
     if collected > 0 {
         println!("🧹 [gc] Collected {collected} finished threads");
     }
+
+    GC_LOCK.store(false, Ordering::Release);
 }
 
 }

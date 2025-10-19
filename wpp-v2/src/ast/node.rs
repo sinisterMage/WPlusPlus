@@ -10,6 +10,17 @@ pub enum Node {
     },
     Expr(Expr),
     Entity(EntityNode),
+    Export {
+        name: String,
+        item: Box<Node>,
+    },
+    ImportAll {
+        module: String,
+    },
+    ImportList {
+        module: String,
+        members: Vec<(String, Option<String>)>, // name, alias
+    },
 }
 
 #[derive(Debug, Clone)]

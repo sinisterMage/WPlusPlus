@@ -68,6 +68,7 @@ static int is_probably_valid_utf8(const unsigned char *s) {
 }
 
 static void safe_print_string_checked(const char *s) {
+        printf("🧩 [debug] safe_print_string_checked(ptr=%p)\n", s);
     if (!s) {
         printf("(null)\n");
         return;
@@ -131,7 +132,9 @@ void wpp_print_object(void *obj_ptr) {
 // =====================================================
 
 __attribute__((visibility("default")))
-void wpp_print_value_basic(void *ptr, int32_t type_id) {
+void wpp_print_value_basic(const void *ptr, int32_t type_id) {
+        printf("🧩 [debug] wpp_print_value_basic(ptr=%p, type_id=%d)\n", ptr, type_id);
+
     if (!ptr) {
         printf("(null)\n");
         return;
@@ -164,6 +167,7 @@ void wpp_print_value_basic(void *ptr, int32_t type_id) {
             break;
         }
        case 6: { // string
+        printf("🧩 [debug] entering string printer with ptr=%p\n", ptr);
     const char *s = (const char *)ptr; // ✅ no dereference
     safe_print_string_checked(s);
     break;

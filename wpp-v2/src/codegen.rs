@@ -8,7 +8,7 @@ use inkwell::{
     AddressSpace,
     OptimizationLevel,
 };
-use std::collections::HashMap;
+use std::{collections::HashMap, sync::{Arc, Mutex}};
 use inkwell::types::BasicType;
 use inkwell::types::BasicMetadataTypeEnum;
 use std::ffi::CString;
@@ -22,6 +22,9 @@ use crate::runtime;
 use std::mem;
 use std::ffi::c_void;
 use inkwell::types::IntType;
+use crate::module_system::ModuleSystem;
+use crate::export_resolver::ExportResolver;
+
 
 pub struct OopsieEntity<'ctx> {
     pub name: String,
@@ -64,6 +67,8 @@ pub struct Codegen <'ctx> {
     pub functions: HashMap<FunctionSignature, FunctionValue<'ctx>>,
     pub reverse_func_index: HashMap<String, Vec<FunctionSignature>>,
         pub entities: HashMap<String, OopsieEntity<'ctx>>,
+       pub wms: Option<Arc<Mutex<ModuleSystem>>>,
+pub resolver: Option<Arc<Mutex<ExportResolver>>>,
 
 }
 fn get_or_declare_fn<'ctx>(
@@ -109,7 +114,7 @@ if self.module.get_function("wpp_str_concat").is_none() {
 
 
 impl<'ctx> Codegen<'ctx> {
-    pub fn new(context: &'ctx Context, name: &str) -> Self {
+    pub fn new(context: &'ctx Context, name: &str, base_dir: &str) -> Self {
     let module = context.create_module(name);
     let builder = context.create_builder();
     let i32_type = context.i32_type();
@@ -142,6 +147,9 @@ impl<'ctx> Codegen<'ctx> {
         // 🧩 Multiple dispatch maps
         functions: HashMap::new(),
         reverse_func_index: HashMap::new(),
+        wms: Some(Arc::new(Mutex::new(ModuleSystem::new(base_dir)))),
+resolver: Some(Arc::new(Mutex::new(ExportResolver::new()))),
+
     };
 
     // ✅ Register runtime externs immediately after initialization
@@ -255,7 +263,7 @@ pub fn init_mutex_support(&self) {
         // === Integer literal ===
         Expr::Literal(value) => self.i32_type.const_int(*value as u64, false).into(),
 
-      Expr::StringLiteral(s) => {
+     Expr::StringLiteral(s) => {
     use inkwell::values::BasicValueEnum;
 
     // ✅ Create null-terminated bytes
@@ -283,23 +291,24 @@ pub fn init_mutex_support(&self) {
     global.set_constant(true);
     global.set_linkage(inkwell::module::Linkage::Private);
 
-    // ✅ Get a pointer to the first byte
-    // ✅ Get a pointer to the first byte
-let zero = self.context.i32_type().const_zero();
-let ptr = unsafe {
+    // ✅ Get a pointer to the first byte (i8*)
+    let zero = self.context.i32_type().const_zero();
+    let ptr = unsafe {
     self.builder
         .build_in_bounds_gep(
-            array_type,                     // 🩵 Use array type here, not i8_type()
-            global.as_pointer_value(),      // pointer to [N x i8]
-            &[zero, zero],                  // get element [0][0]
-            "strptr",
+            array_type,                  // ✅ pointee type
+            global.as_pointer_value(),   // ✅ pointer to [N x i8]
+            &[zero, zero],               // ✅ indices [0,0]
+            "str_gep",
         )
-        .expect("Failed to GEP string pointer")
+        .expect("Failed to build GEP for string literal")
 };
+
 
     // ✅ Return as a BasicValueEnum (i8*)
     ptr.as_basic_value_enum()
 }
+
 
 
 
@@ -2480,6 +2489,15 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
         self.compile_entity(entity);
         None // 👈 explicitly return None so the return type matches
     }
+    Node::ImportAll { module } | Node::ImportList { module, .. } => {
+        println!("📦 Skipping import '{}': already resolved by WMS", module);
+        None
+    }
+
+    Node::Export { name, .. } => {
+        println!("📤 Export '{}' handled by ExportResolver", name);
+        None
+    }
 
         Node::Let { name, value, is_const, ty } => {
     println!("🧱 Compiling top-level node: Let {{ name: {}, ty: {:?} }}", name, ty);
@@ -2702,6 +2720,31 @@ if let Expr::NewInstance { entity, args } = value {
 
 /// Create main(), compile nodes, and return i32.
 pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
+    // 🔒 Skip entrypoint scaffolding for submodules
+    let module_name = self.module.get_name().to_str().unwrap_or_default();
+    if module_name != "main" {
+        println!("⚙️ Compiling submodule '{}' — skipping main_async/main wrappers", module_name);
+
+        // Just compile function bodies; no entrypoint creation
+        for node in nodes {
+            if let Node::Expr(Expr::Funcy { name, params, body, is_async }) = node {
+                if *is_async {
+                    self.compile_async_funcy(name, params, body);
+                } else {
+                    self.compile_funcy(name, params, body, None, None);
+                }
+            }
+        }
+
+        // Return a dummy placeholder function to satisfy return type
+        return self.module.add_function(
+            "__submodule_stub",
+            self.i32_type.fn_type(&[], false),
+            None,
+        );
+    }
+
+    // === Root module only ===
     let fn_type = self.i32_type.fn_type(&[], false);
     let async_fn = self.module.add_function("main_async", fn_type, None);
     let entry = self.context.append_basic_block(async_fn, "entry");
@@ -2710,6 +2753,7 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     // === Use a dedicated temporary builder for the entry ===
     let entry_builder = self.context.create_builder();
     entry_builder.position_at_end(entry);
+
 
     // === Exception slots (kept global) ===
     let flag_ptr = entry_builder.build_alloca(self.i32_type, "exc_flag").unwrap();
@@ -2725,6 +2769,19 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     self.exception_flag = Some(flag_ptr);
     self.exception_value_i32 = Some(val_i32_ptr);
     self.exception_value_str = Some(val_str_ptr);
+    if let (Some(wms_arc), Some(resolver_arc)) = (&self.wms, &self.resolver) {
+    // 🔒 Lock both Arc<Mutex<T>> to get access to the inner values
+    let wms = wms_arc.lock().unwrap();
+    let mut resolver = resolver_arc.lock().unwrap();
+
+    println!("🔗 [wms] Collecting exports from cached modules...");
+    resolver.collect_exports(&wms);
+
+    println!("🔗 [wms] Applying imports into current module...");
+    resolver.apply_imports(&mut self.module, &wms);
+}
+
+
 
   // === Predeclare functions ===
 for node in nodes {
@@ -3245,6 +3302,19 @@ if let Some(func) = self.module.get_function("wpp_str_concat") {
         
 
     }
+    // === Link cross-module imports ===
+if let (Some(wms_arc), Some(resolver_arc)) = (&self.wms, &self.resolver) {
+    println!("🧩 Linking runtime imports across modules...");
+
+    // 🔒 Lock both Arc<Mutex<T>> values
+    let wms = wms_arc.lock().unwrap();
+    let mut resolver = resolver_arc.lock().unwrap();
+
+    // ✅ Now we can call methods on the real ExportResolver
+    resolver.link_imports_runtime(&engine, &self.module, &wms);
+}
+
+
 
     // ✅ Launch entrypoint
     let entry_name = if self.module.get_function("bootstrap_main").is_some() {

@@ -1,2 +1,4 @@
-print("Hello from W++!")
-print("✨ Functional configuration detected!")
+import { add } from "math"
+import { greet } from "utils"
+
+print("2 + 3 = ", add(2, 3))

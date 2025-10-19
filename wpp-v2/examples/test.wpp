@@ -1,12 +1,1 @@
-entity Dog {
-    age = 5;
-
-    func new(age: i32) {
-        me.age = age;
-    }
-
-    func bark() => print("woof");
-}
-
-let d = new Dog(3)
-d.bark()
+import { greet } from "utils"

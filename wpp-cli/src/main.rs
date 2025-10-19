@@ -2,11 +2,13 @@ use clap::{Parser, Subcommand};
 use indicatif::{ProgressBar, ProgressStyle};
 use reqwest::blocking::{get, Client};
 use tokio::time::Instant;
+use wpp_v2::export_resolver::ExportResolver;
+use wpp_v2::module_system::ModuleSystem;
 use std::fs::{self, File, OpenOptions};
 use std::io::{self, copy, Read, Write};
 use std::path::Path;
-use std::sync::Arc;
-use std::thread;
+use std::sync::{Arc, Mutex};
+use std::{env, thread};
 use std::time::Duration;
 use colored::*;
 use wpp_v2::{run_file, build_ir};
@@ -645,29 +647,42 @@ main = do
     println!("\nRun it with:");
     println!("   {}", format!("cd {} && ingot run src/main.wpp", project_name).bright_yellow());
 }
-fn run_with_codegen(source: &str, optimize: bool) {
-    use wpp_v2::{lexer::Lexer, parser::Parser, codegen::Codegen, run_file};
-    use inkwell::context::Context;
-
+fn run_with_codegen(_source: &str, optimize: bool) {
     // 🧠 Step 1: Create LLVM context once
     let context = Context::create();
+    let project_root = std::env::current_dir().unwrap();
+    let src_dir = project_root.join("src");
 
-    // 🧱 Step 2: Lex + parse
-    let mut lexer = Lexer::new(source);
-    let tokens = lexer.tokenize();
-    let mut parser = Parser::new(tokens);
-    let nodes = parser.parse_program();
+    // 🧱 Step 2: Initialize module system
+    let mut wms = ModuleSystem::new(&project_root);
+    wms.clear_cache();
 
-    // ⚙️ Step 3: Generate IR
-    let mut codegen = Codegen::new(&context, "wpp_module");
-    codegen.compile_main(&nodes);
+    // 🧩 Step 3: Load and compile all modules (WMS compiles 'main' internally)
+    wms.load_module("main").expect("Failed to load main module");
 
-    // 🧠 Step 4: Run JIT (unified API)
+    // 🧩 Step 4: Collect exports across cached modules
+    let mut resolver = ExportResolver::new();
+    println!("📦 [debug] WMS cache keys: {:?}", wms.get_cache().keys());
+    resolver.collect_exports(&wms);
+
+    // ⚙️ Step 5: Initialize the top-level codegen shell
+    let mut codegen = Codegen::new(&context, "wpp_module", src_dir.to_str().unwrap());
+    codegen.wms = Some(Arc::new(Mutex::new(wms)));
+    codegen.resolver = Some(Arc::new(Mutex::new(resolver)));
+
+    // ✅ Skip re-compilation of main: WMS already did it
+    println!("🧩 Using precompiled main module from WMS cache — skipping redundant compile.");
+
+    // 🧠 Step 6: Run via JIT
     match run_file(&mut codegen, optimize) {
         Ok(_) => println!("✅ Execution finished successfully."),
         Err(e) => eprintln!("❌ Error during execution: {e}"),
     }
 }
+
+
+
+
 fn show_upload_progress() {
     let symbols = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"];
     for _ in 0..12 {

@@ -187,7 +187,110 @@ TokenKind::Keyword(k) if k == "return" => {
 TokenKind::Keyword(k) if k == "entity" => {
     self.parse_entity()
 }
+TokenKind::Keyword(k) if k == "export" => {
+    self.advance(); // consume 'export'
 
+    // Support: export func foo() { ... }
+    // or export const X = 5;
+    if self.check(TokenKind::Keyword("async".into())) {
+    self.advance(); // consume 'async'
+    self.expect(TokenKind::Keyword("funcy".into()), "Expected 'funcy' after 'async'");
+    let func_expr = self.parse_funcy(true);
+    let name = match &func_expr {
+        Expr::Funcy { name, .. } => name.clone(),
+        _ => "anonymous".to_string(),
+    };
+    return Some(Node::Export {
+        name,
+        item: Box::new(Node::Expr(func_expr)),
+    });
+} else if self.check(TokenKind::Keyword("func".into())) || self.check(TokenKind::Keyword("funcy".into())) {
+
+        self.advance();
+        let func_expr = self.parse_funcy(false);
+        let name = match &func_expr {
+            Expr::Funcy { name, .. } => name.clone(),
+            _ => "anonymous".to_string(),
+        };
+        Some(Node::Export {
+            name,
+            item: Box::new(Node::Expr(func_expr)),
+        })
+    } else if self.check(TokenKind::Keyword("const".into())) || self.check(TokenKind::Keyword("let".into())) {
+        // export const/let ...
+        let is_const = self.check(TokenKind::Keyword("const".into()));
+        self.advance();
+        if let Some(decl) = self.parse_let(is_const) {
+            let name = match &decl {
+                Node::Let { name, .. } => name.clone(),
+                _ => "unknown".to_string(),
+            };
+            Some(Node::Export {
+                name,
+                item: Box::new(decl),
+            })
+        } else {
+            None
+        }
+    } else {
+        panic!("Expected function or variable after 'export'");
+    }
+}
+
+TokenKind::Keyword(k) if k == "import" => {
+    self.advance(); // consume 'import'
+
+    // Case 1: import "pkg"
+    if let TokenKind::String(module_name) = self.peek().clone() {
+    self.advance(); // only consume if confirmed
+    return Some(Node::ImportAll { module: module_name });
+}
+
+
+    // Case 2: import { a, b } from "pkg"
+    if self.check(TokenKind::Symbol("{".into())) {
+        self.advance(); // consume '{'
+
+        let mut members = Vec::new();
+        while !self.check(TokenKind::Symbol("}".into())) && !self.check(TokenKind::EOF) {
+            let name = match self.advance().clone() {
+                TokenKind::Identifier(n) => n,
+                other => panic!("Expected identifier in import list, got {:?}", other),
+            };
+
+            // Optional alias: "as"
+            let alias = if self.check(TokenKind::Keyword("as".into())) {
+                self.advance();
+                match self.advance().clone() {
+                    TokenKind::Identifier(a) => Some(a),
+                    _ => panic!("Expected alias name after 'as'"),
+                }
+            } else {
+                None
+            };
+
+            members.push((name, alias));
+
+            if self.check(TokenKind::Symbol(",".into())) {
+                self.advance();
+            } else {
+                break;
+            }
+        }
+
+        self.expect(TokenKind::Symbol("}".into()), "Expected '}' after import list");
+        self.expect(TokenKind::Keyword("from".into()), "Expected 'from' after import list");
+
+        let module = match self.advance().clone() {
+            TokenKind::String(m) => m,
+            other => panic!("Expected string after 'from', got {:?}", other),
+        };
+
+        return Some(Node::ImportList { module, members });
+    }
+
+    panic!("Invalid import syntax – expected string or '{{...}}'");
+}
 
 
         _ => {

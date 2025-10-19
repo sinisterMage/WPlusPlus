@@ -3,6 +3,9 @@ mod parser;
 mod ast;
 mod codegen;
 pub mod runtime;
+pub mod module_system;
+pub mod export_resolver;
+
 
 use std::env;
 use std::fs;
@@ -51,7 +54,7 @@ fn main() {
     // === Code generation (LLVM) ===
     let context = Context::create(); // ✅ Create the LLVM context
     
-let mut codegen = Codegen::new(&context, "wpp_module");
+let mut codegen = Codegen::new(&context, "wpp_module", "./src");
 let main_fn = codegen.compile_main(&ast);
 if let Err(msg) = codegen.module.verify() {
     eprintln!("❌ LLVM Verification failed:\n{}", msg.to_string());

@@ -131,90 +131,89 @@ pub struct ThreadHandle {
     pub id: u64,
     pub finished: Arc<AtomicBool>,
     pub result: Arc<Mutex<Option<Box<dyn Any + Send + 'static>>>>,
-    pub join_handle: Option<thread::JoinHandle<()>>,
+    pub join_handle: Mutex<Option<thread::JoinHandle<()>>>, // ← wrap in Mutex
     pub ref_count: Arc<AtomicU64>, // how many active references exist
 }
 
 impl ThreadHandle {
     pub fn spawn(func_ptr: *const c_void) -> Arc<ThreadHandle> {
-    if func_ptr.is_null() {
-        eprintln!("❌ [thread] null func pointer");
-        ThreadGC::collect_now();
-        return Arc::new(ThreadHandle {
-            id: 0,
-            finished: Arc::new(AtomicBool::new(true)),
-            result: Arc::new(Mutex::new(None)),
-            join_handle: None,
-            ref_count: Arc::new(AtomicU64::new(0)),
-        });
-    }
-
-    static NEXT_ID: AtomicU64 = AtomicU64::new(1);
-    let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
-
-    // 🧩 recursion prevention
-    let mut recursion_violation = false;
-    THREAD_ANCESTRY.with(|ancestry| {
-        let ancestors = ancestry.borrow();
-        if ancestors.contains(&id) {
-            recursion_violation = true;
+        if func_ptr.is_null() {
+            eprintln!("❌ [thread] null func pointer");
+            ThreadGC::collect_now();
+            return Arc::new(ThreadHandle {
+                id: 0,
+                finished: Arc::new(AtomicBool::new(true)),
+                result: Arc::new(Mutex::new(None)),
+                join_handle: Mutex::new(None), // ✅ now matches type
+                ref_count: Arc::new(AtomicU64::new(0)),
+            });
         }
-    });
-    if recursion_violation {
-        eprintln!("💥 [thread] recursion prevented: thread #{id} tried to spawn itself!");
-        return Arc::new(ThreadHandle {
-            id,
-            finished: Arc::new(AtomicBool::new(true)),
-            result: Arc::new(Mutex::new(None)),
-            join_handle: None,
-            ref_count: Arc::new(AtomicU64::new(0)),
-        });
-    }
 
-    THREAD_ANCESTRY.with(|ancestry| ancestry.borrow_mut().push(id));
+        static NEXT_ID: AtomicU64 = AtomicU64::new(1);
+        let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
 
-    let finished = Arc::new(AtomicBool::new(false));
-    let result = Arc::new(Mutex::new(None));
-    let ref_count = Arc::new(AtomicU64::new(1));
-
-    let func: extern "C" fn() = unsafe { mem::transmute(func_ptr) };
-    let fin_clone = finished.clone();
-
-    println!("🚀 [thread] spawning GC-managed thread #{id}");
-
-    let join_handle = Some(thread::spawn(move || {
-        let result = std::panic::catch_unwind(|| func());
-        match result {
-            Ok(_) => println!("✅ [thread] thread #{id} finished normally"),
-            Err(_) => eprintln!("💥 [thread] thread #{id} panicked"),
-        }
-        fin_clone.store(true, Ordering::SeqCst);
-
-        // 🧹 remove ancestry record when finished
+        // recursion prevention
+        let mut recursion_violation = false;
         THREAD_ANCESTRY.with(|ancestry| {
-            let mut a = ancestry.borrow_mut();
-            if let Some(pos) = a.iter().position(|x| *x == id) {
-                a.remove(pos);
+            let ancestors = ancestry.borrow();
+            if ancestors.contains(&id) {
+                recursion_violation = true;
             }
         });
-    }));
+        if recursion_violation {
+            eprintln!("💥 [thread] recursion prevented: thread #{id} tried to spawn itself!");
+            return Arc::new(ThreadHandle {
+                id,
+                finished: Arc::new(AtomicBool::new(true)),
+                result: Arc::new(Mutex::new(None)),
+                join_handle: Mutex::new(None),
+                ref_count: Arc::new(AtomicU64::new(0)),
+            });
+        }
 
-    let handle = Arc::new(ThreadHandle {
-        id,
-        finished,
-        result,
-        join_handle,
-        ref_count,
-    });
+        THREAD_ANCESTRY.with(|ancestry| ancestry.borrow_mut().push(id));
 
-    ThreadGC::register(handle.clone());
-    handle
-}
+        let finished = Arc::new(AtomicBool::new(false));
+        let result = Arc::new(Mutex::new(None));
+        let ref_count = Arc::new(AtomicU64::new(1));
 
+        let func: extern "C" fn() = unsafe { mem::transmute(func_ptr) };
+        let fin_clone = finished.clone();
 
+        println!("🚀 [thread] spawning GC-managed thread #{id}");
 
-    pub fn join(&mut self) {
-        if let Some(handle) = self.join_handle.take() {
+        // ✅ Store inside Mutex<Option<JoinHandle>>
+        let join_handle = Mutex::new(Some(thread::spawn(move || {
+            let result = std::panic::catch_unwind(|| func());
+            match result {
+                Ok(_) => println!("✅ [thread] thread #{id} finished normally"),
+                Err(_) => eprintln!("💥 [thread] thread #{id} panicked"),
+            }
+            fin_clone.store(true, Ordering::SeqCst);
+
+            THREAD_ANCESTRY.with(|ancestry| {
+                let mut a = ancestry.borrow_mut();
+                if let Some(pos) = a.iter().position(|x| *x == id) {
+                    a.remove(pos);
+                }
+            });
+        })));
+
+        let handle = Arc::new(ThreadHandle {
+            id,
+            finished,
+            result,
+            join_handle,
+            ref_count,
+        });
+
+        ThreadGC::register(handle.clone());
+        handle
+    }
+
+    pub fn join(&self) {
+        let mut guard = self.join_handle.lock().unwrap();
+        if let Some(handle) = guard.take() {
             println!("🧵 [thread] joining thread #{}", self.id);
             let _ = handle.join();
             self.finished.store(true, Ordering::SeqCst);
@@ -232,7 +231,6 @@ impl ThreadHandle {
     pub fn release(&self) {
         let old = self.ref_count.fetch_sub(1, Ordering::SeqCst);
         if old == 1 {
-            // last reference dropped
             println!("🧹 [gc] ThreadHandle #{} released (0 refs)", self.id);
             ThreadGC::collect_now();
         }
@@ -243,7 +241,11 @@ impl Drop for ThreadHandle {
     fn drop(&mut self) {
         if !self.is_finished() {
             println!("🧹 [thread] auto-joining unfinished thread #{}", self.id);
-            self.join();
+            let mut guard = self.join_handle.lock().unwrap();
+            if let Some(handle) = guard.take() {
+                let _ = handle.join();
+            }
+            self.finished.store(true, Ordering::SeqCst);
         }
     }
 }
@@ -416,7 +418,9 @@ pub fn start_thread_gc_daemon() {
     if handle_arc.is_finished() {
         // Try to join the thread (if not already joined)
         if let Some(handle_mut) = Arc::get_mut(&mut handle_arc) {
-            if let Some(join_handle) = handle_mut.join_handle.take() {
+            let mut guard = handle_mut.join_handle.lock().unwrap();
+if let Some(join_handle) = guard.take() {
+
                 println!("⚙️ [gc] Auto-joining finished thread #{id}");
                 let _ = join_handle.join();
                 joined += 1;
@@ -461,47 +465,60 @@ pub fn start_thread_gc_daemon() {
 
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_thread_join_all() {
-    let mut threads = ThreadGC::global().threads.lock().unwrap();
-    if threads.is_empty() {
+    println!("🧵 [runtime] Entered wpp_thread_join_all()");
+    
+    // === Step 1: Snapshot the threads safely ===
+    let gc = ThreadGC::global();
+    let mut threads_lock = gc.threads.lock().unwrap();
+
+    if threads_lock.is_empty() {
         println!("🧵 [thread] no threads to join");
         return;
     }
 
+    // Clone all Weak handles before dropping the lock
+    let threads_snapshot: Vec<(u64, Weak<ThreadHandle>)> =
+        threads_lock.iter().map(|(id, w)| (*id, w.clone())).collect();
+
+    // Clear the map (so GC can refill it later)
+    threads_lock.clear();
+    drop(threads_lock);
+
     println!(
         "🧵 [thread] joining all remaining GC threads ({} total)",
-        threads.len()
+        threads_snapshot.len()
     );
 
-    let mut joined = 0;
+    // === Step 2: Join threads safely outside the lock ===
+    let mut joined = 0usize;
+    for (id, weak_handle) in threads_snapshot {
+        if let Some(handle_arc) = weak_handle.upgrade() {
+            // Lock the join_handle mutex
+            let mut join_guard = handle_arc.join_handle.lock().unwrap();
 
-    // Drain all Weak handles
-    for (id, weak_handle) in threads.drain() {
-        // Try to upgrade the Weak<ThreadHandle> to Arc<ThreadHandle>
-        if let Some(mut handle_arc) = weak_handle.upgrade() {
-            // Now we have an Arc<ThreadHandle> we can safely access
-            let mut handle = Arc::get_mut(&mut handle_arc);
-            if let Some(h) = handle {
-                // Exclusive ownership: can take join handle directly
-                if let Some(join_handle) = h.join_handle.take() {
-                    println!("🧵 [thread] joining thread #{id}");
-                    let _ = join_handle.join();
-                    joined += 1;
+            // Join if not already joined
+            if let Some(join_handle) = join_guard.take() {
+                println!("🧵 [thread] joining thread #{id}");
+                match join_handle.join() {
+                    Ok(_) => {
+                        println!("✅ [thread] joined thread #{id}");
+                        joined += 1;
+                    }
+                    Err(_) => {
+                        println!("💥 [thread] panic while joining thread #{id}");
+                    }
                 }
             } else {
-                // Shared handle, just wait until finished
-                if !handle_arc.is_finished() {
-                    println!("💤 [thread] waiting on active thread #{id}");
-                    let _ = handle_arc.join_handle.as_ref().map(|jh| jh.thread().unpark());
-                }
+                println!("💤 [thread] thread #{id} already finished or detached");
             }
         } else {
-            // Weak already expired — GC will handle it
             println!("💀 [thread] thread #{id} already collected (Weak expired)");
         }
     }
 
     println!("✅ [thread] all GC threads joined ({joined})");
 }
+
 
 // ===========================================================
 // 🌐 Extern Mutex API for W++

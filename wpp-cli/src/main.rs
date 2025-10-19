@@ -1,7 +1,11 @@
 use clap::{Parser, Subcommand};
-use std::fs;
-use std::io::{self, Write};
+use indicatif::{ProgressBar, ProgressStyle};
+use reqwest::blocking::{get, Client};
+use tokio::time::Instant;
+use std::fs::{self, File, OpenOptions};
+use std::io::{self, copy, Read, Write};
 use std::path::Path;
+use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 use colored::*;
@@ -11,6 +15,12 @@ use wpp_v2::codegen::Codegen;
 use inkwell::context::Context;
 mod config;
 use crate::config::WppConfig;
+mod api;
+use api::*;
+use walkdir::WalkDir;
+use sha2::{Sha256, Digest};
+mod wms;
+use wms::WmsResolver;
 
 
 /// 🦥 Ingot CLI — Chaos meets LLVM
@@ -31,6 +41,7 @@ enum Commands {
     /// Enable LLVM optimization passes
     #[arg(short, long)]
     opt: bool,
+    
 },
 
 
@@ -60,6 +71,23 @@ enum Commands {
         /// Project name (optional; defaults to current folder)
         name: Option<String>,
     },
+        /// Verify your Ingot registry token
+    Login,
+
+    /// Install a package from the Ingot registry
+    Install {
+    /// Package name
+    name: String,
+
+    /// Version (defaults to latest if omitted)
+    #[arg(default_value = "latest")]
+    version: String,
+},
+
+    /// Publish a package to the registry
+    Publish,
+        Fetch,
+
 }
 
 fn main() {
@@ -78,6 +106,261 @@ fn main() {
         Commands::Pacman => troll_pacman(),
         Commands::Info => print_help(),
         Commands::Init { name } => init_project(name),
+                Commands::Login => {
+    use std::{fs, path::PathBuf};
+    use rpassword::read_password;
+    use colored::*;
+
+    // 🧠 Step 1: Try to load from env or saved file
+    let mut token = std::env::var("WPP_TOKEN").ok();
+
+    if token.is_none() {
+        let mut path = dirs::home_dir().unwrap_or_default();
+        path.push(".wpp_token");
+
+        if path.exists() {
+            token = fs::read_to_string(&path).ok().map(|t| t.trim().to_string());
+        }
+    }
+
+    // 🧩 Step 2: If still missing, ask user to input it
+    if token.is_none() {
+        println!("🔐 Please enter your W++ Ingot API token (input hidden):");
+        match read_password() {
+            Ok(input) if !input.trim().is_empty() => {
+                token = Some(input.trim().to_string());
+                // Save locally for next time
+                let mut path = dirs::home_dir().unwrap_or_default();
+                path.push(".wpp_token");
+                if let Err(e) = fs::write(&path, token.as_ref().unwrap()) {
+                    eprintln!("⚠️ Failed to save token locally: {e}");
+                } else {
+                    println!("💾 Token saved to {}", path.display());
+                }
+            }
+            _ => {
+                eprintln!("❌ No token entered. Aborting login.");
+                return;
+            }
+        }
+    }
+
+    // 🛰️ Step 3: Verify login
+    let api = IngotAPI::new("https://ingotwpp.dev", token.clone());
+
+    match tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(api.verify_login())
+    {
+        Ok(res) => {
+            if res.success {
+                if let Some(user) = res.user {
+                    println!(
+                        "✅ Logged in as {} {}",
+                        user.firstName.green(),
+                        user.lastName.green()
+                    );
+                } else {
+                    println!("✅ Login verified: {}", res.message.green());
+                }
+            } else {
+                println!("❌ Login failed: {}", res.message.red());
+            }
+        }
+        Err(e) => eprintln!("❌ Login request failed: {e}"),
+    }
+}
+
+
+      Commands::Install { name, version } => {
+    let token = std::env::var("WPP_TOKEN").ok();
+    let api = IngotAPI::new("https://ingotwpp.dev", token);
+
+    match tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(api.get_package(&name, &version))
+    {
+        Ok(pkg) => {
+            println!("📦 Installing {} v{}", pkg.name, pkg.version);
+
+            let install_dir = Path::new(".wpp_packages").join(&pkg.name);
+            fs::create_dir_all(&install_dir).unwrap();
+
+            // Cache directory in ~/.wpp_cache
+            let cache_dir = dirs::home_dir()
+                .unwrap()
+                .join(".wpp_cache")
+                .join(&pkg.name)
+                .join(&pkg.version);
+            fs::create_dir_all(&cache_dir).unwrap();
+
+            let client = Client::new();
+            let start = Instant::now();
+            let mut total_bytes_downloaded = 0u64;
+
+            for f in pkg.files {
+                let dest_path = install_dir.join(&f.filename);
+                let cache_path = cache_dir.join(&f.filename);
+
+                // === Step 1: Check cache first
+                if cache_path.exists() {
+                    println!("💾 Using cached {}", f.filename);
+                    fs::copy(&cache_path, &dest_path).unwrap();
+                    continue;
+                }
+
+                // === Step 2: Download if not cached
+                println!("⬇️ Downloading {}...", f.filename);
+
+                let mut req = client.get(&f.downloadUrl);
+                if let Some((k, v)) = api.auth_header() {
+                    req = req.header(k, v);
+                }
+
+                match req.send() {
+                    Ok(mut resp) => {
+                        if !resp.status().is_success() {
+                            eprintln!(
+                                "❌ Failed to download {} (status: {})",
+                                f.filename,
+                                resp.status()
+                            );
+                            continue;
+                        }
+
+                       let total_size = resp.content_length().unwrap_or(0);
+let pb = ProgressBar::new(total_size);
+pb.set_style(
+    ProgressStyle::with_template(
+        "{spinner:.green} [{elapsed_precise}] [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})"
+    )
+    .unwrap()
+    .progress_chars("#>-"),
+);
+
+// Prepare paths
+let dest_path = install_dir.join(&f.filename);
+let cache_path = Path::new(".wpp_cache").join(&f.filename);
+fs::create_dir_all(".wpp_cache").unwrap();
+
+// Create output file and wrap with progress bar
+let mut dest_file = File::create(&dest_path).unwrap();
+let mut writer = pb.wrap_write(&mut dest_file);
+
+// Stream response into file + progress bar
+let mut content = resp;
+let bytes_written = copy(&mut content, &mut writer).unwrap_or(0);
+total_bytes_downloaded += bytes_written;
+
+// Compute checksum for integrity validation
+let file_bytes = fs::read(&dest_path).unwrap();
+let checksum = checksum_bytes(&file_bytes);
+
+// Write to cache and finalize progress bar
+fs::write(&cache_path, &file_bytes).unwrap();
+pb.finish_and_clear();
+
+println!("✅ Saved {}", dest_path.display());
+
+// Update .simula lock file
+update_simula_lock(&pkg.name, &pkg.version, &checksum).unwrap();
+
+
+                        // Update .simula lock file
+                        update_simula_lock(&pkg.name, &pkg.version, &checksum).unwrap();
+                    }
+                    Err(e) => eprintln!("❌ Error downloading {}: {}", f.filename, e),
+                }
+            }
+
+            let elapsed = start.elapsed();
+            println!(
+                "\n✨ Installed {} v{} in {:.2?} ({} bytes)\n",
+                pkg.name,
+                pkg.version,
+                elapsed,
+                total_bytes_downloaded
+            );
+        }
+        Err(e) => eprintln!("❌ Failed to install package: {e}"),
+    }
+}
+
+        Commands::Publish => {
+    let token = std::env::var("WPP_TOKEN").ok();
+    let api = IngotAPI::new("https://ingotwpp.dev", token);
+
+    println!("🔍 Loading wpp.config.hs...");
+    let cfg = match WppConfig::load(Path::new("wpp.config.hs")) {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("❌ Failed to load config: {e}");
+            return;
+        }
+    };
+
+    let meta = PublishMetadata {
+        name: cfg.project_name.clone().unwrap_or_else(|| "unnamed".into()),
+        version: cfg.version.clone().unwrap_or_else(|| "0.1.0".into()),
+        description: Some("Published via W++ Ingot CLI".into()),
+        license: cfg.license.clone(),
+        category: Some("utilities".into()),
+        tags: Some(cfg.flags.clone()),
+        readme: Some("# Published via W++ Ingot CLI".into()),
+        is_public: Some(true),
+    };
+
+    println!("📦 Package: {}", meta.name);
+    println!("🧩 Version: {}", meta.version);
+    if let Some(lic) = &meta.license {
+        println!("📜 License: {}", lic);
+    }
+
+    // 🔎 Collect all .wpp files recursively
+    println!("🗂️  Scanning project files...");
+    let mut files = Vec::new();
+    for entry in WalkDir::new(".")
+        .into_iter()
+        .filter_map(Result::ok)
+        .filter(|e| e.file_type().is_file() && e.path().extension().map(|x| x == "wpp").unwrap_or(false))
+    {
+        files.push(entry.path().display().to_string());
+    }
+
+    if files.is_empty() {
+        eprintln!("❌ No .wpp files found in project.");
+        return;
+    }
+
+    println!("📄 Found {} files for upload.", files.len());
+    for f in &files {
+        println!("  - {}", f.bright_cyan());
+    }
+
+    println!("🚀 Uploading package...");
+    show_upload_progress();
+
+    match tokio::runtime::Runtime::new()
+        .unwrap()
+        .block_on(api.publish_package(&meta, files))
+    {
+        Ok(_) => println!(
+            "✅ Successfully published {} v{} to the Ingot registry!",
+            meta.name, meta.version
+        ),
+        Err(e) => eprintln!("❌ Publish failed: {e}"),
+    }
+}
+
+Commands::Fetch => {
+    let token = std::env::var("WPP_TOKEN").ok();
+    let api = Arc::new(IngotAPI::new("https://ingotwpp.dev", token));
+    let wms = WmsResolver::new(api);
+    if let Err(e) = wms.resolve_all(Path::new(".")) {
+        eprintln!("❌ Dependency resolution failed: {e}");
+    }
+}
+
     }
 }
 
@@ -384,4 +667,82 @@ fn run_with_codegen(source: &str, optimize: bool) {
         Ok(_) => println!("✅ Execution finished successfully."),
         Err(e) => eprintln!("❌ Error during execution: {e}"),
     }
+}
+fn show_upload_progress() {
+    let symbols = ["⠋","⠙","⠹","⠸","⠼","⠴","⠦","⠧","⠇","⠏"];
+    for _ in 0..12 {
+        for s in symbols {
+            print!("\r{} Uploading to Ingot registry...", s.bright_magenta());
+            io::stdout().flush().unwrap();
+            thread::sleep(Duration::from_millis(80));
+        }
+    }
+    println!("\r✅ Upload complete!                                      ");
+}
+fn checksum_bytes(bytes: &[u8]) -> String {
+    let mut hasher = Sha256::new();
+    hasher.update(bytes);
+    format!("sha256:{:x}", hasher.finalize())
+}
+
+pub fn update_simula_lock(pkg_name: &str, version: &str, checksum: &str) -> std::io::Result<()> {
+    let path = Path::new(".simula");
+
+    // Create .simula if missing
+    if !path.exists() {
+        let mut file = File::create(path)?;
+        writeln!(file, "BEGIN SYSTEM SIMULATION;")?;
+        writeln!(file, "   CLASS PACKAGE;")?;
+        writeln!(file, "      STRING name;")?;
+        writeln!(file, "      STRING version;")?;
+        writeln!(file, "      STRING checksum;")?;
+        writeln!(file, "   END;")?;
+        writeln!(file)?;
+        writeln!(file, "   BEGIN MAIN;")?;
+        writeln!(file, "   END;")?;
+        writeln!(file)?;
+        writeln!(file, "END SYSTEM;")?;
+    }
+
+    // Read existing file
+    let mut content = String::new();
+    File::open(path)?.read_to_string(&mut content)?;
+
+    let package_block_start = format!("PACKAGE {}", pkg_name);
+
+    if content.contains(&package_block_start) {
+        println!("🔄 Updating existing package '{}' in .simula...", pkg_name);
+
+        // Update version and checksum using simple replacements
+        let updated = content
+            .lines()
+            .map(|line| {
+                if line.trim_start().starts_with(&format!("{}.version", pkg_name)) {
+                    format!("         {}.version := \"{}\";", pkg_name, version)
+                } else if line.trim_start().starts_with(&format!("{}.checksum", pkg_name)) {
+                    format!("         {}.checksum := \"{}\";", pkg_name, checksum)
+                } else {
+                    line.to_string()
+                }
+            })
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        std::fs::write(path, updated)?;
+    } else {
+        // Append new entry
+        println!("➕ Adding new package '{}' to .simula...", pkg_name);
+        let mut file = OpenOptions::new().write(true).append(true).open(path)?;
+
+        writeln!(file)?;
+        writeln!(file, "   BEGIN MAIN;")?;
+        writeln!(file, "      PACKAGE {};", pkg_name)?;
+        writeln!(file, "         {}.name := \"{}\";", pkg_name, pkg_name)?;
+        writeln!(file, "         {}.version := \"{}\";", pkg_name, version)?;
+        writeln!(file, "         {}.checksum := \"{}\";", pkg_name, checksum)?;
+        writeln!(file, "      END;")?;
+        writeln!(file, "   END;")?;
+    }
+
+    Ok(())
 }

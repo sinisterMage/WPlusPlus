@@ -1,0 +1,19 @@
+BEGIN SYSTEM SIMULATION;
+   CLASS PACKAGE;
+      STRING name;
+      STRING version;
+      STRING checksum;
+   END;
+
+   BEGIN MAIN;
+   END;
+
+END SYSTEM;
+
+   BEGIN MAIN;
+      PACKAGE demo;
+         demo.name := "demo";
+         demo.version := "1.0.0";
+         demo.checksum := "sha256:2a57e90b72a017f5863626ee3ac4a9c42e3356b40512defaeb98fd59ae415a62";
+      END;
+   END;

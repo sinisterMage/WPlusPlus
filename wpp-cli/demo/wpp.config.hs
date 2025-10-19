@@ -8,4 +8,8 @@ main = do
   version   "1.0.0"
   license   "MIT"
   author    "Ofek Bickel"
-  println  "✨ Config loaded successfully. Chaos imminent."
+  category  "utilities"
+  tags      ["cli", "demo"]
+  readme    "README.md"
+  isPublic  true
+  println   "✨ Config loaded successfully. Chaos imminent."

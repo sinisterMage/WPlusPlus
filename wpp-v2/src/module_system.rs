@@ -88,6 +88,7 @@ impl ModuleSystem {
                 let mut cache = self.cache.lock().unwrap();
                 if !cache.contains_key(module) {
                     drop(cache); // unlock before recursive call
+                    #[cfg(debug_assertions)]
                     println!("🔗 [wms] Auto-loading dependency '{}'", module);
                     if let Err(e) = self.load_module(module) {
                         eprintln!("⚠️ [wms] Failed to load dependency '{}': {}", module, e);
@@ -117,7 +118,7 @@ if name != "main" {
                 use inkwell::values::AsValueRef;
                 LLVMSetInitializer(global.as_value_ref(), std::ptr::null_mut());
             }
-
+            #[cfg(debug_assertions)]
             println!("🔧 [wms] Neutralized duplicate global '{}' in module '{}'", gname, name);
         }
     }

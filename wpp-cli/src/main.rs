@@ -662,6 +662,7 @@ fn run_with_codegen(_source: &str, optimize: bool) {
 
     // 🧩 Step 4: Collect exports across cached modules
     let mut resolver = ExportResolver::new();
+    #[cfg(debug_assertions)]
     println!("📦 [debug] WMS cache keys: {:?}", wms.get_cache().keys());
     resolver.collect_exports(&wms);
 

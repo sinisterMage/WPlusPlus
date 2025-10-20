@@ -9,6 +9,13 @@ use std::collections::HashMap;
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex};
+use libloading::Library;
+
+// platform extension
+#[cfg(target_os = "macos")]
+const LIB_EXT: &str = "dylib";
+#[cfg(any(target_os = "linux", target_os = "freebsd"))]
+const LIB_EXT: &str = "so";
 
 /// Represents a parsed module stored in cache.
 #[derive(Clone)]
@@ -47,6 +54,7 @@ impl ModuleSystem {
    pub fn load_module(&self, name: &str) -> Result<Vec<Node>, String> {
     use crate::Codegen;
     use inkwell::context::Context;
+    use rayon::prelude::*;
 
     // === 1️⃣ Prevent infinite recursion ===
     {
@@ -60,17 +68,26 @@ impl ModuleSystem {
         }
     }
 
-    // === 2️⃣ Resolve & read source ===
-    let resolved_path = self.resolve_module_path(name)?;
-    let source = std::fs::read_to_string(&resolved_path)
-        .map_err(|e| format!("Failed to read module '{}': {}", resolved_path.display(), e))?;
+    // === 2️⃣ Handle Rust native modules ===
+if name.starts_with("rust:") {
+    let rust_mod = name.trim_start_matches("rust:").to_string();
+    println!("🦀 [wms] Loading Rust module '{}'", rust_mod);
+    self.load_rust_module(&rust_mod)?;
+    return Ok(vec![]);
+}
+
+// === 3️⃣ Resolve & read source ===
+let resolved_path = self.resolve_module_path(name)?;
+let source = std::fs::read_to_string(&resolved_path)
+    .map_err(|e| format!("Failed to read module '{}': {}", resolved_path.display(), e))?;
+
 
     println!("📦 [wms] Loading module '{}'", name);
 
     // === 3️⃣ Parse into AST ===
     let ast = parse(&source)?;
 
-    // Insert placeholder to prevent circular recursion
+    // Insert placeholder early to block circular recursion
     self.cache.lock().unwrap().insert(
         name.to_string(),
         ModuleData {
@@ -81,60 +98,74 @@ impl ModuleSystem {
         },
     );
 
-    // === 4️⃣ Recursively load dependencies ===
-    for node in &ast {
-        match node {
-            Node::ImportList { module, .. } | Node::ImportAll { module } => {
-                let mut cache = self.cache.lock().unwrap();
-                if !cache.contains_key(module) {
-                    drop(cache); // unlock before recursive call
+    // === 4️⃣ Gather dependency module names ===
+    let deps: Vec<String> = ast
+        .iter()
+        .filter_map(|node| match node {
+            Node::ImportList { module, .. } | Node::ImportAll { module } => Some(module.clone()),
+            _ => None,
+        })
+        .collect();
+
+    // === 5️⃣ Compile dependencies concurrently ===
+    if !deps.is_empty() {
+        println!("🧩 [wms] Compiling {} dependencies in parallel…", deps.len());
+        deps.par_iter().for_each(|dep_name| {
+            // Skip if already cached
+            if self.cache.lock().unwrap().contains_key(dep_name) {
+                return;
+            }
+
+            // Each dependency compiles in its own LLVM context
+            match self.load_module(dep_name) {
+                Ok(_) => {
                     #[cfg(debug_assertions)]
-                    println!("🔗 [wms] Auto-loading dependency '{}'", module);
-                    if let Err(e) = self.load_module(module) {
-                        eprintln!("⚠️ [wms] Failed to load dependency '{}': {}", module, e);
-                    }
+                    println!("✅ [wms] Finished dependency '{}'", dep_name);
                 }
+                Err(e) => eprintln!("⚠️ [wms] Failed to load dependency '{}': {}", dep_name, e),
             }
-            _ => {}
-        }
+        });
     }
 
-    // === 5️⃣ Compile LLVM IR ===
+    // === 6️⃣ Compile this module to LLVM IR ===
     let context = Context::create();
-let mut codegen = Codegen::new(&context, name, "./src");
+    let mut codegen = Codegen::new(&context, name, "./src");
 
-// 🧱 Compile the module first
-codegen.compile_main(&ast);
+    codegen.compile_main(&ast);
 
-if name != "main" {
-    for gname in ["_wpp_exc_flag", "_wpp_exc_i32", "_wpp_exc_str"] {
-        if let Some(global) = codegen.module.get_global(gname) {
-            // Force external linkage and remove its initializer
-            global.set_linkage(Linkage::External);
-
-            // LLVM doesn't let you "unset" the initializer directly; you clear it by replacing it with none via raw API
-            unsafe {
-                use inkwell::llvm_sys::core::LLVMSetInitializer;
-                use inkwell::values::AsValueRef;
-                LLVMSetInitializer(global.as_value_ref(), std::ptr::null_mut());
+    if name != "main" {
+        for gname in ["_wpp_exc_flag", "_wpp_exc_i32", "_wpp_exc_str"] {
+            if let Some(global) = codegen.module.get_global(gname) {
+                // Force external linkage and remove its initializer
+                global.set_linkage(inkwell::module::Linkage::External);
+                unsafe {
+                    use inkwell::llvm_sys::core::LLVMSetInitializer;
+                    use inkwell::values::AsValueRef;
+                    LLVMSetInitializer(global.as_value_ref(), std::ptr::null_mut());
+                }
+                #[cfg(debug_assertions)]
+                println!(
+                    "🔧 [wms] Neutralized duplicate global '{}' in module '{}'",
+                    gname, name
+                );
             }
-            #[cfg(debug_assertions)]
-            println!("🔧 [wms] Neutralized duplicate global '{}' in module '{}'", gname, name);
         }
     }
-}
 
+    let ir_str = Some(codegen.module.print_to_string().to_string());
 
-let ir_str = Some(codegen.module.print_to_string().to_string());
-
-    // === 6️⃣ Update cache ===
+    // === 7️⃣ Cache compiled result ===
     let data = ModuleData {
         name: name.to_string(),
         path: resolved_path.clone(),
         ast: ast.clone(),
         llvm_ir: ir_str,
     };
-    self.cache.lock().unwrap().insert(name.to_string(), data);
+
+    {
+        let mut cache = self.cache.lock().unwrap();
+        cache.insert(name.to_string(), data);
+    }
 
     println!("✅ Cached compiled module '{}'", name);
     Ok(ast)
@@ -143,12 +174,35 @@ let ir_str = Some(codegen.module.print_to_string().to_string());
 
 
     /// Load multiple modules in parallel using Rayon.
-    pub fn load_modules_parallel(&self, modules: &[String]) -> Result<Vec<Vec<Node>>, String> {
-        modules
-            .par_iter()
-            .map(|m| self.load_module(m))
-            .collect::<Result<Vec<_>, _>>()
-    }
+    /// ⚡ Load multiple modules concurrently with full IR compilation.
+/// Each module gets its own LLVM context and Codegen.
+pub fn load_modules_parallel(&self, modules: &[String]) -> Result<(), String> {
+    use rayon::prelude::*;
+
+    let resolved: Vec<(String, PathBuf)> = modules
+        .iter()
+        .map(|m| {
+            self.resolve_module_path(m)
+                .map(|p| (m.clone(), p))
+        })
+        .collect::<Result<_, _>>()?;
+
+    resolved.par_iter().for_each(|(name, path)| {
+        match self.compile_single_module(name, path) {
+            Ok(data) => {
+                let mut cache = self.cache.lock().unwrap();
+                cache.insert(name.clone(), data);
+                println!("✅ [wms-parallel] Cached module '{}'", name);
+            }
+            Err(e) => {
+                eprintln!("❌ [wms-parallel] Failed to compile '{}': {}", name, e);
+            }
+        }
+    });
+
+    Ok(())
+}
+
 
     /// Returns all cached modules (for debugging or hot-reload).
     pub fn list_cached_modules(&self) -> Vec<String> {
@@ -298,6 +352,75 @@ let ir_str = Some(codegen.module.print_to_string().to_string());
     pub fn clear_cache(&self) {
         self.cache.lock().unwrap().clear();
     }
+    fn compile_single_module(&self, name: &str, path: &Path) -> Result<ModuleData, String> {
+    use crate::Codegen;
+    use inkwell::context::Context;
+    use inkwell::module::Linkage;
+
+    let source = std::fs::read_to_string(path)
+        .map_err(|e| format!("Failed to read module '{}': {}", path.display(), e))?;
+
+    let ast = crate::parser::parse(&source)?;
+    let context = Context::create();
+    let mut codegen = Codegen::new(&context, name, "./src");
+    codegen.compile_main(&ast);
+
+    if name != "main" {
+        for g in ["_wpp_exc_flag", "_wpp_exc_i32", "_wpp_exc_str"] {
+            if let Some(global) = codegen.module.get_global(g) {
+                global.set_linkage(Linkage::External);
+                unsafe {
+                    use inkwell::llvm_sys::core::LLVMSetInitializer;
+                    use inkwell::values::AsValueRef;
+                    LLVMSetInitializer(global.as_value_ref(), std::ptr::null_mut());
+                }
+            }
+        }
+    }
+
+    Ok(ModuleData {
+        name: name.to_string(),
+        path: path.to_path_buf(),
+        ast,
+        llvm_ir: Some(codegen.module.print_to_string().to_string()),
+    })
+}
+/// 🦀 Load a native Rust module (.so/.dylib) for W++ interop.
+/// The library is stored in cache so it's kept loaded for the process lifetime.
+pub fn load_rust_module(&self, name: &str) -> Result<(), String> {
+    use std::path::PathBuf;
+
+    let mut lib_path = self.base_dir.join("rust_modules");
+    lib_path.push(format!("lib{0}.{1}", name, LIB_EXT));
+
+    if !lib_path.exists() {
+        return Err(format!("Rust module not found: {}", lib_path.display()));
+    }
+
+    unsafe {
+        let lib = Library::new(&lib_path)
+            .map_err(|e| format!("Failed to load Rust library '{}': {}", lib_path.display(), e))?;
+
+        // Keep the library handle alive by inserting into cache
+        let mut cache = self.cache.lock().unwrap();
+        cache.insert(
+            format!("rust:{}", name),
+            ModuleData {
+                name: format!("rust:{}", name),
+                path: lib_path.clone(),
+                ast: vec![],  // native module has no AST
+                llvm_ir: None,
+            },
+        );
+
+        // Leak library to keep it alive globally (intentional for runtime safety)
+        std::mem::forget(lib);
+    }
+
+    println!("✅ [wms] Loaded Rust module '{}'", name);
+    Ok(())
+}
+
 }
 impl ModuleSystem {
     /// Expose an immutable reference to the internal cache (for export resolver).

@@ -1,3 +1,4 @@
-print("What is your name?");
-let name = readline();
-print(name);
+import { add } from "math"
+import { greet } from "utils"
+
+print("2 + 3 = ", add(2, 3))

@@ -320,6 +320,19 @@ pub fn run_file(codegen: &mut Codegen, optimize: bool) -> Result<(), String> {
     let engine = module
         .create_jit_execution_engine(OptimizationLevel::None)
         .map_err(|e| format!("JIT init failed: {e:?}"))?;
+    // === Optional: Link native Rust modules (.so/.dylib) ===
+{
+    println!("🧩 Linking Rust modules into JIT context...");
+    if let Some(wms_arc) = &codegen.wms {
+        let wms = wms_arc.lock().unwrap();
+        if let Err(e) = crate::runtime::link_rust_modules(&engine, module, &wms) {
+            eprintln!("⚠️ [jit] Failed to link Rust modules: {e}");
+        } else {
+            println!("✅ [jit] Rust modules linked successfully.");
+        }
+    }
+}
+
     #[cfg(debug_assertions)]
 println!("🪶 [debug3] JIT engine created successfully");
     for func in module.get_functions() {

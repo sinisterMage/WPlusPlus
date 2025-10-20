@@ -31,6 +31,7 @@ unsafe extern "C" {
     pub fn wpp_print_value_basic(ptr: *const std::ffi::c_void, type_id: i32);
     pub fn wpp_print_array(ptr: *const std::ffi::c_void);
     pub fn wpp_print_object(ptr: *const std::ffi::c_void);
+    pub fn wpp_readline() -> *const std::os::raw::c_char;
 }
 unsafe fn remove_global(global: &GlobalValue) {
     let raw: LLVMValueRef = global.as_value_ref(); // ✅ correct LLVM type
@@ -56,6 +57,8 @@ fn declare_runtime_externals<'ctx>(context: &'ctx Context, module: &Module<'ctx>
 
         // --- String subsystem ---
         ("wpp_str_concat", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false)),
+        ("wpp_readline", i8_ptr.fn_type(&[], false)),
+
 
         // --- HTTP subsystem ---
         ("wpp_http_get", i32_type.fn_type(&[i8_ptr.into()], false)),
@@ -107,6 +110,7 @@ fn register_all_runtime_symbols() {
 
         // --- String subsystem ---
         add_symbol("wpp_str_concat", wpp_str_concat as usize);
+        add_symbol("wpp_readline", wpp_readline as usize);
 
         // --- HTTP subsystem ---
         add_symbol("wpp_http_get", wpp_http_get as usize);
@@ -164,6 +168,7 @@ fn register_runtime_symbols<'ctx>(engine: &ExecutionEngine<'ctx>, module: &Modul
         map_fn("wpp_print_value_basic", wpp_print_value_basic as usize);
         map_fn("wpp_print_array", wpp_print_array as usize);
         map_fn("wpp_print_object", wpp_print_object as usize);
+        map_fn("wpp_readline", wpp_readline as usize);
 
         // === Threading subsystem ===
         map_fn("wpp_thread_spawn_gc", wpp_thread_spawn_gc as usize);

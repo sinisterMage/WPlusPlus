@@ -179,6 +179,20 @@ void wpp_print_value_basic(const void *ptr, int32_t type_id) {
     }
 }
 
+// =====================================================
+// === READLINE (EXPORTED)
+// =====================================================
+__attribute__((visibility("default")))
+char* wpp_readline() {
+    static char buffer[1024]; // static so pointer stays valid after return
+    if (fgets(buffer, sizeof(buffer), stdin) != NULL) {
+        size_t len = strlen(buffer);
+        if (len > 0 && buffer[len - 1] == '\n')
+            buffer[len - 1] = '\0';
+        return buffer;
+    }
+    return "";
+}
 
 #ifdef __cplusplus
 }

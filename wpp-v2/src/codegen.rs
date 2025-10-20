@@ -108,6 +108,13 @@ if self.module.get_function("wpp_str_concat").is_none() {
     let fn_ty = ptr_ty.fn_type(&[ptr_ty.into(), ptr_ty.into()], false);
     self.module.add_function("wpp_str_concat", fn_ty, None);
 }
+// === Readline support ===
+let i8_ptr_ty = self.context.i8_type().ptr_type(AddressSpace::default());
+if self.module.get_function("wpp_readline").is_none() {
+    let fn_ty = i8_ptr_ty.fn_type(&[], false);
+    self.module.add_function("wpp_readline", fn_ty, None);
+}
+
 
     }
 }
@@ -1183,6 +1190,27 @@ else if name == "unlock" {
     return self.i32_type.const_int(0, false).into();
 }
 
+// === READLINE ===
+else if name == "readline" {
+    // Declare the extern if missing
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let readline_fn = self.module.get_function("wpp_readline").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[], false);
+        self.module.add_function("wpp_readline", fn_ty, None)
+    });
+
+    // Call the runtime function
+    let call = self.builder
+        .build_call(readline_fn, &[], "call_readline")
+        .unwrap();
+
+    let result = call
+        .try_as_basic_value()
+        .left()
+        .expect("wpp_readline must return a pointer");
+
+    return result;
+}
 
 // === INDIRECT FUNCTION CALL (lambda stored in variable) ===
 if let Some(var_info) = self.vars.get(name) {
@@ -2533,6 +2561,7 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
         || name == "useThread"
         || name == "http.body"
         || name == "http.headers"
+        || name == "readline" // 🧩 Added here — readline returns a string pointer
     {
         // These builtins return pointers
         self.context
@@ -2544,6 +2573,7 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
         self.context.i32_type().as_basic_type_enum()
     }
 }
+
 
  else if let Some(t) = ty {
     self.resolve_basic_type(t)

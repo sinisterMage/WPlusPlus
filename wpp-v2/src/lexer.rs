@@ -183,28 +183,42 @@ _ => {
     }
 
     fn consume_string(&mut self) -> String {
-        let mut result = String::new();
-        while let Some(c) = self.input.next() {
-            self.col += 1;
-            match c {
-                '"' => break, // closing quote
-                '\\' => {
-                    if let Some(next) = self.input.next() {
-                        self.col += 1;
-                        match next {
-                            'n' => result.push('\n'),
-                            't' => result.push('\t'),
-                            '"' => result.push('"'),
-                            '\\' => result.push('\\'),
-                            _ => result.push(next),
+    let mut result = String::new();
+
+    while let Some(c) = self.input.next() {
+        self.col += 1;
+
+        match c {
+            '"' => break, // closing quote
+            '\\' => {
+                if let Some(next) = self.input.next() {
+                    self.col += 1;
+                    match next {
+                        'n' => result.push('\n'),
+                        'r' => result.push('\r'),
+                        't' => result.push('\t'),
+                        '0' => result.push('\0'),
+                        '"' => result.push('"'),
+                        '\'' => result.push('\''),
+                        '\\' => result.push('\\'),
+                        // ✅ Preserve unknown escapes as literal
+                        other => {
+                            result.push('\\');
+                            result.push(other);
                         }
                     }
+                } else {
+                    // Handle trailing backslash at end of string
+                    result.push('\\');
                 }
-                _ => result.push(c),
             }
+            _ => result.push(c),
         }
-        result
     }
+
+    result
+}
+
 
     fn consume_symbol(&mut self) -> String {
         let ch = self.input.next().unwrap();

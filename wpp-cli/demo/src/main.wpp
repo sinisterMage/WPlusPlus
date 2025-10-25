@@ -2,3 +2,4 @@ import { add } from "math"
 import { greet } from "utils"
 
 print("2 + 3 = ", add(2, 3))
+print("Hello\nW++\t🦥 Sloth Mode\nLine 3\n");

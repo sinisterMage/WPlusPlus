@@ -103,5 +103,5 @@ docker build -t wplusplus:latest .
 
 ## 🧡 About W++
 
-W++ is a chaotic, Python-style scripting language for .NET and LLVM — blending expressive syntax, GC-based multithreading, and serious compiler tech with a sloth’s attitude toward productivity.
+W++ is a chaotic, Python-style scripting language — blending expressive syntax, GC-based multithreading, and serious compiler tech with a sloth’s attitude toward productivity.
 👉 [Learn more on GitHub](https://github.com/sinisterMage/WPlusPlus)

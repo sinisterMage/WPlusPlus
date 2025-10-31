@@ -1,0 +1,9 @@
+// Test HTTP range patterns
+
+funcy handleStatus(code: 2xx) {
+    print("Success range!")
+}
+
+func main() {
+    handleStatus(201)
+}

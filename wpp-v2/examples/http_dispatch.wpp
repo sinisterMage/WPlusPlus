@@ -1,0 +1,41 @@
+// Test HTTP status code dispatch
+
+// Literal status code dispatch
+funcy respond(status: 200) {
+    print("OK - Success!")
+}
+
+funcy respond(status: 404) {
+    print("Not Found")
+}
+
+funcy respond(status: 500) {
+    print("Internal Server Error")
+}
+
+// Range pattern dispatch
+funcy handleStatus(code: 2xx) {
+    print("Success range (200-299)")
+}
+
+funcy handleStatus(code: 4xx) {
+    print("Client error range (400-499)")
+}
+
+funcy handleStatus(code: 5xx) {
+    print("Server error range (500-599)")
+}
+
+func main() {
+    print("Testing HTTP status code dispatch")
+
+    // Test literal dispatch
+    respond(200)
+    respond(404)
+    respond(500)
+
+    // Test range dispatch
+    handleStatus(201)
+    handleStatus(403)
+    handleStatus(503)
+}

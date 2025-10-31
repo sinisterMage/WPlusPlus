@@ -1289,8 +1289,27 @@ if let Some(var_info) = self.vars.get(name) {
         .map(|a| {
             match a {
                 Expr::StringLiteral(_) => TypeDescriptor::Primitive("ptr".to_string()),
-                Expr::TypedLiteral { ty, .. } if ty == "f64" => TypeDescriptor::Primitive("f64".to_string()),
-                Expr::TypedLiteral { ty, .. } if ty.starts_with("i") => TypeDescriptor::Primitive("i32".to_string()),
+                Expr::Literal(num) => {
+                    // Check if it looks like an HTTP status code (100-599)
+                    if *num >= 100 && *num < 600 {
+                        TypeDescriptor::HttpStatusLiteral(*num as u16)
+                    } else {
+                        TypeDescriptor::Primitive("i32".to_string())
+                    }
+                }
+                Expr::TypedLiteral { value, ty } if ty == "f64" => TypeDescriptor::Primitive("f64".to_string()),
+                Expr::TypedLiteral { value, ty } if ty.starts_with("i") => {
+                    // Check if it's an HTTP status code
+                    if let Ok(num) = value.parse::<i32>() {
+                        if num >= 100 && num < 600 {
+                            TypeDescriptor::HttpStatusLiteral(num as u16)
+                        } else {
+                            TypeDescriptor::Primitive("i32".to_string())
+                        }
+                    } else {
+                        TypeDescriptor::Primitive("i32".to_string())
+                    }
+                }
                 Expr::Variable(var_name) => {
                     // Check if it's a known variable (local or global)
                     if let Some(var_info) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
@@ -1356,15 +1375,70 @@ let normalized_arg_types: Vec<TypeDescriptor> = arg_types
 
 println!("💡 Normalized arg types for {}: {:?}", name, normalized_arg_types);
 
-// 🕵️ Try exact match first
+// 🕵️ Find best match using specificity ranking
 let mut sig_opt = None;
 if let Some(sigs) = self.reverse_func_index.get(name) {
     println!("🔍 Available signatures for '{}': {:?}", name, sigs.iter().map(|s| &s.param_types).collect::<Vec<_>>());
+
+    // Try exact match first (highest priority)
     sig_opt = sigs.iter().find(|sig| sig.param_types == arg_types).cloned();
 
-    // Fallback: try normalized match if exact not found
+    // If no exact match, use specificity-based selection
     if sig_opt.is_none() {
-        sig_opt = sigs.iter().find(|sig| sig.param_types == normalized_arg_types).cloned();
+        // Find all compatible signatures and rank by specificity
+        let mut candidates: Vec<(&FunctionSignature, u32)> = sigs
+            .iter()
+            .filter_map(|sig| {
+                // Check if signature is compatible with arg_types
+                if sig.param_types.len() != arg_types.len() {
+                    return None;
+                }
+
+                let mut is_compatible = true;
+                let mut total_specificity = 0u32;
+
+                for (sig_type, arg_type) in sig.param_types.iter().zip(arg_types.iter()) {
+                    let matches = match (sig_type, arg_type) {
+                        // Exact match
+                        (a, b) if a == b => true,
+                        // Any wildcard matches anything
+                        (TypeDescriptor::Any, _) => true,
+                        // HTTP status range matches literal in range
+                        (TypeDescriptor::HttpStatusRange(min, max), TypeDescriptor::HttpStatusLiteral(code)) => {
+                            *code >= *min && *code <= *max
+                        }
+                        // Normalized match (try normalized_arg_types)
+                        _ => {
+                            if let Some(normalized) = normalized_arg_types.get(sig.param_types.iter().position(|t| t == sig_type)?) {
+                                sig_type == normalized
+                            } else {
+                                false
+                            }
+                        }
+                    };
+
+                    if !matches {
+                        is_compatible = false;
+                        break;
+                    }
+
+                    total_specificity += sig_type.specificity();
+                }
+
+                if is_compatible {
+                    Some((sig, total_specificity))
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if !candidates.is_empty() {
+            // Sort by specificity (descending - higher is more specific)
+            candidates.sort_by(|a, b| b.1.cmp(&a.1));
+            sig_opt = Some(candidates[0].0.clone());
+            println!("🎯 Selected overload by specificity: {:?} (score: {})", sig_opt.as_ref().unwrap().param_types, candidates[0].1);
+        }
     }
 }
 
@@ -2740,6 +2814,13 @@ if let Expr::NewInstance { entity, args } = value {
         self.builder.build_store(alloca, casted_val).unwrap();
     }
 
+    // === Extract object type name if it's a typed object literal ===
+    let obj_type = if let Expr::ObjectLiteral { type_name, .. } = value {
+        type_name.clone()
+    } else {
+        None
+    };
+
     // === Register variable ===
     self.vars.insert(
         name.clone(),
@@ -2749,7 +2830,7 @@ if let Expr::NewInstance { entity, args } = value {
             is_const: *is_const,
             is_thread_state: false,
             entity_type: None,
-            object_type_name: None,
+            object_type_name: obj_type,
         },
     );
 

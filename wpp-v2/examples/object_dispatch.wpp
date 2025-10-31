@@ -1,0 +1,29 @@
+// Test object type dispatch with type aliases
+
+type Request = {
+    "method": string,
+    "url": string
+}
+
+type Response = {
+    "code": i32,
+    "body": string
+}
+
+funcy handle(req: Request) {
+    print("Handling request")
+}
+
+funcy handle(res: Response) {
+    print("Handling response")
+}
+
+func main() {
+    print("Testing object type dispatch")
+
+    let request = Request { "method": "GET", "url": "/api" }
+    let response = Response { "code": 200, "body": "OK" }
+
+    handle(request)
+    handle(response)
+}

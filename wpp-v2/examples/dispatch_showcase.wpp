@@ -1,0 +1,118 @@
+// W++ Enhanced Multiple Dispatch Showcase
+// Demonstrates entity, object type, and HTTP status code dispatch
+
+// ========================================
+// Type Aliases (Object Types)
+// ========================================
+type Request = {
+    "method": string,
+    "url": string
+}
+
+type Response = {
+    "status": i32,
+    "body": string
+}
+
+// ========================================
+// Entity (Class) Types
+// ========================================
+entity Dog {
+    func speak() {
+        print("Woof!")
+    }
+}
+
+entity Cat {
+    func speak() {
+        print("Meow!")
+    }
+}
+
+// ========================================
+// Entity Type Dispatch
+// ========================================
+funcy greet(animal: Dog) {
+    print("Hello doggo!")
+}
+
+funcy greet(animal: Cat) {
+    print("Hello kitty!")
+}
+
+// ========================================
+// Object Type Dispatch
+// ========================================
+funcy process(req: Request) {
+    print("Processing HTTP request")
+}
+
+funcy process(res: Response) {
+    print("Processing HTTP response")
+}
+
+// ========================================
+// HTTP Status Code Literal Dispatch
+// ========================================
+funcy handleCode(status: 200) {
+    print("200 OK")
+}
+
+funcy handleCode(status: 404) {
+    print("404 Not Found")
+}
+
+funcy handleCode(status: 500) {
+    print("500 Internal Server Error")
+}
+
+// ========================================
+// HTTP Status Code Range Dispatch
+// ========================================
+funcy handleRange(code: 2xx) {
+    print("2xx - Success")
+}
+
+funcy handleRange(code: 4xx) {
+    print("4xx - Client Error")
+}
+
+funcy handleRange(code: 5xx) {
+    print("5xx - Server Error")
+}
+
+// ========================================
+// Main - Test All Dispatch Types
+// ========================================
+func main() {
+    print("=== W++ Enhanced Multiple Dispatch Demo ===")
+    print("")
+
+    print("--- Entity Type Dispatch ---")
+    let dog = new Dog()
+    let cat = new Cat()
+    greet(dog)
+    greet(cat)
+    print("")
+
+    print("--- Object Type Dispatch ---")
+    let request = Request { "method": "GET", "url": "/api/users" }
+    let response = Response { "status": 200, "body": "Success" }
+    process(request)
+    process(response)
+    print("")
+
+    print("--- HTTP Status Code Literal Dispatch ---")
+    handleCode(200)
+    handleCode(404)
+    handleCode(500)
+    print("")
+
+    print("--- HTTP Status Code Range Dispatch ---")
+    handleRange(201)
+    handleRange(403)
+    handleRange(503)
+    print("")
+
+    print("=== Demo Complete ===")
+}

@@ -1,0 +1,9 @@
+// Simple HTTP status code test
+
+funcy respond(status: 200) {
+    print("OK!")
+}
+
+func main() {
+    respond(200)
+}

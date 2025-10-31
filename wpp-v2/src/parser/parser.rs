@@ -681,15 +681,42 @@ let name = match self.advance().clone() {
             if self.check(TokenKind::Symbol(":".into())) {
                 self.advance(); // consume ':'
 
-                // Check for literal pattern (HTTP status code)
+                // Check for literal pattern (HTTP status code or range like 2xx)
                 if let TokenKind::Number { raw, .. } = self.peek().clone() {
                     self.advance();
-                    has_patterns = true;
-                    if let Ok(num) = raw.parse::<i32>() {
-                        pattern = Some(TypePattern::Value(Expr::Literal(num)));
-                        param_type = format!("http_{}", num);
+
+                    // Check if followed by "xx" for range patterns (2xx, 4xx, etc.)
+                    if let TokenKind::Identifier(xx) = self.peek().clone() {
+                        if xx == "xx" {
+                            self.advance(); // consume "xx"
+                            has_patterns = true;
+                            if let Ok(range_start) = raw.parse::<u16>() {
+                                let min = range_start * 100;
+                                let max = min + 99;
+                                pattern = Some(TypePattern::Type(TypeDescriptor::HttpStatusRange(min, max)));
+                                param_type = format!("http_{}xx", range_start);
+                            } else {
+                                panic!("Failed to parse range start: {}", raw);
+                            }
+                        } else {
+                            // Just a literal number
+                            has_patterns = true;
+                            if let Ok(num) = raw.parse::<i32>() {
+                                pattern = Some(TypePattern::Value(Expr::Literal(num)));
+                                param_type = format!("http_{}", num);
+                            } else {
+                                panic!("Failed to parse number: {}", raw);
+                            }
+                        }
                     } else {
-                        panic!("Failed to parse number: {}", raw);
+                        // Just a literal number
+                        has_patterns = true;
+                        if let Ok(num) = raw.parse::<i32>() {
+                            pattern = Some(TypePattern::Value(Expr::Literal(num)));
+                            param_type = format!("http_{}", num);
+                        } else {
+                            panic!("Failed to parse number: {}", raw);
+                        }
                     }
                 } else if let TokenKind::Identifier(ty_or_pattern) = self.advance().clone() {
                     println!("🧩 Parsed typed parameter: {}: {}", param_name, ty_or_pattern);
@@ -1098,6 +1125,43 @@ if let TokenKind::Keyword(k) = self.peek() {
             }
             other => panic!("Expected identifier after '.', got {:?}", other),
         }
+    }
+
+    // 🏷️ Handle typed object literals: Request { "method": "GET" }
+    if self.check(TokenKind::Symbol("{".into())) {
+        self.advance(); // consume '{'
+        let mut fields = Vec::new();
+
+        if !self.check(TokenKind::Symbol("}".into())) {
+            loop {
+                // Field name (must be string literal)
+                let field_name = if let TokenKind::String(s) = self.advance().clone() {
+                    s
+                } else {
+                    panic!("Expected string literal for object field name");
+                };
+
+                self.expect(TokenKind::Symbol(":".into()), "Expected ':' after field name");
+                let field_value = self.parse_expr();
+                fields.push((field_name, field_value));
+
+                if self.check(TokenKind::Symbol(",".into())) {
+                    self.advance();
+                    // Allow trailing comma
+                    if self.check(TokenKind::Symbol("}".into())) {
+                        break;
+                    }
+                    continue;
+                }
+                break;
+            }
+        }
+
+        self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close typed object literal");
+        return Expr::ObjectLiteral {
+            fields,
+            type_name: Some(name.clone()),
+        };
     }
 
     // 📞 Handle function calls (after full name is built)

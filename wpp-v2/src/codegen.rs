@@ -18,6 +18,7 @@ use libc::malloc;
 
 
 use crate::ast::{node::{EntityMember, EntityNode}, Expr, Node};
+use crate::ast::types::TypeDescriptor;
 use crate::runtime;
 use std::mem;
 use std::ffi::c_void;
@@ -37,7 +38,7 @@ pub struct OopsieEntity<'ctx> {
 #[derive(Hash, Eq, PartialEq, Clone, Debug)]
 pub struct FunctionSignature {
     pub name: String,
-    pub param_types: Vec<String>,
+    pub param_types: Vec<crate::ast::types::TypeDescriptor>,
 }
 
 #[derive(Clone)]
@@ -45,9 +46,9 @@ pub struct VarInfo<'ctx> {
     pub ptr: PointerValue<'ctx>,
     pub ty: BasicTypeEnum<'ctx>,
     pub is_const: bool,
-        pub is_thread_state: bool, // 👈 new field
-            pub entity_type: Option<String>, // 👈 NEW FIELD
-
+    pub is_thread_state: bool, // 👈 new field
+    pub entity_type: Option<String>, // 👈 NEW FIELD for entity dispatch
+    pub object_type_name: Option<String>, // 👈 NEW FIELD for object type dispatch
 }
 /// The core LLVM code generator for W++
 pub struct Codegen <'ctx> {
@@ -66,10 +67,10 @@ pub struct Codegen <'ctx> {
     exception_value_str: Option<PointerValue<'ctx>>,
     pub functions: HashMap<FunctionSignature, FunctionValue<'ctx>>,
     pub reverse_func_index: HashMap<String, Vec<FunctionSignature>>,
-        pub entities: HashMap<String, OopsieEntity<'ctx>>,
-       pub wms: Option<Arc<Mutex<ModuleSystem>>>,
-pub resolver: Option<Arc<Mutex<ExportResolver>>>,
-
+    pub entities: HashMap<String, OopsieEntity<'ctx>>,
+    pub type_aliases: HashMap<String, crate::ast::types::ObjectTypeDefinition>, // ✅ NEW: Type alias registry
+    pub wms: Option<Arc<Mutex<ModuleSystem>>>,
+    pub resolver: Option<Arc<Mutex<ExportResolver>>>,
 }
 fn get_or_declare_fn<'ctx>(
     module: &Module<'ctx>,
@@ -144,7 +145,6 @@ impl<'ctx> Codegen<'ctx> {
         i32_type,
         vars: HashMap::new(),
         globals: HashMap::new(),
-            entities: HashMap::new(),
         loop_stack: Vec::new(),
         switch_stack: Vec::new(),
         exception_flag: Some(flag_global.as_pointer_value()),
@@ -154,9 +154,10 @@ impl<'ctx> Codegen<'ctx> {
         // 🧩 Multiple dispatch maps
         functions: HashMap::new(),
         reverse_func_index: HashMap::new(),
+        entities: HashMap::new(),
+        type_aliases: HashMap::new(), // ✅ NEW: Empty type alias registry
         wms: Some(Arc::new(Mutex::new(ModuleSystem::new(base_dir)))),
-resolver: Some(Arc::new(Mutex::new(ExportResolver::new()))),
-
+        resolver: Some(Arc::new(Mutex::new(ExportResolver::new()))),
     };
 
     // ✅ Register runtime externs immediately after initialization
@@ -1280,42 +1281,64 @@ if let Some(var_info) = self.vars.get(name) {
 
 
            else if self.reverse_func_index.contains_key(name) {
-    // 🧩 Collect argument types for overload resolution
-    let arg_types: Vec<String> = args
+    // 🧩 Collect argument TypeDescriptors for overload resolution
+    use crate::ast::types::TypeDescriptor;
+
+    let arg_types: Vec<TypeDescriptor> = args
         .iter()
         .map(|a| {
             match a {
-                Expr::StringLiteral(_) => "ptr".to_string(),
-                Expr::TypedLiteral { ty, .. } if ty == "f64" => "f64".to_string(),
-                Expr::TypedLiteral { ty, .. } if ty.starts_with("i") => "i32".to_string(),
+                Expr::StringLiteral(_) => TypeDescriptor::Primitive("ptr".to_string()),
+                Expr::TypedLiteral { ty, .. } if ty == "f64" => TypeDescriptor::Primitive("f64".to_string()),
+                Expr::TypedLiteral { ty, .. } if ty.starts_with("i") => TypeDescriptor::Primitive("i32".to_string()),
                 Expr::Variable(var_name) => {
                     // Check if it's a known variable (local or global)
                     if let Some(var_info) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
-    let var_ty = &var_info.ty;
+                        // 🎯 Check for entity or object type first
+                        if let Some(entity_name) = &var_info.entity_type {
+                            return TypeDescriptor::Entity(entity_name.clone());
+                        }
+                        if let Some(obj_type_name) = &var_info.object_type_name {
+                            return TypeDescriptor::ObjectType(obj_type_name.clone());
+                        }
 
+                        // Fall back to LLVM type inference
+                        let var_ty = &var_info.ty;
                         if var_ty.is_int_type() {
-                            "i32".to_string()
+                            TypeDescriptor::Primitive("i32".to_string())
                         } else if var_ty.is_pointer_type() {
-                            "ptr".to_string()
+                            TypeDescriptor::Primitive("ptr".to_string())
                         } else if var_ty.is_float_type() {
-                            "f64".to_string()
+                            TypeDescriptor::Primitive("f64".to_string())
                         } else {
-                            "i32".to_string()
+                            TypeDescriptor::Primitive("i32".to_string())
                         }
                     } else {
-                        "i32".to_string()
+                        TypeDescriptor::Primitive("i32".to_string())
                     }
                 }
                 Expr::BinaryOp { left, right, .. } => {
                     let l = self.infer_expr_type(left);
                     let r = self.infer_expr_type(right);
                     if l.is_float_type() || r.is_float_type() {
-                        "f64".to_string()
+                        TypeDescriptor::Primitive("f64".to_string())
                     } else {
-                        "i32".to_string()
+                        TypeDescriptor::Primitive("i32".to_string())
                     }
                 }
-                _ => "i32".to_string(),
+                Expr::NewInstance { entity, .. } => {
+                    // Instance creation returns an entity type
+                    TypeDescriptor::Entity(entity.clone())
+                }
+                Expr::ObjectLiteral { type_name, .. } => {
+                    // If object has a type name, use it for dispatch
+                    if let Some(obj_type) = type_name {
+                        TypeDescriptor::ObjectType(obj_type.clone())
+                    } else {
+                        TypeDescriptor::Primitive("ptr".to_string())
+                    }
+                }
+                _ => TypeDescriptor::Primitive("i32".to_string()),
             }
         })
         .collect();
@@ -1323,10 +1346,10 @@ if let Some(var_info) = self.vars.get(name) {
     println!("💡 Inferred arg types for {}: {:?}", name, arg_types);
 
 // 🧠 Normalize for compatible overloads (f64 → f32, etc.)
-let normalized_arg_types: Vec<String> = arg_types
+let normalized_arg_types: Vec<TypeDescriptor> = arg_types
     .iter()
-    .map(|t| match t.as_str() {
-        "f64" => "f32".to_string(), // auto-promote
+    .map(|t| match t {
+        TypeDescriptor::Primitive(ty) if ty == "f64" => TypeDescriptor::Primitive("f32".to_string()),
         _ => t.clone(),
     })
     .collect();
@@ -1336,6 +1359,7 @@ println!("💡 Normalized arg types for {}: {:?}", name, normalized_arg_types);
 // 🕵️ Try exact match first
 let mut sig_opt = None;
 if let Some(sigs) = self.reverse_func_index.get(name) {
+    println!("🔍 Available signatures for '{}': {:?}", name, sigs.iter().map(|s| &s.param_types).collect::<Vec<_>>());
     sig_opt = sigs.iter().find(|sig| sig.param_types == arg_types).cloned();
 
     // Fallback: try normalized match if exact not found
@@ -1366,7 +1390,10 @@ if let Some(sig) = sig_opt {
     let llvm_name = if sig.param_types.is_empty() {
         sig.name.clone()
     } else {
-        format!("{}__{}", sig.name, sig.param_types.join("_"))
+        let mangled_types: Vec<String> = sig.param_types.iter()
+            .map(|td| td.to_mangle_string())
+            .collect();
+        format!("{}__{}", sig.name, mangled_types.join("_"))
     };
 
     let target_fn = self.module.get_function(&llvm_name).unwrap_or(func_val);
@@ -1917,6 +1944,7 @@ if let Some(var) = catch_var {
         is_const: false,
         is_thread_state: false,
         entity_type: None,
+        object_type_name: None,
     },
 );
 
@@ -1963,7 +1991,7 @@ self.i32_type.const_int(0, false).into()
 
 
 
-Expr::Funcy { name, params, body, is_async } => {
+Expr::Funcy { name, params, body, is_async, params_patterns: _ } => {
     // 1️⃣ Compile the function (async or not)
     let func_val = if *is_async {
         self.compile_async_funcy(name, params, body)
@@ -2211,7 +2239,7 @@ let mem_ptr_i8 = self.builder
     arr_ptr.as_basic_value_enum()
 }
 
-Expr::ObjectLiteral(fields) => {
+Expr::ObjectLiteral { fields, type_name: _ } => {
     let field_count = fields.len() as u64;
     let i32_type = self.context.i32_type();
     let i64_type = self.context.i64_type();
@@ -2458,7 +2486,7 @@ Expr::NewInstance { entity, args } => {
     let ctor_name = format!("{}.new", entity);
     let ctor_sig = FunctionSignature {
         name: ctor_name.clone(),
-        param_types: args.iter().map(|_| "i32".to_string()).collect(), // basic arg inference
+        param_types: args.iter().map(|_| crate::ast::types::TypeDescriptor::Primitive("i32".to_string())).collect(),
     };
 
     if let Some(func_val) = self.functions.get(&ctor_sig).cloned() {
@@ -2517,6 +2545,12 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
         self.compile_entity(entity);
         None // 👈 explicitly return None so the return type matches
     }
+    Node::TypeAlias(type_def) => {
+        // Register type alias for dispatch resolution
+        println!("📝 Registering type alias: {}", type_def.name);
+        self.type_aliases.insert(type_def.name.clone(), type_def.clone());
+        None
+    }
     Node::ImportAll { module } | Node::ImportList { module, .. } => {
         println!("📦 Skipping import '{}': already resolved by WMS", module);
         None
@@ -2531,7 +2565,7 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
     println!("🧱 Compiling top-level node: Let {{ name: {}, ty: {:?} }}", name, ty);
 
     // === Detect heap-allocated expressions (arrays/objects) ===
-    let is_heap_value = matches!(value, Expr::ArrayLiteral(_) | Expr::ObjectLiteral(_));
+    let is_heap_value = matches!(value, Expr::ArrayLiteral(_) | Expr::ObjectLiteral { .. });
     if is_heap_value {
         println!("💾 Variable `{}` is a heap object — allocating as pointer", name);
     }
@@ -2643,6 +2677,7 @@ if let Expr::NewInstance { entity, args } = value {
             is_const: *is_const,
             is_thread_state: false,
             entity_type: Some(entity.clone()), // 👈 NEW FIELD (add this to VarInfo)
+            object_type_name: None,
         },
     );
 
@@ -2712,9 +2747,9 @@ if let Expr::NewInstance { entity, args } = value {
             ptr: alloca,
             ty: var_type,
             is_const: *is_const,
-                is_thread_state: false,
-                    entity_type: None, // ✅ add this line
-
+            is_thread_state: false,
+            entity_type: None,
+            object_type_name: None,
         },
     );
 
@@ -2743,13 +2778,113 @@ if let Expr::NewInstance { entity, args } = value {
     }
 }
 
+    /// Helper: Extract TypeDescriptors from function parameters
+    /// This checks params_patterns first (enhanced dispatch), falls back to basic type inference
+    fn extract_param_type_descriptors(
+        &self,
+        params: &[String],
+        params_patterns: &Option<Vec<crate::ast::types::ParameterPattern>>,
+    ) -> Vec<crate::ast::types::TypeDescriptor> {
+        use crate::ast::types::TypeDescriptor;
 
+        // If we have enhanced patterns, use them
+        if let Some(patterns) = params_patterns {
+            return patterns
+                .iter()
+                .map(|param_pattern| {
+                    if let Some(pattern) = &param_pattern.pattern {
+                        // Extract TypeDescriptor from the pattern
+                        if let Some(td) = pattern.to_type_descriptor() {
+                            // Resolve if it's an entity or object type
+                            match &td {
+                                TypeDescriptor::ObjectType(name) => {
+                                    // Check if it's actually an entity
+                                    println!("🔍 Resolving ObjectType '{}' - entities: {:?}, type_aliases: {:?}",
+                                        name,
+                                        self.entities.keys().collect::<Vec<_>>(),
+                                        self.type_aliases.keys().collect::<Vec<_>>()
+                                    );
+                                    if self.entities.contains_key(name) {
+                                        println!("✅ Resolved '{}' as Entity", name);
+                                        TypeDescriptor::Entity(name.clone())
+                                    } else if self.type_aliases.contains_key(name) {
+                                        println!("✅ Resolved '{}' as ObjectType", name);
+                                        TypeDescriptor::ObjectType(name.clone())
+                                    } else {
+                                        println!("⚠️  '{}' not found - treating as Primitive", name);
+                                        // Unknown type, treat as primitive
+                                        TypeDescriptor::Primitive(name.clone())
+                                    }
+                                }
+                                _ => td,
+                            }
+                        } else {
+                            // Default to i32 if pattern doesn't have a type descriptor
+                            TypeDescriptor::Primitive("i32".to_string())
+                        }
+                    } else {
+                        // No pattern, infer from param name annotation
+                        let param_str = &param_pattern.name;
+                        if param_str.contains(':') {
+                            let parts: Vec<&str> = param_str.split(':').collect();
+                            if parts.len() == 2 {
+                                let type_str = parts[1].trim();
+                                TypeDescriptor::Primitive(type_str.to_string())
+                            } else {
+                                TypeDescriptor::Primitive("i32".to_string())
+                            }
+                        } else {
+                            TypeDescriptor::Primitive("i32".to_string())
+                        }
+                    }
+                })
+                .collect();
+        }
 
-
-    
+        // Fallback: parse from params strings (old format: "name:type")
+        params
+            .iter()
+            .map(|p| {
+                if p.contains(':') {
+                    let parts: Vec<&str> = p.split(':').collect();
+                    if parts.len() == 2 {
+                        let type_str = parts[1].trim();
+                        // Check if it's an entity or object type
+                        if self.entities.contains_key(type_str) {
+                            TypeDescriptor::Entity(type_str.to_string())
+                        } else if self.type_aliases.contains_key(type_str) {
+                            TypeDescriptor::ObjectType(type_str.to_string())
+                        } else {
+                            TypeDescriptor::Primitive(type_str.to_string())
+                        }
+                    } else {
+                        TypeDescriptor::Primitive("i32".to_string())
+                    }
+                } else {
+                    TypeDescriptor::Primitive("i32".to_string())
+                }
+            })
+            .collect()
+    }
 
 /// Create main(), compile nodes, and return i32.
 pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
+    // === Pre-pass: Compile entities and type aliases first (BEFORE module check) ===
+    println!("🔍 Pre-pass: Processing {} nodes for entities and type aliases", nodes.len());
+    for node in nodes {
+        match node {
+            Node::Entity(entity) => {
+                println!("🏗️ Pre-pass found entity: {}", entity.name);
+                self.compile_entity(entity);
+            }
+            Node::TypeAlias(type_def) => {
+                self.type_aliases.insert(type_def.name.clone(), type_def.clone());
+                println!("📝 Registered type alias: {}", type_def.name);
+            }
+            _ => {}
+        }
+    }
+
     // 🔒 Skip entrypoint scaffolding for submodules
     let module_name = self.module.get_name().to_str().unwrap_or_default();
     if module_name != "main" {
@@ -2757,11 +2892,13 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
 
         // Just compile function bodies; no entrypoint creation
         for node in nodes {
-            if let Node::Expr(Expr::Funcy { name, params, body, is_async }) = node {
+            if let Node::Expr(Expr::Funcy { name, params, body, is_async, params_patterns, .. }) = node {
                 if *is_async {
                     self.compile_async_funcy(name, params, body);
                 } else {
-                    self.compile_funcy(name, params, body, None, None);
+                    // Extract type descriptors for proper dispatch
+                    let type_descriptors = self.extract_param_type_descriptors(params, params_patterns);
+                    self.compile_funcy(name, params, body, Some(&type_descriptors), None);
                 }
             }
         }
@@ -2811,11 +2948,9 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     resolver.apply_imports(&mut self.module, &wms);
 }
 
-
-
   // === Predeclare functions ===
 for node in nodes {
-    if let Node::Expr(Expr::Funcy { name, params, body, .. }) = node {
+    if let Node::Expr(Expr::Funcy { name, params, body, params_patterns, .. }) = node {
         // Infer parameter types from body (minimal version)
         let mut int_params = std::collections::HashSet::new();
         let mut ptr_params = std::collections::HashSet::new();
@@ -2925,36 +3060,68 @@ let fn_ty = inferred_ret_ty.fn_type(&param_types, false);
 
 
 
-        // 🪶 Use mangled name for overload
+        // 🪶 Extract TypeDescriptors for dispatch
+        println!("🧪 extract_param_type_descriptors for '{}' with params_patterns: {:?}", name, params_patterns);
+        let type_descriptors = self.extract_param_type_descriptors(
+            params,
+            params_patterns,
+        );
+        println!("🧪 Result: {:?}", type_descriptors);
+
         let sig = FunctionSignature {
             name: name.clone(),
-            param_types: params.iter()
-                .map(|p| if ptr_params.contains(p) { "ptr".to_string() } else { "i32".to_string() })
-                .collect(),
+            param_types: type_descriptors.clone(),
         };
-        let llvm_name = format!("{}__{}", name, sig.param_types.join("_"));
+
+        // 🧩 Generate mangled name using TypeDescriptor
+        let mangled_types: Vec<String> = sig.param_types.iter()
+            .map(|td| td.to_mangle_string())
+            .collect();
+        let llvm_name = if mangled_types.is_empty() {
+            name.clone()
+        } else {
+            format!("{}__{}", name, mangled_types.join("_"))
+        };
+
         // 🧠 Skip re-registering if function already exists
-if self.reverse_func_index
-    .get(name)
-    .map_or(false, |sigs| sigs.iter().any(|s| s.param_types == sig.param_types))
-{
-    continue; // Already registered
-}
+        if self.reverse_func_index
+            .get(name)
+            .map_or(false, |sigs| sigs.iter().any(|s| s.param_types == sig.param_types))
+        {
+            continue; // Already registered
+        }
 
         let f = self.module.add_function(&llvm_name, fn_ty, None);
 
         self.functions.insert(sig.clone(), f);
-self.reverse_func_index
-    .entry(name.clone())
-    .or_default()
-    .push(sig.clone()); // ✅ clone again so sig is still usable
+        self.reverse_func_index
+            .entry(name.clone())
+            .or_default()
+            .push(sig.clone());
 
-println!(
-    "🪶 Registered funcy {}({}) as {}",
-    name,
-    sig.param_types.join(", "),
-    llvm_name
-);
+        // 🎨 Pretty-print type descriptors
+        let type_display: Vec<String> = sig.param_types.iter()
+            .map(|td| match td {
+                crate::ast::types::TypeDescriptor::Entity(name) => name.clone(),
+                crate::ast::types::TypeDescriptor::ObjectType(name) => name.clone(),
+                crate::ast::types::TypeDescriptor::Primitive(name) => name.clone(),
+                crate::ast::types::TypeDescriptor::HttpStatusLiteral(code) => format!("{}", code),
+                crate::ast::types::TypeDescriptor::HttpStatusRange(min, _) => format!("{}xx", min / 100),
+                crate::ast::types::TypeDescriptor::Any => "_".to_string(),
+            })
+            .collect();
+
+        println!(
+            "🧱 Compiling funcy {} as {}",
+            name,
+            llvm_name
+        );
+        println!(
+            "🪶 Registered funcy {}({}) as {}",
+            name,
+            type_display.join(", "),
+            llvm_name
+        );
 
     }
 }
@@ -2965,15 +3132,18 @@ println!(
     // === Compile function bodies ===
     // === Compile function bodies using predeclared signatures ===
 for node in nodes {
-    if let Node::Expr(Expr::Funcy { name, params, body, is_async }) = node {
+    if let Node::Expr(Expr::Funcy { name, params, body, is_async, .. }) = node {
         // For each overload signature of this function name
         if let Some(sig_list) = self.reverse_func_index.get(name).cloned() {
     // release immutable borrow immediately by cloning the Vec<FunctionSignature>
     for sig in sig_list {
+        let mangled_types: Vec<String> = sig.param_types.iter()
+            .map(|td| td.to_mangle_string())
+            .collect();
         let llvm_name = if sig.param_types.is_empty() {
             name.clone()
         } else {
-            format!("{}__{}", name, sig.param_types.join("_"))
+            format!("{}__{}", name, mangled_types.join("_"))
         };
 
         // Skip already-defined functions
@@ -2983,11 +3153,20 @@ for node in nodes {
             }
         }
 
+        let type_display: Vec<String> = sig.param_types.iter()
+            .map(|td| match td {
+                crate::ast::types::TypeDescriptor::Entity(n) => n.clone(),
+                crate::ast::types::TypeDescriptor::ObjectType(n) => n.clone(),
+                crate::ast::types::TypeDescriptor::Primitive(n) => n.clone(),
+                _ => format!("{:?}", td),
+            })
+            .collect();
+
         println!(
             "🧱 Compiling funcy {} as {} ({} overload)",
             name,
             llvm_name,
-            sig.param_types.join(", ")
+            type_display.join(", ")
         );
 
         if *is_async {
@@ -3448,7 +3627,7 @@ pub fn compile_new_instance(
     // === 3️⃣ Optional: call constructor if it exists (e.g. Dog.new) ===
     let ctor_sig = FunctionSignature {
         name: format!("{}.new", entity),
-        param_types: args.iter().map(|_| "i32".to_string()).collect(), // ✅ avoid infer_type lifetime
+        param_types: args.iter().map(|_| TypeDescriptor::Primitive("i32".to_string())).collect(),
     };
 
     if let Some(func) = self.functions.get(&ctor_sig).cloned() {
@@ -3542,7 +3721,7 @@ pub fn compile_funcy(
     name: &str,
     params: &[String],
     body: &[Node],
-    param_override: Option<&[String]>,
+    param_override: Option<&[TypeDescriptor]>,
     entity_name: Option<&str>, // 👈 added
  // 👈 optional explicit type list
 ) -> FunctionValue<'ctx> {
@@ -3811,9 +3990,30 @@ let param_types: Vec<BasicMetadataTypeEnum<'ctx>> = effective_params
     
 
 // === Step 4: Apply override if present ===
-if let Some(overrides) = param_override {
-    param_type_names = overrides.to_vec();
-}
+let final_param_types = if let Some(overrides) = param_override {
+    param_type_names = overrides.iter().map(|td| td.to_mangle_string()).collect();
+    // Rebuild LLVM param_types based on TypeDescriptors
+    overrides.iter().map(|td| {
+        match td {
+            TypeDescriptor::Entity(_) | TypeDescriptor::ObjectType(_) => {
+                // Entities and objects are passed as pointers
+                self.context.i8_type().ptr_type(AddressSpace::default()).into()
+            }
+            TypeDescriptor::Primitive(name) => {
+                match name.as_str() {
+                    "i32" | "int" => self.i32_type.into(),
+                    "f32" | "float" | "f64" => self.context.f32_type().into(),
+                    "bool" => self.context.bool_type().into(),
+                    "ptr" | "string" => self.context.i8_type().ptr_type(AddressSpace::default()).into(),
+                    _ => self.i32_type.into(),
+                }
+            }
+            _ => self.i32_type.into(), // Default for HttpStatus, Any, etc.
+        }
+    }).collect()
+} else {
+    param_types
+};
 
     let llvm_name = if let Some(ent_name) = entity_name {
     format!("{}.{}", ent_name, name)  // e.g. Dog.bark
@@ -3831,16 +4031,16 @@ let fn_type = if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
     self.context
         .i8_type()
         .ptr_type(AddressSpace::default())
-        .fn_type(&param_types, false)
+        .fn_type(&final_param_types, false)
 } else if param_type_names.iter().any(|t| t == "f32" || t == "f64" || t == "float") {
     // 🧮 Float overload returns float
-    self.context.f32_type().fn_type(&param_types, false)
+    self.context.f32_type().fn_type(&final_param_types, false)
 } else if param_type_names.iter().any(|t| t == "bool") {
     // 🧩 Bool overload returns i1
-    self.context.bool_type().fn_type(&param_types, false)
+    self.context.bool_type().fn_type(&final_param_types, false)
 } else {
     // 🧱 Default integer return
-    self.i32_type.fn_type(&param_types, false)
+    self.i32_type.fn_type(&final_param_types, false)
 };
 
 
@@ -3880,7 +4080,8 @@ let fn_type = if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
             ty: param_ty,
             is_const: false,
             is_thread_state: false,
-                entity_type: None, // ✅ add this line
+            entity_type: None,
+            object_type_name: None,
         },
     );
 }
@@ -3969,9 +4170,16 @@ if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
     }
 
     // === Step 12: Register overload signature ===
+    // Convert param_type_names (strings) to TypeDescriptors for registration
+    let type_descriptors: Vec<TypeDescriptor> = if let Some(overrides) = param_override {
+        overrides.to_vec()
+    } else {
+        param_type_names.iter().map(|s| TypeDescriptor::Primitive(s.clone())).collect()
+    };
+
     let sig = FunctionSignature {
         name: name.to_string(),
-        param_types: param_type_names.clone(),
+        param_types: type_descriptors,
     };
     self.functions.insert(sig.clone(), function);
     self.reverse_func_index
@@ -3979,10 +4187,13 @@ if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
         .or_default()
         .push(sig.clone());
 
+    let type_display: Vec<String> = sig.param_types.iter()
+        .map(|td| td.to_mangle_string())
+        .collect();
     println!(
         "🪶 Registered funcy {}({}) as {}",
         name,
-        sig.param_types.join(", "),
+        type_display.join(", "),
         llvm_name
     );
 
@@ -4025,9 +4236,9 @@ let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
         ptr: alloca,
         ty: self.i32_type.as_basic_type_enum(),
         is_const: false,
-            is_thread_state: false,
-                entity_type: None, // ✅ add this line
-
+        is_thread_state: false,
+        entity_type: None,
+        object_type_name: None,
     },
 );
 
@@ -4088,7 +4299,7 @@ let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
     self.vars = old_vars;
     let sig = FunctionSignature {
     name: name.to_string(),
-    param_types: params.iter().map(|_| "i32".to_string()).collect(), // or real inferred types
+    param_types: params.iter().map(|_| TypeDescriptor::Primitive("i32".to_string())).collect(),
 };
 
 self.functions.insert(sig.clone(), function);

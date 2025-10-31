@@ -1,4 +1,5 @@
 use super::expr::Expr;
+use super::types::{ObjectTypeDefinition};
 
 #[derive(Debug, Clone)]
 pub enum Node {
@@ -21,6 +22,7 @@ pub enum Node {
         module: String,
         members: Vec<(String, Option<String>)>, // name, alias
     },
+    TypeAlias(ObjectTypeDefinition), // ✅ NEW: type aliases for named objects
 }
 
 #[derive(Debug, Clone)]

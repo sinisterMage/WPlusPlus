@@ -1,4 +1,5 @@
 use crate::ast::{node::{EntityMember, EntityNode}, Expr, Node};
+use crate::ast::types::{ObjectTypeDefinition, ObjectField, FieldType, ParameterPattern, TypePattern, TypeDescriptor};
 use std::mem;
 use crate::lexer::{Token, TokenKind};
 use std::collections::HashMap;
@@ -186,6 +187,10 @@ TokenKind::Keyword(k) if k == "return" => {
 }
 TokenKind::Keyword(k) if k == "entity" => {
     self.parse_entity()
+}
+TokenKind::Keyword(k) if k == "type" => {
+    self.advance(); // consume 'type'
+    self.parse_type_alias()
 }
 TokenKind::Keyword(k) if k == "export" => {
     self.advance(); // consume 'export'
@@ -656,8 +661,10 @@ let name = match self.advance().clone() {
     // expect '('
     self.expect(TokenKind::Symbol("(".into()), "Expected '(' after function name");
 
-    // === 🧠 parse parameters (with optional types)
+    // === 🧠 parse parameters (with optional types and patterns)
     let mut params = Vec::new();
+    let mut params_patterns = Vec::new();
+    let mut has_patterns = false;
 
     if !self.check(TokenKind::Symbol(")".into())) {
         loop {
@@ -667,20 +674,58 @@ let name = match self.advance().clone() {
                 other => panic!("Expected parameter name, got {:?}", other),
             };
 
-            // optional type annotation like a: f32
+            // optional type annotation or pattern like a: f32, req: Request, status: 200, code: 2xx
             let mut param_type = "i32".to_string(); // default type
+            let mut pattern: Option<TypePattern> = None;
+
             if self.check(TokenKind::Symbol(":".into())) {
                 self.advance(); // consume ':'
-                match self.advance().clone() {
-                    TokenKind::Identifier(ty_name) => {
-                        println!("🧩 Parsed typed parameter: {}: {}", param_name, ty_name);
-                        param_type = ty_name;
+
+                // Check for literal pattern (HTTP status code)
+                if let TokenKind::Number { raw, .. } = self.peek().clone() {
+                    self.advance();
+                    has_patterns = true;
+                    if let Ok(num) = raw.parse::<i32>() {
+                        pattern = Some(TypePattern::Value(Expr::Literal(num)));
+                        param_type = format!("http_{}", num);
+                    } else {
+                        panic!("Failed to parse number: {}", raw);
                     }
-                    other => panic!("Expected type name after ':' in parameter, got {:?}", other),
+                } else if let TokenKind::Identifier(ty_or_pattern) = self.advance().clone() {
+                    println!("🧩 Parsed typed parameter: {}: {}", param_name, ty_or_pattern);
+
+                    // Check for HTTP range pattern (2xx, 4xx, etc.)
+                    if ty_or_pattern.ends_with("xx") && ty_or_pattern.len() == 3 {
+                        if let Ok(range_start) = ty_or_pattern[..1].parse::<u16>() {
+                            has_patterns = true;
+                            let min = range_start * 100;
+                            let max = min + 99;
+                            pattern = Some(TypePattern::Type(TypeDescriptor::HttpStatusRange(min, max)));
+                            param_type = format!("http_{}xx", range_start);
+                        }
+                    } else {
+                        // Regular type annotation (could be primitive, entity, or object type)
+                        param_type = ty_or_pattern.clone();
+
+                        // Detect if it's a custom type (entity or object)
+                        if !["i32", "i64", "i8", "u64", "f32", "f64", "bool", "ptr", "string"].contains(&ty_or_pattern.as_str()) {
+                            has_patterns = true;
+                            // Could be Entity or ObjectType - will be resolved in codegen
+                            pattern = Some(TypePattern::Type(TypeDescriptor::ObjectType(ty_or_pattern)));
+                        }
+                    }
+                } else {
+                    panic!("Expected type name or pattern after ':' in parameter");
                 }
             }
 
-            // ✅ Store full typed form ("a:f32")
+            // Store parameter pattern
+            params_patterns.push(ParameterPattern {
+                name: param_name.clone(),
+                pattern,
+            });
+
+            // ✅ Store full typed form ("a:f32") for backward compatibility
             params.push(format!("{}:{}", param_name, param_type));
 
             // comma or end
@@ -708,6 +753,7 @@ let name = match self.advance().clone() {
             return Expr::Funcy {
                 name,
                 params,
+                params_patterns: if has_patterns { Some(params_patterns) } else { None },
                 body,
                 is_async,
             };
@@ -733,13 +779,68 @@ let name = match self.advance().clone() {
     Expr::Funcy {
         name,
         params,
+        params_patterns: if has_patterns { Some(params_patterns) } else { None },
         body,
         is_async,
     }
 }
 
+/// Parse type alias: type Name = { "field": type, ... }
+fn parse_type_alias(&mut self) -> Option<Node> {
+    // Expect type name
+    let name = match self.advance().clone() {
+        TokenKind::Identifier(n) => n,
+        other => {
+            panic!("Expected type name after 'type', got {:?}", other);
+        }
+    };
 
+    // Expect '='
+    self.expect(TokenKind::Symbol("=".into()), "Expected '=' after type name");
 
+    // Expect '{'
+    self.expect(TokenKind::Symbol("{".into()), "Expected '{' to start object type definition");
+
+    let mut fields = Vec::new();
+
+    // Parse fields: "fieldName": type
+    if !self.check(TokenKind::Symbol("}".into())) {
+        loop {
+            // Field name (string)
+            let field_name = match self.advance().clone() {
+                TokenKind::String(s) => s,
+                TokenKind::Identifier(id) => id,
+                other => panic!("Expected field name, got {:?}", other),
+            };
+
+            // Expect ':'
+            self.expect(TokenKind::Symbol(":".into()), "Expected ':' after field name");
+
+            // Field type
+            let field_type_str = match self.advance().clone() {
+                TokenKind::Identifier(ty) => ty,
+                other => panic!("Expected field type, got {:?}", other),
+            };
+
+            let field_type = FieldType::from_string(&field_type_str);
+            fields.push(ObjectField {
+                name: field_name,
+                ty: field_type,
+            });
+
+            // Check for comma or end
+            if self.check(TokenKind::Symbol("}".into())) {
+                break;
+            }
+            self.expect(TokenKind::Symbol(",".into()), "Expected ',' between fields");
+        }
+    }
+
+    // Expect '}'
+    self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close object type definition");
+
+    Some(Node::TypeAlias(ObjectTypeDefinition { name, fields }))
+}
 
 
 
@@ -976,6 +1077,7 @@ if let TokenKind::Keyword(k) = self.peek() {
         return Expr::Funcy {
             name,
             params,
+            params_patterns: None, // No patterns for entity methods
             body,
             is_async: false,
         };
@@ -1108,7 +1210,10 @@ fn parse_object_literal(&mut self) -> Expr {
     }
 
     self.expect(TokenKind::Symbol("}".into()), "Expected '}' to close object literal");
-    Expr::ObjectLiteral(fields)
+    Expr::ObjectLiteral {
+        fields,
+        type_name: None, // ✅ Type inference will be handled in codegen
+    }
 }
 
 }

@@ -1,0 +1,85 @@
+// Test file for extended multiple dispatch in W++ (Basic Parsing Test)
+
+// ========================================
+// Type Aliases (Object Types)
+// ========================================
+type Request = {
+    "method": string,
+    "url": string,
+    "status": i32
+}
+
+type Response = {
+    "code": i32,
+    "body": string
+}
+
+// ========================================
+// Entity (Class) Types
+// ========================================
+entity Dog {
+    func speak() {
+        print("Woof!")
+    }
+}
+
+entity Cat {
+    func speak() {
+        print("Meow!")
+    }
+}
+
+// ========================================
+// Object Type Dispatch
+// ========================================
+funcy handleRequest(req: Request) {
+    print("Handling HTTP request")
+}
+
+funcy handleResponse(res: Response) {
+    print("Handling HTTP response")
+}
+
+// ========================================
+// Entity Type Dispatch
+// ========================================
+funcy greet(animal: Dog) {
+    print("Hello doggo")
+}
+
+funcy greet(animal: Cat) {
+    print("Hello kitty")
+}
+
+// ========================================
+// HTTP Status Code Dispatch (Commented - needs full codegen support)
+// ========================================
+// funcy respond(status: 200) {
+//     print("OK - Success!")
+// }
+
+// funcy respond(status: 404) {
+//     print("Not Found")
+// }
+
+// funcy respond(status: 500) {
+//     print("Internal Server Error")
+// }
+
+// HTTP Status Code Range Dispatch (Commented - needs full codegen support)
+// funcy handleStatus(code: 2xx) {
+//     print("Success range (200-299)")
+// }
+
+// funcy handleStatus(code: 4xx) {
+//     print("Client error range (400-499)")
+// }
+
+// funcy handleStatus(code: 5xx) {
+//     print("Server error range (500-599)")
+// }
+
+// ========================================
+// Main (for testing parsing)
+// ========================================
+print("W++ Enhanced Dispatch System - Parsing Test")

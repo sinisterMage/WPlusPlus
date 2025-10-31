@@ -1,4 +1,5 @@
 use super::node::Node; // 👈 to use Node inside Expr
+use super::types::ParameterPattern;
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -49,14 +50,18 @@ pub enum Expr {
     },
     Funcy {
         name: String,
-        params: Vec<String>,
+        params: Vec<String>, // Kept for backward compatibility - stores "name:type" format
+        params_patterns: Option<Vec<ParameterPattern>>, // ✅ NEW: Enhanced pattern support
         body: Vec<Node>,
         is_async: bool, // ✅ Added this field
     },
     Return(Option<Box<Expr>>),
     Await(Box<Expr>), // ✅ new expression kind
     ArrayLiteral(Vec<Expr>),
-    ObjectLiteral(Vec<(String, Expr)>),
+    ObjectLiteral {
+        fields: Vec<(String, Expr)>,
+        type_name: Option<String>, // ✅ NEW: Track object type for dispatch
+    },
     NewInstance {
         entity: String,
         args: Vec<Expr>,

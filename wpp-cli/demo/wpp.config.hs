@@ -12,4 +12,4 @@ main = do
   tags      ["cli", "demo"]
   readme    "README.md"
   isPublic  true
-  println   "✨ Config loaded successfully. Chaos imminent."
+  println   "✨ Testing W++ libraries"

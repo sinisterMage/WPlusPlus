@@ -1,0 +1,8 @@
+// Minimal JSON FFI test - no print statements
+import "rust:json"
+
+func main() {
+    let json_str = "{\"test\":123}"
+    let result = json_validate(json_str)
+    return result
+}

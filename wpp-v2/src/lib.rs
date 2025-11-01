@@ -32,6 +32,7 @@ unsafe extern "C" {
     pub fn wpp_print_array(ptr: *const std::ffi::c_void);
     pub fn wpp_print_object(ptr: *const std::ffi::c_void);
     pub fn wpp_readline() -> *const std::os::raw::c_char;
+    pub fn wpp_int_to_string(value: i32) -> *const std::os::raw::c_char;
 }
 unsafe fn remove_global(global: &GlobalValue) {
     let raw: LLVMValueRef = global.as_value_ref(); // ✅ correct LLVM type
@@ -58,6 +59,7 @@ fn declare_runtime_externals<'ctx>(context: &'ctx Context, module: &Module<'ctx>
         // --- String subsystem ---
         ("wpp_str_concat", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false)),
         ("wpp_readline", i8_ptr.fn_type(&[], false)),
+        ("wpp_int_to_string", i8_ptr.fn_type(&[i32_type.into()], false)),
 
 
         // --- HTTP subsystem ---
@@ -89,6 +91,7 @@ fn declare_runtime_externals<'ctx>(context: &'ctx Context, module: &Module<'ctx>
 
         // --- Runtime ---
         ("wpp_runtime_wait", void_type.fn_type(&[], false)),
+        ("wpp_return", void_type.fn_type(&[i8_ptr.into(), i32_type.into()], false)),
 
         // --- libc ---
         ("printf", i32_type.fn_type(&[i8_ptr.into()], true)),
@@ -111,6 +114,7 @@ fn register_all_runtime_symbols() {
         // --- String subsystem ---
         add_symbol("wpp_str_concat", wpp_str_concat as usize);
         add_symbol("wpp_readline", wpp_readline as usize);
+        add_symbol("wpp_int_to_string", wpp_int_to_string as usize);
 
         // --- HTTP subsystem ---
         add_symbol("wpp_http_get", wpp_http_get as usize);
@@ -159,6 +163,7 @@ fn register_runtime_symbols<'ctx>(engine: &ExecutionEngine<'ctx>, module: &Modul
             #[cfg(debug_assertions)]
             println!("🔗 Bound {name}");
         } else {
+            #[cfg(debug_assertions)]
             eprintln!("⚠️ Function {name} not found in module");
         }
     };
@@ -170,14 +175,40 @@ fn register_runtime_symbols<'ctx>(engine: &ExecutionEngine<'ctx>, module: &Modul
         map_fn("wpp_print_object", wpp_print_object as usize);
         map_fn("wpp_readline", wpp_readline as usize);
 
+        // === String subsystem ===
+        map_fn("wpp_str_concat", wpp_str_concat as usize);
+        map_fn("wpp_int_to_string", wpp_int_to_string as usize);
+
+        // === HTTP subsystem ===
+        map_fn("wpp_http_get", wpp_http_get as usize);
+        map_fn("wpp_http_post", wpp_http_post as usize);
+        map_fn("wpp_http_put", wpp_http_put as usize);
+        map_fn("wpp_http_patch", wpp_http_patch as usize);
+        map_fn("wpp_http_delete", wpp_http_delete as usize);
+        map_fn("wpp_http_status", wpp_http_status as usize);
+        map_fn("wpp_http_body", wpp_http_body as usize);
+        map_fn("wpp_http_headers", wpp_http_headers as usize);
+        map_fn("wpp_http_free_all", wpp_http_free_all as usize);
+        map_fn("wpp_register_endpoint", wpp_register_endpoint as usize);
+        map_fn("wpp_start_server", wpp_start_server as usize);
+
         // === Threading subsystem ===
         map_fn("wpp_thread_spawn_gc", wpp_thread_spawn_gc as usize);
         map_fn("wpp_thread_join", wpp_thread_join as usize);
         map_fn("wpp_thread_poll", wpp_thread_poll as usize);
+        map_fn("wpp_thread_state_new", wpp_thread_state_new as usize);
+        map_fn("wpp_thread_state_get", wpp_thread_state_get as usize);
+        map_fn("wpp_thread_state_set", wpp_thread_state_set as usize);
         map_fn("wpp_thread_join_all", wpp_thread_join_all as usize);
+
+        // === Mutex subsystem ===
         map_fn("wpp_mutex_new", wpp_mutex_new as usize);
         map_fn("wpp_mutex_lock", wpp_mutex_lock as usize);
         map_fn("wpp_mutex_unlock", wpp_mutex_unlock as usize);
+
+        // === Runtime ===
+        map_fn("wpp_runtime_wait", wpp_runtime_wait as usize);
+        map_fn("wpp_return", wpp_return as usize);
 
         // === Standard libc ===
         unsafe extern "C" {
@@ -335,21 +366,30 @@ pub fn run_file(codegen: &mut Codegen, optimize: bool) -> Result<(), String> {
 
     #[cfg(debug_assertions)]
 println!("🪶 [debug3] JIT engine created successfully");
-    for func in module.get_functions() {
-    if let Ok(name) = func.get_name().to_str() {
-        if let Ok(addr) = engine.get_function_address(name) {
-            #[cfg(debug_assertions)]
-            println!("🔎 {name} -> 0x{addr:x}");
-        } else {
-            #[cfg(debug_assertions)]
-            println!("❌ {name} -> <missing>");
-        }
-    }
-}
+    // TEMPORARILY COMMENTED OUT FOR DEBUGGING
+    // for func in module.get_functions() {
+    // if let Ok(name) = func.get_name().to_str() {
+    //     if let Ok(addr) = engine.get_function_address(name) {
+    //         #[cfg(debug_assertions)]
+    //         println!("🔎 {name} -> 0x{addr:x}");
+    //     } else {
+    //         #[cfg(debug_assertions)]
+    //         println!("❌ {name} -> <missing>");
+    //     }
+    // }
+    // }
 
+    println!("🪶 [debug3.1] About to set engine globally");
+    std::io::Write::flush(&mut std::io::stdout()).ok();
     unsafe {
+        println!("🪶 [debug3.1a] Inside unsafe block");
+        std::io::Write::flush(&mut std::io::stdout()).ok();
         crate::runtime::set_engine(std::mem::transmute::<_, ExecutionEngine<'static>>(engine.clone()));
+        println!("🪶 [debug3.1b] set_engine returned");
+        std::io::Write::flush(&mut std::io::stdout()).ok();
     }
+    println!("🪶 [debug3.2] Engine set, now registering runtime symbols");
+    std::io::Write::flush(&mut std::io::stdout()).ok();
 
     // === Register runtime bindings ===
     register_runtime_symbols(&engine, module);
@@ -384,12 +424,13 @@ println!("🪶 [debug3] JIT engine created successfully");
     println!("🪶 [debug7] Entrypoint resolved to {entry_name}");
     #[cfg(debug_assertions)]
     println!("🔍 [jit] Listing all LLVM functions before execution:");
-    for func in module.get_functions() {
-        if let Ok(name) = func.get_name().to_str() {
-            #[cfg(debug_assertions)]
-            println!("  - {}", name);
-        }
-    }
+    // TEMPORARILY COMMENTED - causes segfault
+    // for func in module.get_functions() {
+    //     if let Ok(name) = func.get_name().to_str() {
+    //         #[cfg(debug_assertions)]
+    //         println!("  - {}", name);
+    //     }
+    // }
 
     if let Some(wms_arc) = &codegen.wms {
         let wms = wms_arc.lock().unwrap();
@@ -412,12 +453,13 @@ println!("{}", module.print_to_string().to_string());
     }
 
     // === Verify runtime bindings before executing ===
-    for name in ["wpp_print_value_basic", "wpp_thread_join_all", "printf", "malloc"] {
-        match engine.get_function_address(name) {
-            Ok(addr) => println!("✅ Verified binding for {name} @ 0x{addr:x}"),
-            Err(_) => println!("❌ Missing runtime binding for {name}"),
-        }
-    }
+    // TEMPORARILY COMMENTED - causes segfault
+    // for name in ["wpp_print_value_basic", "wpp_thread_join_all", "printf", "malloc"] {
+    //     match engine.get_function_address(name) {
+    //         Ok(addr) => println!("✅ Verified binding for {name} @ 0x{addr:x}"),
+    //         Err(_) => println!("❌ Missing runtime binding for {name}"),
+    //     }
+    // }
     #[cfg(debug_assertions)]
     println!("🧠 [jit] About to execute entrypoint `{entry_name}`");
     // === Run the entrypoint ===

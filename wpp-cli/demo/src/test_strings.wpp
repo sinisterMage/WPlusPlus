@@ -1,0 +1,58 @@
+// String Features Test
+func main() {
+    print("=== W++ String Features Test ===")
+    print("")
+
+    // Test 1: String comparison
+    print("--- Test 1: String Comparison ---")
+    let str1 = "hello"
+    let str2 = "hello"
+    let str3 = "world"
+
+    if (str1 == str2) {
+        print("str1 == str2: true")
+    }
+
+    if (str1 != str3) {
+        print("str1 != str3: true")
+    }
+    print("")
+
+    // Test 2: String length
+    print("--- Test 2: String Length ---")
+    let text = "Hello, W++!"
+    let len = strlen(text)
+    print("Text:", text)
+    print("Length:", len)
+    print("")
+
+    // Test 3: Integer to string
+    print("--- Test 3: Integer to String ---")
+    let num = 42
+    let num_str = int_to_string(num)
+    print("Number:", num)
+    print("As string:", num_str)
+    print("")
+
+    // Test 4: String concatenation
+    print("--- Test 4: String Concatenation ---")
+    let first = "Hello"
+    let second = " World"
+    let combined = first + second
+    print("First:", first)
+    print("Second:", second)
+    print("Combined:", combined)
+    print("")
+
+    // Test 5: Complex example
+    print("--- Test 5: Complex Example ---")
+    let name = "Alice"
+    let age = 30
+    let age_str = int_to_string(age)
+    let message = name + " is " + age_str + " years old"
+    print(message)
+    print("")
+
+    print("=== All String Tests Complete! ===")
+    return 0
+}

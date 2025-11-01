@@ -1,0 +1,40 @@
+// W++ JSON Library - Direct FFI wrapper
+// NOTE: These functions will be auto-declared by the compiler
+
+import "rust:json"
+
+// The compiler will auto-declare these FFI functions:
+// json_validate, json_parse, json_stringify, json_pretty,
+// json_get, json_get_string, json_get_int, json_merge
+
+export func validate(json_str) {
+    return json_validate(json_str)
+}
+
+export func parse(json_str) {
+    return json_parse(json_str)
+}
+
+export func stringify(obj) {
+    return json_stringify(obj)
+}
+
+export func pretty(obj, indent) {
+    return json_pretty(obj, indent)
+}
+
+export func get(obj, path) {
+    return json_get(obj, path)
+}
+
+export func getString(obj, key) {
+    return json_get_string(obj, key)
+}
+
+export func getInt(obj, key) {
+    return json_get_int(obj, key)
+}
+
+export func merge(json1, json2) {
+    return json_merge(json1, json2)
+}

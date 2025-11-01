@@ -258,6 +258,56 @@ pub fn init_mutex_support(&self) {
     self.module.add_function("wpp_mutex_unlock", unlock_ty, None);
 }
 
+    /// Declare known Rust FFI functions for imported Rust modules
+    pub fn declare_rust_ffi_functions(&self) {
+        let i8_ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+        let i32_ty = self.context.i32_type();
+        let i64_ty = self.context.i64_type();
+        let void_ty = self.context.void_type();
+
+        // Helper macro to declare if not already declared
+        macro_rules! declare_ffi {
+            ($name:expr, $fn_type:expr) => {
+                if self.module.get_function($name).is_none() {
+                    self.module.add_function($name, $fn_type, None);
+                    println!("  ✅ Declared FFI function '{}'", $name);
+                }
+            };
+        }
+
+        // JSON library functions
+        declare_ffi!("json_parse", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("json_stringify", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("json_pretty", i8_ptr.fn_type(&[i8_ptr.into(), i32_ty.into()], false));
+        declare_ffi!("json_validate", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("json_get", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("json_get_string", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("json_get_int", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("json_merge", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("json_free", void_ty.fn_type(&[i8_ptr.into()], false));
+
+        // File I/O library functions
+        declare_ffi!("io_read_file", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_write_file", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("io_read_bytes", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_read_lines", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_append_file", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("io_write_bytes", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("io_exists", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_delete_file", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_copy_file", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("io_rename_file", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("io_file_size", i64_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_is_file", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_is_dir", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_create_dir", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_create_dir_all", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_remove_dir", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_remove_dir_all", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_list_dir", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("io_free", void_ty.fn_type(&[i8_ptr.into()], false));
+    }
+
 
     pub fn create_engine(&self) -> ExecutionEngine<'ctx> {
         self.module
@@ -629,6 +679,60 @@ return result.as_basic_value_enum();
         }
     }
    // --- String (ptr) + String (ptr) ---
+    (BasicValueEnum::PointerValue(lp), BasicValueEnum::PointerValue(rp)) => {
+        match op.as_str() {
+            "==" | "!=" => {
+                // Use strcmp for string comparison
+                let i32_ty = self.context.i32_type();
+                let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+                let strcmp_fn = self.module.get_function("strcmp").unwrap_or_else(|| {
+                    let ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into()], false);
+                    self.module.add_function("strcmp", ty, None)
+                });
+
+                let cmp_result = self.builder
+                    .build_call(strcmp_fn, &[(*lp).into(), (*rp).into()], "strcmp")
+                    .unwrap()
+                    .try_as_basic_value()
+                    .left()
+                    .unwrap()
+                    .into_int_value();
+
+                let zero = i32_ty.const_int(0, false);
+                let is_equal = self.builder
+                    .build_int_compare(inkwell::IntPredicate::EQ, cmp_result, zero, "streq")
+                    .unwrap();
+
+                if op == "==" {
+                    is_equal.as_basic_value_enum()
+                } else {
+                    // != means not equal
+                    let is_not_equal = self.builder
+                        .build_not(is_equal, "strne")
+                        .unwrap();
+                    is_not_equal.as_basic_value_enum()
+                }
+            }
+            "+" => {
+                // String concatenation using wpp_str_concat
+                let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+                let concat_fn = self.module.get_function("wpp_str_concat").unwrap_or_else(|| {
+                    let ty = i8ptr.fn_type(&[i8ptr.into(), i8ptr.into()], false);
+                    self.module.add_function("wpp_str_concat", ty, None)
+                });
+
+                self.builder
+                    .build_call(concat_fn, &[(*lp).into(), (*rp).into()], "strconcat")
+                    .unwrap()
+                    .try_as_basic_value()
+                    .left()
+                    .unwrap()
+            }
+            _ => panic!("❌ Unsupported string operator: {}", op),
+        }
+    }
 
 // --- Boolean logic (and / or) ---
 
@@ -673,109 +777,128 @@ result
         self.module.add_function("wpp_print_object", ty, None)
     });
 
-    // === Compile argument ===
+    // Declare printf for newline
+    let printf_fn = self.module.get_function("printf").unwrap_or_else(|| {
+        let ty = i32_ty.fn_type(&[i8ptr.into()], true);
+        self.module.add_function("printf", ty, None)
+    });
+
+    // === Compile all arguments ===
     if args.is_empty() {
         panic!("print() expects at least one argument");
     }
-    let val = self.compile_expr(&args[0]);
 
-    // === Handle based on value type ===
-    match val {
-        BasicValueEnum::IntValue(iv) => {
-            // 🧮 Detect width to choose between i32/i64/bool
-            let width = iv.get_type().get_bit_width();
-            let type_id = match width {
-                1 => 5,    // bool
-                64 => 2,   // i64
-                _ => 1,    // i32 default
-            };
+    // Print each argument with a space separator
+    for (i, arg) in args.iter().enumerate() {
+        let val = self.compile_expr(arg);
 
-            // Store to temporary alloca to pass by pointer
-            let tmp = self.builder.build_alloca(iv.get_type(), "tmp_int").unwrap();
-            self.builder.build_store(tmp, iv).unwrap();
-            let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_int").unwrap();
+        // === Handle based on value type ===
+        match val {
+            BasicValueEnum::IntValue(iv) => {
+                // 🧮 Detect width to choose between i32/i64/bool
+                let width = iv.get_type().get_bit_width();
+                let type_id = match width {
+                    1 => 5,    // bool
+                    64 => 2,   // i64
+                    _ => 1,    // i32 default
+                };
 
-            self.builder
-                .build_call(
-                    wpp_print_value_basic,
-                    &[casted.into(), i32_ty.const_int(type_id, false).into()],
-                    "call_print_basic_int",
-                )
-                .unwrap();
-        }
+                // Store to temporary alloca to pass by pointer
+                let tmp = self.builder.build_alloca(iv.get_type(), "tmp_int").unwrap();
+                self.builder.build_store(tmp, iv).unwrap();
+                let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_int").unwrap();
 
-        BasicValueEnum::FloatValue(fv) => {
-            let f64_ty = self.context.f64_type();
-let type_id: u64 = if fv.get_type() == f64_ty {
-    4 // f64
-} else {
-    3 // f32
-};
+                self.builder
+                    .build_call(
+                        wpp_print_value_basic,
+                        &[casted.into(), i32_ty.const_int(type_id, false).into()],
+                        "call_print_basic_int",
+                    )
+                    .unwrap();
+            }
 
+            BasicValueEnum::FloatValue(fv) => {
+                let f64_ty = self.context.f64_type();
+                let type_id: u64 = if fv.get_type() == f64_ty {
+                    4 // f64
+                } else {
+                    3 // f32
+                };
 
-            let tmp = self.builder.build_alloca(fv.get_type(), "tmp_float").unwrap();
-            self.builder.build_store(tmp, fv).unwrap();
-            let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_float").unwrap();
+                let tmp = self.builder.build_alloca(fv.get_type(), "tmp_float").unwrap();
+                self.builder.build_store(tmp, fv).unwrap();
+                let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_float").unwrap();
 
-            self.builder
-                .build_call(
-                    wpp_print_value_basic,
-                    &[casted.into(), i32_ty.const_int(type_id, false).into()],
-                    "call_print_basic_float",
-                )
-                .unwrap();
-        }
+                self.builder
+                    .build_call(
+                        wpp_print_value_basic,
+                        &[casted.into(), i32_ty.const_int(type_id, false).into()],
+                        "call_print_basic_float",
+                    )
+                    .unwrap();
+            }
 
-        BasicValueEnum::PointerValue(pv) => {
-            // 🔤 Assume string (C char*) by default
-            let type_id = i32_ty.const_int(6, false);
-            self.builder
-                .build_call(
-                    wpp_print_value_basic,
-                    &[pv.into(), type_id.into()],
-                    "call_print_basic_ptr",
-                )
-                .unwrap();
-        }
+            BasicValueEnum::PointerValue(pv) => {
+                // 🔤 Assume string (C char*) by default
+                let type_id = i32_ty.const_int(6, false);
+                self.builder
+                    .build_call(
+                        wpp_print_value_basic,
+                        &[pv.into(), type_id.into()],
+                        "call_print_basic_ptr",
+                    )
+                    .unwrap();
+            }
 
-        BasicValueEnum::ArrayValue(av) => {
-            let tmp = self.builder.build_alloca(av.get_type(), "tmp_arr").unwrap();
-            self.builder.build_store(tmp, av).unwrap();
-            let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_arr").unwrap();
-            self.builder
-                .build_call(
-                    wpp_print_array,
-                    &[casted.into()],
-                    "call_print_array",
-                )
-                .unwrap();
-        }
+            BasicValueEnum::ArrayValue(av) => {
+                let tmp = self.builder.build_alloca(av.get_type(), "tmp_arr").unwrap();
+                self.builder.build_store(tmp, av).unwrap();
+                let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_arr").unwrap();
+                self.builder
+                    .build_call(
+                        wpp_print_array,
+                        &[casted.into()],
+                        "call_print_array",
+                    )
+                    .unwrap();
+            }
 
-        BasicValueEnum::StructValue(sv) => {
-            let tmp = self.builder.build_alloca(sv.get_type(), "tmp_obj").unwrap();
-            self.builder.build_store(tmp, sv).unwrap();
-            let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_obj").unwrap();
-            self.builder
-                .build_call(
-                    wpp_print_object,
-                    &[casted.into()],
-                    "call_print_object",
-                )
-                .unwrap();
-        }
+            BasicValueEnum::StructValue(sv) => {
+                let tmp = self.builder.build_alloca(sv.get_type(), "tmp_obj").unwrap();
+                self.builder.build_store(tmp, sv).unwrap();
+                let casted = self.builder.build_pointer_cast(tmp, i8ptr, "casted_obj").unwrap();
+                self.builder
+                    .build_call(
+                        wpp_print_object,
+                        &[casted.into()],
+                        "call_print_object",
+                    )
+                    .unwrap();
+            }
 
-        _ => {
-            println!("⚠️ Unsupported print type — using null");
-            let null_ptr = i8ptr.const_null();
-            self.builder
-                .build_call(
-                    wpp_print_value_basic,
-                    &[null_ptr.into(), i32_ty.const_int(0, false).into()],
-                    "call_print_value_null",
-                )
-                .unwrap();
+            _ => {
+                println!("⚠️ Unsupported print type — using null");
+                let null_ptr = i8ptr.const_null();
+                self.builder
+                    .build_call(
+                        wpp_print_value_basic,
+                        &[null_ptr.into(), i32_ty.const_int(0, false).into()],
+                        "call_print_value_null",
+                    )
+                    .unwrap();
+            }
         }
     }
+
+    // Print newline at the end
+    let newline_str = self.builder.build_global_string_ptr("\n", "newline").unwrap();
+    self.builder
+        .build_call(
+            printf_fn,
+            &[newline_str.as_pointer_value().into()],
+            "print_newline",
+        )
+        .unwrap();
 
     // === Return dummy i32 ===
     return self.i32_type.const_int(0, false).into();
@@ -1211,6 +1334,58 @@ else if name == "readline" {
         .expect("wpp_readline must return a pointer");
 
     return result;
+}
+
+// === STRING LENGTH ===
+else if name == "strlen" {
+    if args.len() != 1 {
+        panic!("strlen() expects exactly 1 argument (string)");
+    }
+
+    let str_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    // Declare strlen from C standard library
+    let strlen_fn = self.module.get_function("strlen").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("strlen", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(strlen_fn, &[str_val.into()], "call_strlen")
+        .unwrap();
+
+    return call
+        .try_as_basic_value()
+        .left()
+        .expect("strlen must return an integer");
+}
+
+// === INTEGER TO STRING ===
+else if name == "int_to_string" || name == "to_string" {
+    if args.len() != 1 {
+        panic!("{}() expects exactly 1 argument (integer)", name);
+    }
+
+    let int_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    // Declare wpp_int_to_string runtime function
+    let int_to_str_fn = self.module.get_function("wpp_int_to_string").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[i32_ty.into()], false);
+        self.module.add_function("wpp_int_to_string", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(int_to_str_fn, &[int_val.into()], "call_int_to_string")
+        .unwrap();
+
+    return call
+        .try_as_basic_value()
+        .left()
+        .expect("wpp_int_to_string must return a pointer");
 }
 
 // === INDIRECT FUNCTION CALL (lambda stored in variable) ===
@@ -1653,9 +1828,32 @@ else {
 }
 
 
-        
+
             else {
-                panic!("Unknown function: {}", name);
+                // === FFI FALLBACK: Check if function exists in module (Rust FFI) ===
+                if let Some(func) = self.module.get_function(name) {
+                    println!("🦀 Found FFI function '{}' in module", name);
+
+                    // Compile arguments
+                    let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
+                    for a in args {
+                        let v = self.compile_expr(a);
+                        compiled_args.push(v.into());
+                    }
+
+                    // Call the FFI function
+                    let call_site = self
+                        .builder
+                        .build_call(func, &compiled_args, &format!("call_{}", name))
+                        .unwrap();
+
+                    return call_site
+                        .try_as_basic_value()
+                        .left()
+                        .unwrap_or_else(|| self.i32_type.const_int(0, false).into());
+                } else {
+                    panic!("Unknown function: {}", name);
+                }
             }
         }
 
@@ -2626,7 +2824,12 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
         None
     }
     Node::ImportAll { module } | Node::ImportList { module, .. } => {
-        println!("📦 Skipping import '{}': already resolved by WMS", module);
+        if module.starts_with("rust:") {
+            println!("🦀 Declaring FFI functions for Rust module '{}'", module);
+            self.declare_rust_ffi_functions();
+        } else {
+            println!("📦 Skipping import '{}': already resolved by WMS", module);
+        }
         None
     }
 
@@ -2662,16 +2865,29 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
         .ptr_type(inkwell::AddressSpace::default())
         .as_basic_type_enum()
 
-// 🧵 Special case: if RHS is a useThreadState() call, allocate as pointer
+// 🧵 Special case: if RHS is a function call that returns a pointer
 } else if let Expr::Call { name, .. } = value {
     if name == "useThreadState"
         || name == "useMutex"
         || name == "useThread"
         || name == "http.body"
         || name == "http.headers"
-        || name == "readline" // 🧩 Added here — readline returns a string pointer
+        || name == "readline"
+        || name == "int_to_string"
+        || name == "to_string"
+        // FFI functions that return strings (pointers)
+        || name == "json_parse"
+        || name == "json_stringify"
+        || name == "json_pretty"
+        || name == "json_get"
+        || name == "json_get_string"
+        || name == "json_merge"
+        || name == "io_read_file"
+        || name == "io_read_bytes"
+        || name == "io_read_lines"
+        || name == "io_list_dir"
     {
-        // These builtins return pointers
+        // These builtins/FFI functions return pointers
         self.context
             .i8_type()
             .ptr_type(inkwell::AddressSpace::default())
@@ -2717,6 +2933,14 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
                 let left_ty = self.infer_expr_type(left);
                 let right_ty = self.infer_expr_type(right);
                 self.merge_types(left_ty, right_ty)
+            }
+
+            // 🔤 String literals should be stored as pointers
+            Expr::StringLiteral(_) => {
+                self.context
+                    .i8_type()
+                    .ptr_type(inkwell::AddressSpace::default())
+                    .as_basic_type_enum()
             }
 
             _ => {
@@ -2961,6 +3185,12 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
             Node::TypeAlias(type_def) => {
                 self.type_aliases.insert(type_def.name.clone(), type_def.clone());
                 println!("📝 Registered type alias: {}", type_def.name);
+            }
+            Node::ImportAll { module } | Node::ImportList { module, .. } => {
+                if module.starts_with("rust:") {
+                    println!("🦀 Pre-pass: Declaring FFI functions for Rust module '{}'", module);
+                    self.declare_rust_ffi_functions();
+                }
             }
             _ => {}
         }
@@ -3604,7 +3834,16 @@ if let (Some(wms_arc), Some(resolver_arc)) = (&self.wms, &self.resolver) {
     resolver.link_imports_runtime(&engine, &self.module, &wms);
 }
 
-
+    // === Link Rust modules (FFI) ===
+    println!("🧩 Linking Rust modules into JIT context...");
+    if let Some(wms_arc) = &self.wms {
+        let wms = wms_arc.lock().unwrap();
+        if let Err(e) = crate::runtime::link_rust_modules(&engine, &self.module, &wms) {
+            eprintln!("⚠️ [jit] Failed to link Rust modules: {}", e);
+        } else {
+            println!("✅ [jit] Rust modules linked successfully.");
+        }
+    }
 
     // ✅ Launch entrypoint
     let entry_name = if self.module.get_function("bootstrap_main").is_some() {

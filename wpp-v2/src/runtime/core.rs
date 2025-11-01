@@ -51,11 +51,15 @@ static LAST_RESULT: Lazy<Mutex<Option<i32>>> = Lazy::new(|| Mutex::new(None));
 pub fn set_engine(engine: ExecutionEngine<'static>) {
     let boxed = Box::new(engine);
     let ptr = Box::into_raw(boxed);
-    ENGINE
-        .set(EnginePtr(ptr))
-        .ok()
-        .expect("ENGINE already initialized");
-    println!("🧠 [runtime] ENGINE stored globally");
+
+    if ENGINE.set(EnginePtr(ptr)).is_err() {
+        // Engine was already set - this is fine, just use the new one
+        println!("⚠️ [runtime] ENGINE was already initialized, keeping existing engine");
+        // Clean up the new engine we tried to set
+        unsafe { drop(Box::from_raw(ptr)); }
+    } else {
+        println!("🧠 [runtime] ENGINE stored globally");
+    }
 }
 
 pub unsafe fn get_engine<'a>() -> &'a ExecutionEngine<'static> {

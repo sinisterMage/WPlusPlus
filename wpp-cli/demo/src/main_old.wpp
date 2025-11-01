@@ -1,0 +1,30 @@
+// Simple dispatch test
+
+// Entity type dispatch
+entity Dog {
+    func speak() {
+        print("Woof!")
+    }
+}
+
+entity Cat {
+    func speak() {
+        print("Meow!")
+    }
+}
+
+funcy greet(animal: Dog) {
+    print("Hello doggo")
+}
+
+funcy greet(animal: Cat) {
+    print("Hello kitty")
+}
+
+func main() {
+    print("Testing entity dispatch")
+    let dog = new Dog()
+    let cat = new Cat()
+    greet(dog)
+    greet(cat)
+}

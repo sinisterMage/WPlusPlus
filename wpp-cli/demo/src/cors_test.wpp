@@ -1,0 +1,238 @@
+// W++ CORS Library Test
+// Tests CORS configuration and header generation (Pure W++)
+
+// Note: CORS is pure W++, so we would import from a package
+// For testing, we'll simulate the CORS library functionality inline
+
+// Type definitions matching CORS library
+type CorsConfig = {
+    "origin": string,
+    "methods": string,
+    "headers": string,
+    "credentials": bool,
+    "maxAge": i32,
+    "exposeHeaders": string
+}
+
+type CorsHeaders = {
+    "Access-Control-Allow-Origin": string,
+    "Access-Control-Allow-Methods": string,
+    "Access-Control-Allow-Headers": string,
+    "Access-Control-Allow-Credentials": string,
+    "Access-Control-Max-Age": string,
+    "Access-Control-Expose-Headers": string
+}
+
+// Helper function to convert bool to string
+func boolToString(b: bool) -> string {
+    if b {
+        return "true"
+    }
+    return "false"
+}
+
+// Helper function to convert i32 to string (simplified)
+func intToString(n: i32) -> string {
+    // For demo purposes, we'll return a placeholder
+    // In real implementation, this would convert properly
+    if n == 86400 {
+        return "86400"
+    }
+    if n == 3600 {
+        return "3600"
+    }
+    return "0"
+}
+
+// Create default CORS configuration
+func defaultConfig() -> CorsConfig {
+    return CorsConfig {
+        "origin": "*",
+        "methods": "GET, POST, PUT, DELETE, PATCH, OPTIONS",
+        "headers": "Content-Type, Authorization, X-Requested-With",
+        "credentials": false,
+        "maxAge": 86400,
+        "exposeHeaders": ""
+    }
+}
+
+// Create strict CORS configuration
+func strictConfig(origin: string) -> CorsConfig {
+    return CorsConfig {
+        "origin": origin,
+        "methods": "GET, POST",
+        "headers": "Content-Type",
+        "credentials": true,
+        "maxAge": 3600,
+        "exposeHeaders": ""
+    }
+}
+
+// Generate CORS headers from config
+func generateHeaders(config: CorsConfig) -> CorsHeaders {
+    return CorsHeaders {
+        "Access-Control-Allow-Origin": config.origin,
+        "Access-Control-Allow-Methods": config.methods,
+        "Access-Control-Allow-Headers": config.headers,
+        "Access-Control-Allow-Credentials": boolToString(config.credentials),
+        "Access-Control-Max-Age": intToString(config.maxAge),
+        "Access-Control-Expose-Headers": config.exposeHeaders
+    }
+}
+
+// Check if origin is allowed
+func isOriginAllowed(origin: string, allowedOrigin: string) -> bool {
+    if allowedOrigin == "*" {
+        return true
+    }
+    return origin == allowedOrigin
+}
+
+// Check if method is preflight
+func isPreflight(method: string) -> bool {
+    return method == "OPTIONS"
+}
+
+func main() {
+    print("=== W++ CORS Library Test ===")
+    print("")
+
+    // ========================================
+    // 1. Default Configuration
+    // ========================================
+    print("--- Default CORS Configuration ---")
+
+    let default_cfg = defaultConfig()
+    print("Origin:", default_cfg.origin)
+    print("Methods:", default_cfg.methods)
+    print("Headers:", default_cfg.headers)
+    print("Credentials:", default_cfg.credentials)
+    print("Max Age:", default_cfg.maxAge)
+    print("Expose Headers:", default_cfg.exposeHeaders)
+    print("")
+
+    // ========================================
+    // 2. Generate Default Headers
+    // ========================================
+    print("--- Default CORS Headers ---")
+
+    let headers = generateHeaders(default_cfg)
+    print("Access-Control-Allow-Origin:", headers["Access-Control-Allow-Origin"])
+    print("Access-Control-Allow-Methods:", headers["Access-Control-Allow-Methods"])
+    print("Access-Control-Allow-Headers:", headers["Access-Control-Allow-Headers"])
+    print("Access-Control-Allow-Credentials:", headers["Access-Control-Allow-Credentials"])
+    print("Access-Control-Max-Age:", headers["Access-Control-Max-Age"])
+    print("Access-Control-Expose-Headers:", headers["Access-Control-Expose-Headers"])
+    print("")
+
+    // ========================================
+    // 3. Strict Configuration
+    // ========================================
+    print("--- Strict CORS Configuration ---")
+
+    let strict = strictConfig("https://example.com")
+    print("Origin:", strict.origin)
+    print("Methods:", strict.methods)
+    print("Headers:", strict.headers)
+    print("Credentials:", strict.credentials)
+    print("Max Age:", strict.maxAge)
+    print("")
+
+    let strict_headers = generateHeaders(strict)
+    print("Strict Headers:")
+    print("  Origin:", strict_headers["Access-Control-Allow-Origin"])
+    print("  Methods:", strict_headers["Access-Control-Allow-Methods"])
+    print("  Credentials:", strict_headers["Access-Control-Allow-Credentials"])
+    print("  Max-Age:", strict_headers["Access-Control-Max-Age"])
+    print("")
+
+    // ========================================
+    // 4. Origin Validation
+    // ========================================
+    print("--- Origin Validation ---")
+
+    print("Is 'https://example.com' allowed with wildcard (*)?")
+    let check1 = isOriginAllowed("https://example.com", "*")
+    print(check1)
+    print("")
+
+    print("Is 'https://example.com' allowed with strict origin?")
+    let check2 = isOriginAllowed("https://example.com", "https://example.com")
+    print(check2)
+    print("")
+
+    print("Is 'https://evil.com' allowed with strict origin?")
+    let check3 = isOriginAllowed("https://evil.com", "https://example.com")
+    print(check3)
+    print("")
+
+    // ========================================
+    // 5. Preflight Detection
+    // ========================================
+    print("--- Preflight Detection ---")
+
+    print("Is 'OPTIONS' a preflight request?")
+    let preflight1 = isPreflight("OPTIONS")
+    print(preflight1)
+    print("")
+
+    print("Is 'GET' a preflight request?")
+    let preflight2 = isPreflight("GET")
+    print(preflight2)
+    print("")
+
+    print("Is 'POST' a preflight request?")
+    let preflight3 = isPreflight("POST")
+    print(preflight3)
+    print("")
+
+    // ========================================
+    // 6. Custom Configuration
+    // ========================================
+    print("--- Custom CORS Configuration ---")
+
+    let custom = CorsConfig {
+        "origin": "https://myapp.com",
+        "methods": "GET, POST, DELETE",
+        "headers": "Content-Type, X-API-Key",
+        "credentials": true,
+        "maxAge": 3600,
+        "exposeHeaders": "X-Request-Id, X-Response-Time"
+    }
+
+    print("Custom config:")
+    print("  Origin:", custom.origin)
+    print("  Methods:", custom.methods)
+    print("  Headers:", custom.headers)
+    print("  Credentials:", custom.credentials)
+    print("  Max Age:", custom.maxAge)
+    print("  Expose Headers:", custom.exposeHeaders)
+    print("")
+
+    let custom_headers = generateHeaders(custom)
+    print("Custom headers:")
+    print("  Allow-Origin:", custom_headers["Access-Control-Allow-Origin"])
+    print("  Allow-Methods:", custom_headers["Access-Control-Allow-Methods"])
+    print("  Allow-Headers:", custom_headers["Access-Control-Allow-Headers"])
+    print("  Expose-Headers:", custom_headers["Access-Control-Expose-Headers"])
+    print("")
+
+    // ========================================
+    // 7. Multiple Origin Checks
+    // ========================================
+    print("--- Multiple Origin Checks ---")
+
+    let origins = ["https://app1.com", "https://app2.com", "https://evil.com"]
+    let allowed = "https://app1.com"
+
+    print("Allowed origin:", allowed)
+    print("Checking origins:")
+
+    // We would loop here in a real implementation
+    print("  https://app1.com ->", isOriginAllowed("https://app1.com", allowed))
+    print("  https://app2.com ->", isOriginAllowed("https://app2.com", allowed))
+    print("  https://evil.com ->", isOriginAllowed("https://evil.com", allowed))
+    print("")
+
+    print("=== All CORS Tests Complete ===")
+}

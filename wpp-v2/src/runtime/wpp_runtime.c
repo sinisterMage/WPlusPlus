@@ -68,24 +68,22 @@ static int is_probably_valid_utf8(const unsigned char *s) {
 }
 
 static void safe_print_string_checked(const char *s) {
-        printf("🧩 [debug] safe_print_string_checked(ptr=%p)\n", s);
     if (!s) {
-        printf("(null)\n");
+        printf("(null)");
         return;
     }
 
     if (!is_probably_valid_utf8((const unsigned char *)s)) {
-        printf("(invalid UTF-8 or ptr=%p)\n", s);
+        printf("(invalid UTF-8 or ptr=%p)", s);
         return;
     }
 
     size_t len = strlen(s);
     if (len > 300) {
         fwrite(s, 1, 300, stdout);
-        printf("... [truncated %zu bytes]\n", len - 300);
+        printf("... [truncated %zu bytes]", len - 300);
     } else {
         fwrite(s, 1, len, stdout);
-        fputc('\n', stdout);
     }
 }
 
@@ -133,48 +131,46 @@ void wpp_print_object(void *obj_ptr) {
 
 __attribute__((visibility("default")))
 void wpp_print_value_basic(const void *ptr, int32_t type_id) {
-        printf("🧩 [debug] wpp_print_value_basic(ptr=%p, type_id=%d)\n", ptr, type_id);
-
     if (!ptr) {
-        printf("(null)\n");
+        printf("(null) ");
         return;
     }
 
     switch (type_id) {
         case 1: { // i32
             int32_t v = *(int32_t *)ptr;
-            printf("%d\n", v);
+            printf("%d ", v);
             break;
         }
         case 2: { // i64
             int64_t v = *(int64_t *)ptr;
-            printf("%lld\n", (long long)v);
+            printf("%lld ", (long long)v);
             break;
         }
         case 3: { // f32
             float v = *(float *)ptr;
-            printf("%.6g\n", v);
+            printf("%.6g ", v);
             break;
         }
         case 4: { // f64
             double v = *(double *)ptr;
-            printf("%.6g\n", v);
+            printf("%.6g ", v);
             break;
         }
         case 5: { // bool
             int32_t v = *(int32_t *)ptr;
-            printf("%s\n", v ? "true" : "false");
+            printf("%s ", v ? "true" : "false");
             break;
         }
-       case 6: { // string
-        printf("🧩 [debug] entering string printer with ptr=%p\n", ptr);
-    const char *s = (const char *)ptr; // ✅ no dereference
-    safe_print_string_checked(s);
-    break;
-}
+        case 6: { // string
+            const char *s = (const char *)ptr;
+            safe_print_string_checked(s);
+            printf(" ");
+            break;
+        }
 
         default:
-            printf("(unknown type_id=%d, ptr=%p)\n", type_id, ptr);
+            printf("(unknown type_id=%d, ptr=%p) ", type_id, ptr);
             break;
     }
 }
@@ -192,6 +188,17 @@ char* wpp_readline() {
         return buffer;
     }
     return "";
+}
+
+// =====================================================
+// === INTEGER TO STRING CONVERSION
+// =====================================================
+__attribute__((visibility("default")))
+char* wpp_int_to_string(int32_t value) {
+    // Thread-local buffer to avoid conflicts
+    static _Thread_local char buffer[32];
+    snprintf(buffer, sizeof(buffer), "%d", value);
+    return buffer;
 }
 
 #ifdef __cplusplus

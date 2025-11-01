@@ -1,0 +1,63 @@
+// CORS Library Demo
+// Demonstrates CORS configuration concepts
+// Note: Full CORS library awaits string comparison and manipulation features
+
+func main() {
+    print("=== W++ CORS Library Demo ===")
+    print("")
+    print("This demo shows CORS configuration concepts.")
+    print("Full implementation requires string operations not yet available in W++.")
+    print("")
+
+    // Test 1: Default CORS Configuration
+    print("--- Default CORS Configuration ---")
+    let default_origin = "*"
+    let default_methods = "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    let default_headers = "Content-Type, Authorization, X-Requested-With"
+    let default_max_age = 86400
+
+    print("Access-Control-Allow-Origin:", default_origin)
+    print("Access-Control-Allow-Methods:", default_methods)
+    print("Access-Control-Allow-Headers:", default_headers)
+    print("Access-Control-Max-Age:", default_max_age)
+    print("")
+
+    // Test 2: Strict CORS Configuration
+    print("--- Strict CORS Configuration ---")
+    let strict_origin = "https://example.com"
+    let strict_methods = "GET, POST"
+    let strict_headers = "Content-Type"
+    let strict_credentials = 1  // true
+    let strict_max_age = 3600
+
+    print("Access-Control-Allow-Origin:", strict_origin)
+    print("Access-Control-Allow-Methods:", strict_methods)
+    print("Access-Control-Allow-Headers:", strict_headers)
+    print("Access-Control-Allow-Credentials:", strict_credentials)
+    print("Access-Control-Max-Age:", strict_max_age)
+    print("")
+
+    // Test 3: Custom Configuration
+    print("--- Custom CORS Configuration ---")
+    let custom_origin = "https://api.myapp.com"
+    let custom_methods = "GET, POST, PUT, DELETE"
+    let custom_headers = "Content-Type, X-API-Key"
+    let custom_expose = "X-Request-ID, X-Rate-Limit"
+
+    print("Access-Control-Allow-Origin:", custom_origin)
+    print("Access-Control-Allow-Methods:", custom_methods)
+    print("Access-Control-Allow-Headers:", custom_headers)
+    print("Access-Control-Expose-Headers:", custom_expose)
+    print("")
+
+    print("=== CORS Demo Complete! ===")
+    print("")
+    print("To use CORS in production:")
+    print("1. Configure allowed origins")
+    print("2. Set permitted HTTP methods")
+    print("3. Specify allowed request headers")
+    print("4. Handle preflight OPTIONS requests")
+    print("")
+    print("Waiting for W++ string comparison and manipulation features...")
+    return 0
+}

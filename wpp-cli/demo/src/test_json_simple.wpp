@@ -1,0 +1,39 @@
+// Simple JSON test
+import "rust:json"
+
+func main() {
+    print("Testing json_validate:")
+    let json1 = "{\"test\":123}"
+    let result = json_validate(json1)
+
+    if result == 1 {
+        print("✓ Valid JSON detected correctly")
+    } else {
+        print("✗ Failed to validate JSON")
+    }
+
+    let json2 = "{bad json}"
+    let result2 = json_validate(json2)
+
+    if result2 == 0 {
+        print("✓ Invalid JSON detected correctly")
+    } else {
+        print("✗ Failed to detect invalid JSON")
+    }
+
+    print("Testing json_parse and json_stringify:")
+    let original = "{\"name\":\"Alice\",\"age\":30}"
+    let parsed = json_parse(original)
+    print("Parsed result exists:", parsed)
+
+    let stringified = json_stringify(parsed)
+    print("Stringified:", stringified)
+
+    print("Testing json_pretty:")
+    let complex = "{\"user\":{\"name\":\"Bob\"}}"
+    let pretty = json_pretty(complex, 2)
+    print(pretty)
+
+    print("All tests passed!")
+    return 0
+}

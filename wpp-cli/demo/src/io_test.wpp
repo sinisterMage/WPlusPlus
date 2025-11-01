@@ -1,0 +1,219 @@
+// W++ File I/O Library Test
+// Tests file reading, writing, and directory operations
+
+import "rust:io"
+
+func main() {
+    print("=== W++ File I/O Library Test ===")
+    print("")
+
+    // ========================================
+    // 1. File Writing
+    // ========================================
+    print("--- File Writing ---")
+
+    let test_file = "/tmp/wpp_test_demo.txt"
+    let content = "Hello from W++ Demo!"
+
+    print("Writing to:", test_file)
+    let write_result = io_write_file(test_file, content)
+    if write_result == 1 {
+        print("Write successful!")
+    } else {
+        print("Write failed!")
+    }
+    print("")
+
+    // ========================================
+    // 2. File Reading
+    // ========================================
+    print("--- File Reading ---")
+
+    print("Reading file:")
+    let read_content = io_read_file(test_file)
+    print(read_content)
+    print("")
+
+    // ========================================
+    // 3. File Existence Check
+    // ========================================
+    print("--- File Existence ---")
+
+    let exists_result = io_exists(test_file)
+    print("File exists?", exists_result)
+
+    let is_file_result = io_is_file(test_file)
+    print("Is file?", is_file_result)
+
+    let is_dir_result = io_is_dir(test_file)
+    print("Is directory?", is_dir_result)
+    print("")
+
+    // ========================================
+    // 4. File Size
+    // ========================================
+    print("--- File Size ---")
+
+    let size = io_file_size(test_file)
+    print("File size:", size, "bytes")
+    print("")
+
+    // ========================================
+    // 5. Appending to File
+    // ========================================
+    print("--- Appending to File ---")
+
+    let append_text = "\nAppended line 1\nAppended line 2"
+    print("Appending more content...")
+    let append_result = io_append_file(test_file, append_text)
+    if append_result == 1 {
+        print("Append successful!")
+    }
+    print("")
+
+    print("File after append:")
+    print(io_read_file(test_file))
+    print("")
+
+    // ========================================
+    // 6. Reading Lines
+    // ========================================
+    print("--- Reading Lines ---")
+
+    print("Reading file line by line:")
+    let lines = io_read_lines(test_file)
+    print(lines)
+    print("")
+
+    // ========================================
+    // 7. File Copy
+    // ========================================
+    print("--- File Copy ---")
+
+    let copy_path = "/tmp/wpp_test_copy.txt"
+    print("Copying to:", copy_path)
+    let copy_result = io_copy_file(test_file, copy_path)
+    if copy_result == 1 {
+        print("Copy successful!")
+    }
+
+    let copy_exists = io_exists(copy_path)
+    print("Copy exists?", copy_exists)
+    print("")
+
+    // ========================================
+    // 8. File Rename
+    // ========================================
+    print("--- File Rename ---")
+
+    let rename_path = "/tmp/wpp_test_renamed.txt"
+    print("Renaming copy to:", rename_path)
+    let rename_result = io_rename_file(copy_path, rename_path)
+    if rename_result == 1 {
+        print("Rename successful!")
+    }
+
+    let renamed_exists = io_exists(rename_path)
+    print("Renamed file exists?", renamed_exists)
+
+    let old_exists = io_exists(copy_path)
+    print("Original copy exists?", old_exists)
+    print("")
+
+    // ========================================
+    // 9. Directory Operations
+    // ========================================
+    print("--- Directory Operations ---")
+
+    let test_dir = "/tmp/wpp_demo_dir"
+    print("Creating directory:", test_dir)
+    let create_dir_result = io_create_dir(test_dir)
+    if create_dir_result == 1 {
+        print("Directory created!")
+    }
+
+    let dir_exists = io_exists(test_dir)
+    print("Directory exists?", dir_exists)
+
+    let dir_is_dir = io_is_dir(test_dir)
+    print("Is directory?", dir_is_dir)
+    print("")
+
+    // ========================================
+    // 10. Nested Directories
+    // ========================================
+    print("--- Nested Directories ---")
+
+    let nested_dir = "/tmp/wpp_demo_nested/level1/level2"
+    print("Creating nested directories:", nested_dir)
+    let create_nested_result = io_create_dir_all(nested_dir)
+    if create_nested_result == 1 {
+        print("Nested directories created!")
+    }
+
+    let nested_exists = io_exists(nested_dir)
+    print("Nested directory exists?", nested_exists)
+    print("")
+
+    // ========================================
+    // 11. Create Test Files in Directory
+    // ========================================
+    print("--- Creating Test Files ---")
+
+    io_write_file("/tmp/wpp_demo_dir/file1.txt", "File 1 content")
+    io_write_file("/tmp/wpp_demo_dir/file2.txt", "File 2 content")
+    io_write_file("/tmp/wpp_demo_dir/file3.txt", "File 3 content")
+
+    print("Files created in test directory")
+    print("Directory contents:")
+    let dir_contents = io_list_dir(test_dir)
+    print(dir_contents)
+    print("")
+
+    // ========================================
+    // 12. Cleanup
+    // ========================================
+    print("--- Cleanup ---")
+
+    print("Deleting test file...")
+    let delete_result = io_delete_file(test_file)
+    if delete_result == 1 {
+        print("Test file deleted!")
+    }
+
+    print("Deleting renamed file...")
+    let delete_rename_result = io_delete_file(rename_path)
+    if delete_rename_result == 1 {
+        print("Renamed file deleted!")
+    }
+
+    print("Removing test directory (with contents)...")
+    let remove_dir_result = io_remove_dir_all(test_dir)
+    if remove_dir_result == 1 {
+        print("Test directory removed!")
+    }
+
+    print("Removing nested directory...")
+    let remove_nested_result = io_remove_dir_all("/tmp/wpp_demo_nested")
+    if remove_nested_result == 1 {
+        print("Nested directory removed!")
+    }
+    print("")
+
+    // ========================================
+    // 13. Verification
+    // ========================================
+    print("--- Verification ---")
+
+    let final_test_exists = io_exists(test_file)
+    print("Test file exists?", final_test_exists)
+
+    let final_dir_exists = io_exists(test_dir)
+    print("Test directory exists?", final_dir_exists)
+
+    let final_nested_exists = io_exists("/tmp/wpp_demo_nested")
+    print("Nested directory exists?", final_nested_exists)
+    print("")
+
+    print("=== All I/O Tests Complete ===")
+}

@@ -1,0 +1,19 @@
+// Simple concat test
+func main() {
+    print("Testing nested concatenation...")
+
+    let part1 = "Hello"
+    let part2 = " World"
+    let result1 = part1 + part2
+    print("Step 1:", result1)
+
+    let part3 = "!"
+    let result2 = result1 + part3
+    print("Step 2:", result2)
+
+    // Now try it all in one line
+    let final = "A" + "B" + "C"
+    print("All at once:", final)
+
+    return 0
+}

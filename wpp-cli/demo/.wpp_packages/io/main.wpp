@@ -1,0 +1,200 @@
+// W++ File I/O Library
+// High-performance file system operations using Rust FFI
+// Version: 1.0.0
+
+import "rust:io"
+
+// ========================================
+// File Reading Functions
+// ========================================
+
+//
+// Read entire file contents as string
+// @param path - Path to the file
+// @returns File contents as string, or empty if error
+//
+export func readFile(path: string) -> string {
+    return io_read_file(path)
+}
+
+//
+// Read file contents as bytes (hex string)
+// @param path - Path to the file
+// @returns File contents as hex string, or empty if error
+//
+export func readBytes(path: string) -> string {
+    return io_read_bytes(path)
+}
+
+//
+// Read file line by line
+// @param path - Path to the file
+// @returns Lines separated by newline character
+//
+export func readLines(path: string) -> string {
+    return io_read_lines(path)
+}
+
+// ========================================
+// File Writing Functions
+// ========================================
+
+//
+// Write string to file (overwrites existing)
+// @param path - Path to the file
+// @param content - Content to write
+// @returns 1 if successful, 0 if error
+//
+export func writeFile(path: string, content: string) -> i32 {
+    return io_write_file(path, content)
+}
+
+//
+// Append string to file
+// @param path - Path to the file
+// @param content - Content to append
+// @returns 1 if successful, 0 if error
+//
+export func appendFile(path: string, content: string) -> i32 {
+    return io_append_file(path, content)
+}
+
+//
+// Write bytes to file (from hex string)
+// @param path - Path to the file
+// @param hex_data - Hex string of bytes to write
+// @returns 1 if successful, 0 if error
+//
+export func writeBytes(path: string, hex_data: string) -> i32 {
+    return io_write_bytes(path, hex_data)
+}
+
+// ========================================
+// File Operations
+// ========================================
+
+//
+// Check if file or directory exists
+// @param path - Path to check
+// @returns true if exists, false otherwise
+//
+export func exists(path: string) -> bool {
+    return io_exists(path) == 1
+}
+
+//
+// Delete file
+// @param path - Path to file
+// @returns true if successful, false if error
+//
+export func deleteFile(path: string) -> bool {
+    return io_delete_file(path) == 1
+}
+
+//
+// Copy file
+// @param src - Source file path
+// @param dst - Destination file path
+// @returns true if successful, false if error
+//
+export func copyFile(src: string, dst: string) -> bool {
+    return io_copy_file(src, dst) == 1
+}
+
+//
+// Rename or move file
+// @param old - Old file path
+// @param new - New file path
+// @returns true if successful, false if error
+//
+export func renameFile(old: string, new: string) -> bool {
+    return io_rename_file(old, new) == 1
+}
+
+//
+// Get file size in bytes
+// @param path - Path to file
+// @returns File size in bytes, or -1 if error
+//
+export func fileSize(path: string) -> i64 {
+    return io_file_size(path)
+}
+
+//
+// Check if path is a file
+// @param path - Path to check
+// @returns true if file, false otherwise
+//
+export func isFile(path: string) -> bool {
+    return io_is_file(path) == 1
+}
+
+//
+// Check if path is a directory
+// @param path - Path to check
+// @returns true if directory, false otherwise
+//
+export func isDir(path: string) -> bool {
+    return io_is_dir(path) == 1
+}
+
+// ========================================
+// Directory Operations
+// ========================================
+
+//
+// Create directory
+// @param path - Path to directory
+// @returns true if successful, false if error
+//
+export func createDir(path: string) -> bool {
+    return io_create_dir(path) == 1
+}
+
+//
+// Create directory and all parent directories
+// @param path - Path to directory
+// @returns true if successful, false if error
+//
+export func createDirAll(path: string) -> bool {
+    return io_create_dir_all(path) == 1
+}
+
+//
+// Remove empty directory
+// @param path - Path to directory
+// @returns true if successful, false if error
+//
+export func removeDir(path: string) -> bool {
+    return io_remove_dir(path) == 1
+}
+
+//
+// Remove directory and all contents
+// @param path - Path to directory
+// @returns true if successful, false if error
+//
+export func removeDirAll(path: string) -> bool {
+    return io_remove_dir_all(path) == 1
+}
+
+//
+// List directory contents
+// @param path - Path to directory
+// @returns Comma-separated list of entries, or empty if error
+//
+export func listDir(path: string) -> string {
+    return io_list_dir(path)
+}
+
+// ========================================
+// Memory Management
+// ========================================
+
+//
+// Free a string allocated by the I/O library
+// @param ptr - The pointer to free
+//
+export func free(ptr: string) {
+    io_free(ptr)
+}

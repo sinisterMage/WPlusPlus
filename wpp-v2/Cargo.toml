@@ -5,6 +5,7 @@ edition = "2024"
 [features]
 default = []
 rust_modules = []
+thread-debug = []  # Enable verbose thread system debugging
 
 [lib]
 name = "wpp_v2"

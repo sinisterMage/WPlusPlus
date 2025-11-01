@@ -1,0 +1,78 @@
+// W++ Thread System - Concurrent Execution Test
+// Tests true parallel thread execution
+
+func worker1() {
+    print("  [Thread 1] Starting work...")
+
+    // Simulate some work
+    let count = 0
+    let i = 0
+    while (i < 50000000) {
+        count = count + 1
+        i = i + 1
+    }
+
+    print("  [Thread 1] Finished work!")
+    return 0
+}
+
+func worker2() {
+    print("  [Thread 2] Starting work...")
+
+    let count = 0
+    let i = 0
+    while (i < 50000000) {
+        count = count + 1
+        i = i + 1
+    }
+
+    print("  [Thread 2] Finished work!")
+    return 0
+}
+
+func worker3() {
+    print("  [Thread 3] Starting work...")
+
+    let count = 0
+    let i = 0
+    while (i < 50000000) {
+        count = count + 1
+        i = i + 1
+    }
+
+    print("  [Thread 3] Finished work!")
+    return 0
+}
+
+func worker4() {
+    print("  [Thread 4] Starting work...")
+
+    let count = 0
+    let i = 0
+    while (i < 50000000) {
+        count = count + 1
+        i = i + 1
+    }
+
+    print("  [Thread 4] Finished work!")
+    return 0
+}
+
+func main() {
+    print("=== W++ Concurrent Thread Test ===")
+    print("Spawning 4 long-running threads concurrently...")
+    print("")
+
+    // Spawn all threads as detached (non-blocking)
+    let t1 = useThread(worker1, 1)  // 2nd arg = detached flag (1 = true)
+    let t2 = useThread(worker2, 1)
+    let t3 = useThread(worker3, 1)
+    let t4 = useThread(worker4, 1)
+
+    print("All 4 threads spawned!")
+    print("Main thread continuing while workers run...")
+    print("Threads will auto-join when main exits")
+    print("")
+
+    return 0
+}

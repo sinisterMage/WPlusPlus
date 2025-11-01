@@ -1,3 +1,105 @@
+//! # W++ Thread System - GC-Managed Concurrency
+//!
+//! FIX 19: Comprehensive module documentation
+//!
+//! ## Overview
+//!
+//! This module provides a garbage-collected thread system for the W++ programming language.
+//! It implements automatic thread lifecycle management, mutex tracking, and race detection.
+//!
+//! ## Design Goals
+//!
+//! 1. **Memory Safety**: Prevent memory leaks from abandoned threads
+//! 2. **Race Detection**: Warn about potential race conditions on mutexes
+//! 3. **Automatic Cleanup**: Threads auto-join on Drop, no manual management needed
+//! 4. **Deadlock Prevention**: Careful lock ordering to avoid circular dependencies
+//!
+//! ## Architecture
+//!
+//! ### Thread Lifecycle
+//!
+//! 1. **Spawn**: `wpp_thread_spawn_gc()` creates a new `ThreadHandle` wrapped in `Arc`
+//! 2. **Register**: Thread is registered with `ThreadGC` via `Weak` reference
+//! 3. **Execute**: Thread function runs, catches panics, updates finished flag
+//! 4. **Join**: Explicit via `wpp_thread_join()` or automatic on `Drop`
+//! 5. **Collect**: GC periodically collects finished threads with no external references
+//!
+//! ### Garbage Collection Strategy
+//!
+//! - **Mark-and-Sweep**: Periodically scans all registered threads
+//! - **Weak References**: Allows threads to be freed when no longer referenced
+//! - **Reference Counting**: Tracks active Arc references to prevent premature collection
+//! - **Daemon Thread**: Optional background GC for long-running programs
+//!
+//! ### Race Detection Mechanism
+//!
+//! - **Busy Flag**: Atomic flag set during mutex acquisition
+//! - **Compare-Exchange**: Atomic test-and-set to detect concurrent access
+//! - **Warning Only**: Doesn't prevent access, just logs potential races
+//! - **False Positives**: Minimized by proper Acquire/Release ordering
+//!
+//! ## Safety Considerations
+//!
+//! ### Thread Safety
+//!
+//! - All public APIs are thread-safe
+//! - Internal state protected by `Mutex` or atomic operations
+//! - GC operations protected by global `GC_LOCK` spin-lock
+//!
+//! ### Memory Ordering
+//!
+//! - `Acquire`: Used when reading shared state (synchronizes with Release)
+//! - `Release`: Used when writing shared state (visible to future Acquire)
+//! - `SeqCst`: Used for critical error states requiring global ordering
+//! - `Relaxed`: Used for non-synchronizing operations (e.g., ID generation)
+//!
+//! ### Panic Safety
+//!
+//! - Thread panics are caught via `catch_unwind`
+//! - Panic in one thread doesn't crash the program
+//! - RAII guards ensure cleanup even during unwinding
+//! - Drop handlers never panic
+//!
+//! ## Public API
+//!
+//! ### Thread Management
+//!
+//! - `wpp_thread_spawn_gc(fn_ptr)`: Spawn a new GC-managed thread
+//! - `wpp_thread_join(handle)`: Wait for thread to complete
+//! - `wpp_thread_poll(handle)`: Check if thread is finished
+//! - `wpp_thread_join_all()`: Join all remaining threads (cleanup on exit)
+//!
+//! ### Mutex Operations
+//!
+//! - `wpp_mutex_new(initial)`: Create a GC-tracked mutex
+//! - `wpp_mutex_lock(mutex, thread_id)`: Acquire lock with race detection
+//! - `wpp_mutex_unlock(mutex)`: Release lock
+//!
+//! ### Thread-Local State
+//!
+//! - `wpp_thread_state_new(initial)`: Create thread-safe shared state
+//! - `wpp_thread_state_get(state)`: Read current value
+//! - `wpp_thread_state_set(state, value)`: Update value
+//!
+//! ## Example Usage (from W++)
+//!
+//! ```wpp
+//! func worker() {
+//!     print("Worker running")
+//!     return 0
+//! }
+//!
+//! func main() {
+//!     // Blocking mode (default)
+//!     let t1 = useThread(worker)  // Auto-joins before continuing
+//!
+//!     // Detached mode (concurrent)
+//!     let t2 = useThread(worker, 1)  // Runs in background
+//!
+//!     return 0  // All threads auto-join on exit
+//! }
+//! ```
+
 use std::{
     any::Any,
     collections::HashMap,
@@ -13,9 +115,68 @@ use std::{
 
 use once_cell::sync::Lazy;
 use rand::Rng;
+
+// ===========================================================
+// 🔧 Configuration Constants
+// ===========================================================
+/// FIX 20: Extract magic numbers to named constants
+const GC_DAEMON_INTERVAL_SECS: u64 = 3;
+const MAX_SPIN_BACKOFF: u32 = 1024;
+const YIELD_THRESHOLD: u32 = 512;
+
+// ===========================================================
+// 🐛 Debug Logging (FIX 18)
+// ===========================================================
+/// Conditional debug logging - only enabled with "thread-debug" feature
+#[cfg(feature = "thread-debug")]
+macro_rules! thread_debug {
+    ($($arg:tt)*) => {
+        println!($($arg)*)
+    };
+}
+
+#[cfg(not(feature = "thread-debug"))]
+macro_rules! thread_debug {
+    ($($arg:tt)*) => {};
+}
+
+/// Conditional debug logging with custom emoji
+#[cfg(feature = "thread-debug")]
+macro_rules! thread_trace {
+    ($emoji:expr, $($arg:tt)*) => {
+        println!(concat!($emoji, " {}"), format!($($arg)*))
+    };
+}
+
+#[cfg(not(feature = "thread-debug"))]
+macro_rules! thread_trace {
+    ($emoji:expr, $($arg:tt)*) => {};
+}
+
+// ===========================================================
+// 🔒 Global State
+// ===========================================================
 static GC_LOCK: AtomicBool = AtomicBool::new(false);
+static DAEMON_SHUTDOWN: AtomicBool = AtomicBool::new(false); // FIX 12
 thread_local! {
     static THREAD_ANCESTRY: std::cell::RefCell<Vec<u64>> = std::cell::RefCell::new(Vec::new());
+}
+
+// ===========================================================
+// 🧹 RAII Guard for Thread Ancestry (FIX 10)
+// ===========================================================
+/// Automatically cleans up thread ancestry on drop, preventing leaks on panic
+struct AncestryGuard(u64);
+
+impl Drop for AncestryGuard {
+    fn drop(&mut self) {
+        THREAD_ANCESTRY.with(|ancestry| {
+            let mut a = ancestry.borrow_mut();
+            if let Some(pos) = a.iter().position(|x| *x == self.0) {
+                a.remove(pos);
+            }
+        });
+    }
 }
 // ===========================================================
 // 🧩 ThreadState (for useThreadState())
@@ -73,24 +234,48 @@ impl<T: Send + 'static> GcMutex<T> {
     }
 
     pub fn lock(&self, thread_id: u64) -> std::sync::LockResult<std::sync::MutexGuard<'_, T>> {
-    if self.busy.swap(true, Ordering::Acquire) {
-        eprintln!("⚠️ [mutex] Race detected on mutex #{} (already busy)", self.id);
-    }
+        // FIX 4: Proper race detection using compare_exchange
+        // FIX 16: Memory ordering documentation
+        //
+        // Memory Ordering Rationale:
+        // - Acquire on success: Ensures all subsequent loads see writes from the Release in unlock()
+        // - Relaxed on failure: No synchronization needed when CAS fails (we just detected a race)
+        //
+        // Synchronization relationship:
+        // This Acquire synchronizes-with the Release in unlock(), establishing a happens-before
+        // relationship. This ensures that if thread A releases the lock (Release), and thread B
+        // acquires it (Acquire), then all of A's writes before the Release are visible to B.
+        if self.busy.compare_exchange(
+            false,           // Expected: not busy
+            true,            // New value: set busy
+            Ordering::Acquire,  // Success: synchronize with Release in unlock
+            Ordering::Relaxed   // Failure: no synchronization needed
+        ).is_err() {
+            // Flag was already true - genuine race detected
+            eprintln!("⚠️ [mutex] Race detected on mutex #{} (already busy)", self.id);
+            // Continue anyway - the actual Mutex below will serialize access properly
+        }
 
-    let guard = self.data.lock();
-    match guard {
-        Ok(g) => {
-            *self.owner_thread.lock().unwrap() = Some(thread_id);
-            self.busy.store(false, Ordering::Release);
-            Ok(g)
-        }
-        Err(poisoned) => {
-            self.poisoned.store(true, Ordering::SeqCst);
-            self.busy.store(false, Ordering::Release);
-            Err(poisoned)
+        // Lock the actual mutex (may block here)
+        let guard = self.data.lock();
+
+        match guard {
+            Ok(g) => {
+                // Successfully acquired lock - set owner and clear busy flag
+                *self.owner_thread.lock().unwrap() = Some(thread_id);
+                // Release: Makes this store visible to next Acquire in lock()
+                self.busy.store(false, Ordering::Release);
+                Ok(g)
+            }
+            Err(poisoned) => {
+                // Mutex was poisoned - record it and clear busy flag
+                // SeqCst: Ensures global ordering for poison flag (critical error state)
+                self.poisoned.store(true, Ordering::SeqCst);
+                self.busy.store(false, Ordering::Release);
+                Err(poisoned)
+            }
         }
     }
-}
 
 
     pub fn unlock(&self) {
@@ -99,20 +284,27 @@ impl<T: Send + 'static> GcMutex<T> {
     }
 
     pub fn owner_dead(&self) -> bool {
-    if let Some(owner) = *self.owner_thread.lock().unwrap() {
-        let threads = ThreadGC::global().threads.lock().unwrap();
-        if let Some(weak_handle) = threads.get(&owner) {
-            if let Some(handle) = weak_handle.upgrade() {
-                return handle.is_finished();
-            } else {
-                // Weak couldn't be upgraded → thread was already collected
-                println!("💀 [gc] Thread #{owner} already collected (Weak expired)");
-                return true;
+        // FIX 3: Prevent deadlock by reading owner ID and releasing lock before acquiring ThreadGC lock
+        let owner_id = {
+            // Acquire lock, read value, immediately release
+            *self.owner_thread.lock().unwrap()
+        }; // owner_thread lock dropped here
+
+        if let Some(owner) = owner_id {
+            // Now acquire ThreadGC lock - no double-lock deadlock
+            let threads = ThreadGC::global().threads.lock().unwrap();
+            if let Some(weak_handle) = threads.get(&owner) {
+                if let Some(handle) = weak_handle.upgrade() {
+                    return handle.is_finished();
+                } else {
+                    // Weak couldn't be upgraded → thread was already collected
+                    println!("💀 [gc] Thread #{owner} already collected (Weak expired)");
+                    return true;
+                }
             }
         }
+        false
     }
-    false
-}
 
 
     pub fn force_unlock_if_dead(&self) {
@@ -152,6 +344,11 @@ impl ThreadHandle {
         static NEXT_ID: AtomicU64 = AtomicU64::new(1);
         let id = NEXT_ID.fetch_add(1, Ordering::Relaxed);
 
+        // FIX 17: Integer overflow protection
+        if id == u64::MAX {
+            panic!("💥 [thread] Thread ID overflow! Maximum thread count reached.");
+        }
+
         // recursion prevention
         let mut recursion_violation = false;
         THREAD_ANCESTRY.with(|ancestry| {
@@ -171,6 +368,7 @@ impl ThreadHandle {
             });
         }
 
+        // FIX 10: Use RAII guard for automatic ancestry cleanup
         THREAD_ANCESTRY.with(|ancestry| ancestry.borrow_mut().push(id));
 
         let finished = Arc::new(AtomicBool::new(false));
@@ -184,6 +382,9 @@ impl ThreadHandle {
 
         // ✅ Store inside Mutex<Option<JoinHandle>>
         let join_handle = Mutex::new(Some(thread::spawn(move || {
+            // FIX 10: Create RAII guard - ensures cleanup even on panic
+            let _ancestry_guard = AncestryGuard(id);
+
             let result = std::panic::catch_unwind(|| func());
             match result {
                 Ok(_) => println!("✅ [thread] thread #{id} finished normally"),
@@ -191,12 +392,7 @@ impl ThreadHandle {
             }
             fin_clone.store(true, Ordering::SeqCst);
 
-            THREAD_ANCESTRY.with(|ancestry| {
-                let mut a = ancestry.borrow_mut();
-                if let Some(pos) = a.iter().position(|x| *x == id) {
-                    a.remove(pos);
-                }
-            });
+            // _ancestry_guard drops here, automatically cleaning up ancestry
         })));
 
         let handle = Arc::new(ThreadHandle {
@@ -215,7 +411,17 @@ impl ThreadHandle {
         let mut guard = self.join_handle.lock().unwrap();
         if let Some(handle) = guard.take() {
             println!("🧵 [thread] joining thread #{}", self.id);
-            let _ = handle.join();
+
+            // FIX 15: Capture and log join results instead of discarding them
+            match handle.join() {
+                Ok(_) => {
+                    println!("✅ [thread] Successfully joined thread #{}", self.id);
+                }
+                Err(panic_payload) => {
+                    eprintln!("💥 [thread] Thread #{} panicked: {:?}", self.id, panic_payload);
+                }
+            }
+
             self.finished.store(true, Ordering::SeqCst);
         }
     }
@@ -229,10 +435,35 @@ impl ThreadHandle {
     }
 
     pub fn release(&self) {
-        let old = self.ref_count.fetch_sub(1, Ordering::SeqCst);
-        if old == 1 {
-            println!("🧹 [gc] ThreadHandle #{} released (0 refs)", self.id);
-            ThreadGC::collect_now();
+        // FIX 8: Use compare_exchange loop to prevent race condition on ref_count
+        let mut current = self.ref_count.load(Ordering::SeqCst);
+        loop {
+            // Prevent underflow - don't release if already at 0
+            if current == 0 {
+                eprintln!("⚠️ [gc] Attempted to release already-freed thread #{}!", self.id);
+                return;
+            }
+
+            // Atomically decrement only if value hasn't changed
+            match self.ref_count.compare_exchange(
+                current,
+                current - 1,
+                Ordering::SeqCst,  // Success: full synchronization
+                Ordering::SeqCst   // Failure: reload current value
+            ) {
+                Ok(old_value) => {
+                    // Successfully decremented - check if this was the last reference
+                    if old_value == 1 {
+                        println!("🧹 [gc] ThreadHandle #{} released (0 refs)", self.id);
+                        ThreadGC::collect_now();
+                    }
+                    return;
+                }
+                Err(actual) => {
+                    // Another thread changed ref_count - retry with updated value
+                    current = actual;
+                }
+            }
         }
     }
 }
@@ -241,11 +472,21 @@ impl Drop for ThreadHandle {
     fn drop(&mut self) {
         if !self.is_finished() {
             println!("🧹 [thread] auto-joining unfinished thread #{}", self.id);
-            let mut guard = self.join_handle.lock().unwrap();
-            if let Some(handle) = guard.take() {
-                let _ = handle.join();
+
+            // FIX 14: Handle poisoned lock gracefully in Drop
+            match self.join_handle.lock() {
+                Ok(mut guard) => {
+                    if let Some(handle) = guard.take() {
+                        let _ = handle.join();
+                    }
+                    self.finished.store(true, Ordering::SeqCst);
+                }
+                Err(_) => {
+                    eprintln!("⚠️ [thread] Drop: poisoned lock on thread #{}, cannot join", self.id);
+                    // Mark as finished anyway to prevent further issues
+                    self.finished.store(true, Ordering::SeqCst);
+                }
             }
-            self.finished.store(true, Ordering::SeqCst);
         }
     }
 }
@@ -269,19 +510,45 @@ impl ThreadGC {
     }
 
     pub fn register(ptr: Arc<ThreadHandle>) {
-    // Spin-lock GC during mutation
-    while GC_LOCK.swap(true, Ordering::Acquire) {}
-    let id = ptr.id;
-    ThreadGC::global()
-        .threads
-        .lock()
-        .unwrap()
-        .insert(id, Arc::downgrade(&ptr));
-    println!("🧠 [gc] Registered thread handle #{id}");
-    GC_LOCK.store(false, Ordering::Release);
-}
+        // FIX 5: Spin-lock with exponential backoff to prevent CPU exhaustion
+        let mut backoff = 1;
+        while GC_LOCK.swap(true, Ordering::Acquire) {
+            // Exponential backoff: spin increasingly longer before retrying
+            for _ in 0..backoff {
+                std::hint::spin_loop();  // CPU hint for spin-wait
+            }
+            backoff = (backoff * 2).min(1024);  // Cap at 1024 iterations
+
+            // If we've backed off significantly, yield to scheduler
+            if backoff > 512 {
+                std::thread::yield_now();
+            }
+        }
+
+        let id = ptr.id;
+        ThreadGC::global()
+            .threads
+            .lock()
+            .unwrap()
+            .insert(id, Arc::downgrade(&ptr));
+        println!("🧠 [gc] Registered thread handle #{id}");
+        GC_LOCK.store(false, Ordering::Release);
+    }
 
 pub fn register_mutex<T: Send + 'static>(ptr: Arc<GcMutex<T>>) {
+    // FIX 9: Add same GC_LOCK protection as thread registration
+    let mut backoff = 1;
+    while GC_LOCK.swap(true, Ordering::Acquire) {
+        for _ in 0..backoff {
+            std::hint::spin_loop();
+        }
+        backoff = (backoff * 2).min(MAX_SPIN_BACKOFF);
+
+        if backoff > YIELD_THRESHOLD {
+            std::thread::yield_now();
+        }
+    }
+
     let id = ptr.id;
     let erased: Arc<dyn Any + Send + Sync> = ptr;
     ThreadGC::global()
@@ -290,13 +557,34 @@ pub fn register_mutex<T: Send + 'static>(ptr: Arc<GcMutex<T>>) {
         .unwrap()
         .insert(id, Arc::downgrade(&erased));
     println!("🧩 [gc] Registered mutex #{id}");
+
+    GC_LOCK.store(false, Ordering::Release);
 }
 
 
     pub fn collect_now() {
-    if GC_LOCK.swap(true, Ordering::Acquire) {
-        println!("⚠️ [gc] Skipped collect (another thread collecting)");
-        return;
+    // FIX 11: Retry with backoff instead of silently skipping
+    let mut backoff = 1;
+    let mut retries = 0;
+    const MAX_RETRIES: u32 = 5;
+
+    while GC_LOCK.swap(true, Ordering::Acquire) {
+        if retries >= MAX_RETRIES {
+            println!("⚠️ [gc] Skipped collect after {} retries (another thread collecting)", MAX_RETRIES);
+            return;
+        }
+
+        // Exponential backoff
+        for _ in 0..backoff {
+            std::hint::spin_loop();
+        }
+        backoff = (backoff * 2).min(MAX_SPIN_BACKOFF);
+
+        if backoff > YIELD_THRESHOLD {
+            std::thread::yield_now();
+        }
+
+        retries += 1;
     }
 
     let mut threads = ThreadGC::global().threads.lock().unwrap();
@@ -318,16 +606,27 @@ pub fn register_mutex<T: Send + 'static>(ptr: Arc<GcMutex<T>>) {
         }
     });
 
-    for (_, weak_any) in mutexes.iter() {
-        if let Some(mtx_any) = weak_any.upgrade() {
-            if let Some(mtx) = mtx_any.downcast_ref::<GcMutex<c_int>>() {
-                mtx.force_unlock_if_dead();
+    // FIX 13: Clean up dead weak mutex references
+    let mut mutex_cleaned = 0;
+    mutexes.retain(|id, weak_any| {
+        if weak_any.strong_count() > 0 {
+            // Still alive - check if owner is dead
+            if let Some(mtx_any) = weak_any.upgrade() {
+                if let Some(mtx) = mtx_any.downcast_ref::<GcMutex<c_int>>() {
+                    mtx.force_unlock_if_dead();
+                }
             }
+            true // Keep in map
+        } else {
+            // Weak reference expired - remove from map
+            println!("💀 [gc] Mutex #{id} weak reference expired");
+            mutex_cleaned += 1;
+            false // Remove from map
         }
-    }
+    });
 
-    if collected > 0 {
-        println!("🧹 [gc] Collected {collected} finished threads");
+    if collected > 0 || mutex_cleaned > 0 {
+        println!("🧹 [gc] Collected {collected} threads, {mutex_cleaned} mutexes");
     }
 
     GC_LOCK.store(false, Ordering::Release);
@@ -353,16 +652,14 @@ pub extern "C" fn wpp_thread_join(ptr: *mut ThreadHandle) {
     }
 
     unsafe {
-        // temporarily clone the Arc without consuming the original pointer
-        let arc_ref = Arc::from_raw(ptr);
-        let cloned = arc_ref.clone();
-        std::mem::forget(arc_ref); // leave the original raw Arc alive
+        // FIX 1 & 2: Properly consume the Arc to decrement reference count
+        // This fixes the memory leak - Arc will drop naturally at end of scope
+        let arc = Arc::from_raw(ptr);
 
-        // safely join
-        let mut_ref = Arc::as_ptr(&cloned) as *mut ThreadHandle;
-        (*mut_ref).join();
+        // FIX 2: Call join() directly on Arc instead of unsafe pointer dereference
+        arc.join();
 
-        // dropping `cloned` here decrements ref count correctly
+        // Arc drops here, decrementing reference count properly
     }
 }
 
@@ -404,8 +701,20 @@ pub extern "C" fn wpp_thread_state_set(ptr: *mut c_void, val: c_int) {
 // ===========================================================
 // 🧠 Optional background GC scheduler
 // ===========================================================
+
+/// FIX 12: Graceful daemon shutdown
+pub fn stop_thread_gc_daemon() {
+    println!("🛑 [gc] Requesting daemon shutdown");
+    DAEMON_SHUTDOWN.store(true, Ordering::Release);
+}
+
 pub fn start_thread_gc_daemon() {
     thread::spawn(|| loop {
+        // FIX 12: Check shutdown flag
+        if DAEMON_SHUTDOWN.load(Ordering::Acquire) {
+            println!("🛑 [gc] Daemon shutting down");
+            break;
+        }
         let mut collected = 0;
         let mut joined = 0;
 
@@ -458,8 +767,8 @@ if let Some(join_handle) = guard.take() {
             println!("🧹 [gc-daemon] Cleaned {collected} collected, {joined} joined threads");
         }
 
-        // Run every few seconds
-        thread::sleep(Duration::from_secs(3));
+        // FIX 20: Use named constant instead of magic number
+        thread::sleep(Duration::from_secs(GC_DAEMON_INTERVAL_SECS));
     });
 }
 

@@ -1,13 +1,13 @@
 {
   "name": "wplusplus",
   "displayName": "W++",
-  "description": "A VS Code extension for the W++ language",
-  "version": "0.0.7",
+  "description": "W++ language support with syntax highlighting, code completion, and error diagnostics",
+  "version": "0.1.0",
   "publisher": "wlothIndustries",
   "icon": "icon.jpg",
   "engines": {
-  "vscode": ">=1.70.0"
-},
+    "vscode": "^1.75.0"
+  },
   "categories": [
     "Programming Languages"
   ],
@@ -57,8 +57,13 @@
     "onCommand:wpp.run"
   ],
   "main": "./extension.js",
-
-  
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.75.0",
+    "@types/node": "^18.x"
+  },
   "author": "Ofek Bickel",
   "license": "MIT",
   "repository": {

@@ -4,9 +4,7 @@
   "patterns": [
     { "name": "comment.line.double-slash.wpp", "match": "//.*$" },
 
-    { "name": "keyword.control.wpp", "match": "\\b(if|else|while|for|return|break|continue|import|switch|case|default|print|await|async|let|const|entity|inherits|disown|birth|vanish|try|catch|throw|new|alters|me|ancestor|externcall)\\b" },
-
-    { "name": "constant.language.wpp", "match": "\\b(true|false|null)\\b" },
+    { "name": "keyword.control.wpp", "match": "\\b(if|else|while|for|return|break|continue|import|export|from|switch|case|default|await|async|let|const|entity|alters|me|new|try|catch|throw|finally|funcy|func|type|true|false)\\b" },
 
     { "name": "string.quoted.double.wpp", "begin": "\"", "end": "\"", "patterns": [{ "match": "\\\\.", "name": "constant.character.escape.wpp" }] },
 

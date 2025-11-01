@@ -69,60 +69,65 @@
     "body": ["false"],
     "description": "Boolean false"
   },
-  "Null": {
-    "prefix": "null",
-    "body": ["null"],
-    "description": "Null value"
-  },
   "Import": {
     "prefix": "import",
-    "body": ["import \"$1\";"],
-    "description": "Import a file"
+    "body": ["import { $1 } from \"$2\""],
+    "description": "Import symbols from another module"
+  },
+  "Export": {
+    "prefix": "export",
+    "body": ["export $1"],
+    "description": "Export symbol for other modules"
+  },
+  "Try-Catch": {
+    "prefix": "try",
+    "body": ["try {", "  $1", "} catch ($2) {", "  $3", "}"],
+    "description": "Try-catch exception handling"
+  },
+  "Try-Catch-Finally": {
+    "prefix": "tryfinally",
+    "body": ["try {", "  $1", "} catch ($2) {", "  $3", "} finally {", "  $4", "}"],
+    "description": "Try-catch-finally exception handling"
+  },
+  "Throw": {
+    "prefix": "throw",
+    "body": ["throw $1"],
+    "description": "Throw an exception"
+  },
+  "Funcy": {
+    "prefix": "funcy",
+    "body": ["funcy $1($2) {", "  $3", "}"],
+    "description": "Define a function (W++ style)"
+  },
+  "Funcy with Return Type": {
+    "prefix": "funcyr",
+    "body": ["funcy $1($2) -> $3 {", "  $4", "}"],
+    "description": "Define a function with return type"
+  },
+  "Type Alias": {
+    "prefix": "type",
+    "body": ["type $1 = {", "  $2", "}"],
+    "description": "Define a type alias"
   },
   "Entity": {
     "prefix": "entity",
-    "body": ["entity $1 {", "  $2 => {", "    $3", "  }", "}"],
+    "body": ["entity $1 {", "  $2", "}"],
     "description": "Define a W++ entity"
   },
-  "Inherits": {
-    "prefix": "inherits",
-    "body": ["inherits $1"],
-    "description": "Inherit from another entity"
-  },
-  "Disown": {
-    "prefix": "disown",
-    "body": ["disown $1;"],
-    "description": "Remove ownership"
-  },
-  "Birth": {
-    "prefix": "birth",
-    "body": ["birth $1;"],
-    "description": "Create a new instance"
-  },
-  "Vanish": {
-    "prefix": "vanish",
-    "body": ["vanish $1;"],
-    "description": "Delete an instance"
+  "Entity with Inheritance": {
+    "prefix": "entityalters",
+    "body": ["entity $1 alters $2 {", "  $3", "}"],
+    "description": "Define an entity that inherits from another"
   },
   "Me": {
     "prefix": "me",
     "body": ["me"],
-    "description": "Reference the current entity"
-  },
-  "Ancestor": {
-    "prefix": "ancestor",
-    "body": ["ancestor"],
-    "description": "Reference the parent entity"
+    "description": "Reference the current entity instance"
   },
   "New": {
     "prefix": "new",
-    "body": ["new $1();"],
-    "description": "Create a new object"
-  },
-  "Alters": {
-    "prefix": "alters",
-    "body": ["alters $1 => {", "  $2", "}"],
-    "description": "Override or alter inherited behavior"
+    "body": ["new($1)"],
+    "description": "Create a new entity instance"
   },
   "Switch": {
     "prefix": "switch",
@@ -138,10 +143,5 @@
     "prefix": "default",
     "body": ["default:", "  $1"],
     "description": "Default case in switch"
-  },
-  "Externcall": {
-    "prefix": "externcall",
-    "body": ["externcall $1;"],
-    "description": "Call an external function"
   }
 }

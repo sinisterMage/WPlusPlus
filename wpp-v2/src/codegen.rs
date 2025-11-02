@@ -39,6 +39,7 @@ pub struct OopsieEntity<'ctx> {
 pub struct FunctionSignature {
     pub name: String,
     pub param_types: Vec<crate::ast::types::TypeDescriptor>,
+    pub return_type: crate::ast::types::TypeDescriptor,
 }
 
 #[derive(Clone)]
@@ -49,6 +50,14 @@ pub struct VarInfo<'ctx> {
     pub is_thread_state: bool, // 👈 new field
     pub entity_type: Option<String>, // 👈 NEW FIELD for entity dispatch
     pub object_type_name: Option<String>, // 👈 NEW FIELD for object type dispatch
+    pub function_signature: Option<FunctionTypeSignature>, // 👈 NEW FIELD for function type dispatch
+}
+
+/// Function type signature for tracking function-typed values
+#[derive(Clone, Debug)]
+pub struct FunctionTypeSignature {
+    pub param_types: Vec<crate::ast::types::TypeDescriptor>,
+    pub return_type: crate::ast::types::TypeDescriptor,
 }
 /// The core LLVM code generator for W++
 pub struct Codegen <'ctx> {
@@ -1555,9 +1564,28 @@ if let Some(var_info) = self.vars.get(name) {
                     }
                 }
                 Expr::Variable(var_name) => {
+                    // Check if it's a known function for higher-order dispatch
+                    if let Some(sigs) = self.reverse_func_index.get(var_name) {
+                        if let Some(sig) = sigs.first() {
+                            // Create Function TypeDescriptor from function signature
+                            return TypeDescriptor::Function {
+                                param_types: sig.param_types.clone(),
+                                return_type: Box::new(sig.return_type.clone()),
+                            };
+                        }
+                    }
+
                     // Check if it's a known variable (local or global)
                     if let Some(var_info) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
-                        // 🎯 Check for entity or object type first
+                        // 🎯 Check for function signature first (higher-order dispatch)
+                        if let Some(fn_sig) = &var_info.function_signature {
+                            return TypeDescriptor::Function {
+                                param_types: fn_sig.param_types.clone(),
+                                return_type: Box::new(fn_sig.return_type.clone()),
+                            };
+                        }
+
+                        // 🎯 Check for entity or object type
                         if let Some(entity_name) = &var_info.entity_type {
                             return TypeDescriptor::Entity(entity_name.clone());
                         }
@@ -1819,6 +1847,7 @@ else if name.contains('.') {
         let full_name_sig = FunctionSignature {
             name: name.clone(),
             param_types: vec![],
+            return_type: TypeDescriptor::Primitive("i32".to_string()), // Default return type
         };
         if let Some(func) = self.functions.get(&full_name_sig) {
             println!("✅ Direct entity-qualified match for {}", name);
@@ -1841,6 +1870,7 @@ if let Some(var_info) = self.vars.get(lhs) {
         let sig = FunctionSignature {
             name: resolved.clone(),
             param_types: vec![],
+            return_type: TypeDescriptor::Primitive("i32".to_string()), // Default return type
         };
 
         if let Some(func) = self.functions.get(&sig) {
@@ -2286,6 +2316,7 @@ if let Some(var) = catch_var {
         is_thread_state: false,
         entity_type: None,
         object_type_name: None,
+        function_signature: None,
     },
 );
 
@@ -2828,6 +2859,7 @@ Expr::NewInstance { entity, args } => {
     let ctor_sig = FunctionSignature {
         name: ctor_name.clone(),
         param_types: args.iter().map(|_| crate::ast::types::TypeDescriptor::Primitive("i32".to_string())).collect(),
+        return_type: TypeDescriptor::Primitive("ptr".to_string()), // Constructor returns pointer to instance
     };
 
     if let Some(func_val) = self.functions.get(&ctor_sig).cloned() {
@@ -3070,6 +3102,7 @@ if let Expr::NewInstance { entity, args } = value {
             is_thread_state: false,
             entity_type: Some(entity.clone()), // 👈 NEW FIELD (add this to VarInfo)
             object_type_name: None,
+            function_signature: None,
         },
     );
 
@@ -3149,6 +3182,7 @@ if let Expr::NewInstance { entity, args } = value {
             is_thread_state: false,
             entity_type: None,
             object_type_name: obj_type,
+            function_signature: None,
         },
     );
 
@@ -3476,6 +3510,7 @@ let fn_ty = inferred_ret_ty.fn_type(&param_types, false);
         let sig = FunctionSignature {
             name: name.clone(),
             param_types: type_descriptors.clone(),
+            return_type: TypeDescriptor::Primitive("i32".to_string()), // Default return type, will be inferred from actual function
         };
 
         // 🧩 Generate mangled name using TypeDescriptor
@@ -3512,6 +3547,11 @@ let fn_ty = inferred_ret_ty.fn_type(&param_types, false);
                 crate::ast::types::TypeDescriptor::Primitive(name) => name.clone(),
                 crate::ast::types::TypeDescriptor::HttpStatusLiteral(code) => format!("{}", code),
                 crate::ast::types::TypeDescriptor::HttpStatusRange(min, _) => format!("{}xx", min / 100),
+                crate::ast::types::TypeDescriptor::Function { param_types, return_type } => {
+                    let params = param_types.iter().map(|t| t.to_mangle_string()).collect::<Vec<_>>().join(",");
+                    let ret = return_type.to_mangle_string();
+                    format!("func({}) -> {}", params, ret)
+                },
                 crate::ast::types::TypeDescriptor::Any => "_".to_string(),
             })
             .collect();
@@ -4042,6 +4082,7 @@ pub fn compile_new_instance(
     let ctor_sig = FunctionSignature {
         name: format!("{}.new", entity),
         param_types: args.iter().map(|_| TypeDescriptor::Primitive("i32".to_string())).collect(),
+        return_type: TypeDescriptor::Primitive("ptr".to_string()), // Constructor returns pointer to instance
     };
 
     if let Some(func) = self.functions.get(&ctor_sig).cloned() {
@@ -4409,6 +4450,10 @@ let final_param_types = if let Some(overrides) = param_override {
     // Rebuild LLVM param_types based on TypeDescriptors
     overrides.iter().map(|td| {
         match td {
+            TypeDescriptor::Function { .. } => {
+                // Function types are passed as function pointers (i8* in LLVM)
+                self.context.i8_type().ptr_type(AddressSpace::default()).into()
+            }
             TypeDescriptor::Entity(_) | TypeDescriptor::ObjectType(_) => {
                 // Entities and objects are passed as pointers
                 self.context.i8_type().ptr_type(AddressSpace::default()).into()
@@ -4487,6 +4532,24 @@ let fn_type = if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
     let alloca = self.builder.build_alloca(param_ty, &pure_name).unwrap();
     self.builder.build_store(alloca, param).unwrap();
 
+    // 🎯 Check if this parameter has a function type
+    let function_signature = if let Some(overrides) = param_override {
+        if i < overrides.len() {
+            if let TypeDescriptor::Function { param_types, return_type } = &overrides[i] {
+                Some(FunctionTypeSignature {
+                    param_types: param_types.clone(),
+                    return_type: (**return_type).clone(),
+                })
+            } else {
+                None
+            }
+        } else {
+            None
+        }
+    } else {
+        None
+    };
+
     local_vars.insert(
         pure_name,
         VarInfo {
@@ -4496,6 +4559,7 @@ let fn_type = if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
             is_thread_state: false,
             entity_type: None,
             object_type_name: None,
+            function_signature,
         },
     );
 }
@@ -4594,6 +4658,7 @@ if self.builder.get_insert_block().unwrap().get_terminator().is_none() {
     let sig = FunctionSignature {
         name: name.to_string(),
         param_types: type_descriptors,
+        return_type: TypeDescriptor::Primitive("i32".to_string()), // Default return type
     };
     self.functions.insert(sig.clone(), function);
     self.reverse_func_index
@@ -4653,6 +4718,7 @@ let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
         is_thread_state: false,
         entity_type: None,
         object_type_name: None,
+        function_signature: None,
     },
 );
 
@@ -4714,6 +4780,7 @@ let mut local_vars: HashMap<String, VarInfo<'ctx>> = HashMap::new();
     let sig = FunctionSignature {
     name: name.to_string(),
     param_types: params.iter().map(|_| TypeDescriptor::Primitive("i32".to_string())).collect(),
+    return_type: TypeDescriptor::Primitive("i32".to_string()), // Default return type
 };
 
 self.functions.insert(sig.clone(), function);
@@ -4782,7 +4849,11 @@ let func_val: FunctionValue<'_> = self.compile_funcy(
 
 // Register under both function table and entity-local map
 self.functions.insert(
-    FunctionSignature { name: full_name.clone(), param_types: vec![] },
+    FunctionSignature {
+        name: full_name.clone(),
+        param_types: vec![],
+        return_type: TypeDescriptor::Primitive("i32".to_string()), // Default return type
+    },
     func_val,
 );
 

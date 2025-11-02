@@ -1,42 +1,48 @@
 ; ModuleID = 'wpp_module'
 source_filename = "wpp_module"
 
-%Dog = type {}
-%Cat = type {}
-
 @_wpp_exc_flag = global i1 false
 @_wpp_exc_i32 = global i32 0
 @_wpp_exc_str = global ptr null
-@strlit_0 = private constant [6 x i8] c"Woof!\00"
-@strlit_1 = private constant [6 x i8] c"Meow!\00"
-@strlit_2 = private constant [13 x i8] c"Hello doggo!\00"
-@strlit_3 = private constant [13 x i8] c"Hello kitty!\00"
-@strlit_4 = private constant [24 x i8] c"Processing HTTP request\00"
-@strlit_5 = private constant [25 x i8] c"Processing HTTP response\00"
-@strlit_6 = private constant [7 x i8] c"200 OK\00"
-@strlit_7 = private constant [14 x i8] c"404 Not Found\00"
-@strlit_8 = private constant [26 x i8] c"500 Internal Server Error\00"
-@strlit_9 = private constant [14 x i8] c"2xx - Success\00"
-@strlit_10 = private constant [19 x i8] c"4xx - Client Error\00"
-@strlit_11 = private constant [19 x i8] c"5xx - Server Error\00"
-@strlit_12 = private constant [44 x i8] c"=== W++ Enhanced Multiple Dispatch Demo ===\00"
-@strlit_13 = private constant [1 x i8] zeroinitializer
-@strlit_14 = private constant [29 x i8] c"--- Entity Type Dispatch ---\00"
-@strlit_15 = private constant [1 x i8] zeroinitializer
-@strlit_16 = private constant [29 x i8] c"--- Object Type Dispatch ---\00"
-@strlit_17 = private constant [4 x i8] c"GET\00"
-@objkey_0 = private constant [7 x i8] c"method\00"
-@strlit_18 = private constant [11 x i8] c"/api/users\00"
-@objkey_1 = private constant [4 x i8] c"url\00"
-@objkey_0.1 = private constant [7 x i8] c"status\00"
-@strlit_19 = private constant [8 x i8] c"Success\00"
-@objkey_1.2 = private constant [5 x i8] c"body\00"
-@strlit_20 = private constant [1 x i8] zeroinitializer
-@strlit_21 = private constant [42 x i8] c"--- HTTP Status Code Literal Dispatch ---\00"
-@strlit_22 = private constant [1 x i8] zeroinitializer
-@strlit_23 = private constant [40 x i8] c"--- HTTP Status Code Range Dispatch ---\00"
-@strlit_24 = private constant [1 x i8] zeroinitializer
-@strlit_25 = private constant [22 x i8] c"=== Demo Complete ===\00"
+@strlit_0 = private constant [26 x i8] c"Applying func(i32) -> i32\00"
+@newline = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_1 = private constant [31 x i8] c"Applying func(i32, i32) -> i32\00"
+@newline.1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_2 = private constant [36 x i8] c"Executing func() -> i32 (no params)\00"
+@newline.2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_3 = private constant [37 x i8] c"Executing func(i32) -> i32 (1 param)\00"
+@newline.3 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_4 = private constant [33 x i8] c"Processing single-param function\00"
+@newline.4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_5 = private constant [30 x i8] c"Processing two-param function\00"
+@newline.5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_6 = private constant [24 x i8] c"Composing two functions\00"
+@newline.6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_7 = private constant [44 x i8] c"=== Test 1: Dispatch on Parameter Types ===\00"
+@newline.7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@newline.8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@newline.9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_8 = private constant [1 x i8] zeroinitializer
+@newline.10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_9 = private constant [44 x i8] c"=== Test 2: Dispatch on Parameter Count ===\00"
+@newline.11 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@newline.12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@newline.13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_10 = private constant [1 x i8] zeroinitializer
+@newline.14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_11 = private constant [49 x i8] c"=== Test 3: Complex Multi-Parameter Dispatch ===\00"
+@newline.15 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@newline.16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@newline.17 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_12 = private constant [1 x i8] zeroinitializer
+@newline.18 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_13 = private constant [37 x i8] c"=== Test 4: Function Composition ===\00"
+@newline.19 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@newline.20 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_14 = private constant [1 x i8] zeroinitializer
+@newline.21 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@strlit_15 = private constant [27 x i8] c"=== All Tests Complete ===\00"
+@newline.22 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 
 declare void @wpp_print_value(ptr, i32)
 
@@ -74,178 +80,315 @@ declare void @wpp_mutex_lock(ptr, i32)
 
 declare void @wpp_mutex_unlock(ptr)
 
-define i32 @Dog.Dog.speak(ptr %0) {
+define i32 @apply__fn_i32_ret_i32_i32(ptr %0, i32 %1) {
 entry:
-  %me = alloca ptr, align 8
-  store ptr %0, ptr %me, align 8
+  %fn = alloca ptr, align 8
+  store ptr %0, ptr %fn, align 8
+  %data = alloca i32, align 4
+  store i32 %1, ptr %data, align 4
   call void @wpp_print_value_basic(ptr @strlit_0, i32 6)
+  %print_newline = call i32 (ptr, ...) @printf(ptr @newline)
+  %load_fnptr_fn = load ptr, ptr %fn, align 8
+  %load_data = load i32, ptr %data, align 4
+  %call_indirect_fn = call i32 %load_fnptr_fn(i32 %load_data)
+  %ret_tmp = alloca i32, align 4
+  store i32 %call_indirect_fn, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %call_indirect_fn
+
+after_return:                                     ; No predecessors!
   ret i32 0
 }
 
 declare void @wpp_print_value_basic(ptr, i32)
 
-define i32 @Cat.Cat.speak(ptr %0) {
+declare i32 @printf(ptr, ...)
+
+declare void @wpp_return(ptr, i32)
+
+define i32 @apply__fn_i32_i32_ret_i32_i32_i32(ptr %0, i32 %1, i32 %2) {
 entry:
-  %me = alloca ptr, align 8
-  store ptr %0, ptr %me, align 8
+  %fn = alloca ptr, align 8
+  store ptr %0, ptr %fn, align 8
+  %a = alloca i32, align 4
+  store i32 %1, ptr %a, align 4
+  %b = alloca i32, align 4
+  store i32 %2, ptr %b, align 4
   call void @wpp_print_value_basic(ptr @strlit_1, i32 6)
+  %print_newline = call i32 (ptr, ...) @printf(ptr @newline.1)
+  %load_fnptr_fn = load ptr, ptr %fn, align 8
+  %load_a = load i32, ptr %a, align 4
+  %load_b = load i32, ptr %b, align 4
+  %call_indirect_fn = call i32 %load_fnptr_fn(i32 %load_a, i32 %load_b)
+  %ret_tmp = alloca i32, align 4
+  store i32 %call_indirect_fn, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %call_indirect_fn
+
+after_return:                                     ; No predecessors!
   ret i32 0
 }
 
-define i32 @greet__entity_Dog(ptr %0) {
+define i32 @double__i32(i32 %0) {
 entry:
-  %animal = alloca ptr, align 8
-  store ptr %0, ptr %animal, align 8
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %load_x = load i32, ptr %x, align 4
+  %multmp = mul i32 %load_x, 2
+  %ret_tmp = alloca i32, align 4
+  store i32 %multmp, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %multmp
+
+after_return:                                     ; No predecessors!
+  ret i32 0
+}
+
+define i32 @add__i32_i32(i32 %0, i32 %1) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %y = alloca i32, align 4
+  store i32 %1, ptr %y, align 4
+  %load_x = load i32, ptr %x, align 4
+  %load_y = load i32, ptr %y, align 4
+  %addtmp = add i32 %load_x, %load_y
+  %ret_tmp = alloca i32, align 4
+  store i32 %addtmp, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %addtmp
+
+after_return:                                     ; No predecessors!
+  ret i32 0
+}
+
+define i32 @execute__fn__ret_i32(ptr %0) {
+entry:
+  %fn = alloca ptr, align 8
+  store ptr %0, ptr %fn, align 8
   call void @wpp_print_value_basic(ptr @strlit_2, i32 6)
+  %print_newline = call i32 (ptr, ...) @printf(ptr @newline.2)
+  %load_fnptr_fn = load ptr, ptr %fn, align 8
+  %call_indirect_fn = call i32 %load_fnptr_fn()
+  %ret_tmp = alloca i32, align 4
+  store i32 %call_indirect_fn, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %call_indirect_fn
+
+after_return:                                     ; No predecessors!
   ret i32 0
 }
 
-define i32 @greet__entity_Cat(ptr %0) {
+define i32 @execute__fn_i32_ret_i32_i32(ptr %0, i32 %1) {
 entry:
-  %animal = alloca ptr, align 8
-  store ptr %0, ptr %animal, align 8
+  %fn = alloca ptr, align 8
+  store ptr %0, ptr %fn, align 8
+  %val = alloca i32, align 4
+  store i32 %1, ptr %val, align 4
   call void @wpp_print_value_basic(ptr @strlit_3, i32 6)
+  %print_newline = call i32 (ptr, ...) @printf(ptr @newline.3)
+  %load_fnptr_fn = load ptr, ptr %fn, align 8
+  %load_val = load i32, ptr %val, align 4
+  %call_indirect_fn = call i32 %load_fnptr_fn(i32 %load_val)
+  %ret_tmp = alloca i32, align 4
+  store i32 %call_indirect_fn, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %call_indirect_fn
+
+after_return:                                     ; No predecessors!
   ret i32 0
 }
 
-define i32 @process__obj_Request(ptr %0) {
+define i32 @getFortyTwo() {
 entry:
-  %req = alloca ptr, align 8
-  store ptr %0, ptr %req, align 8
+  %ret_tmp = alloca i32, align 4
+  store i32 42, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 42
+
+after_return:                                     ; No predecessors!
+  ret i32 0
+}
+
+define i32 @triple__i32(i32 %0) {
+entry:
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %load_x = load i32, ptr %x, align 4
+  %multmp = mul i32 %load_x, 3
+  %ret_tmp = alloca i32, align 4
+  store i32 %multmp, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %multmp
+
+after_return:                                     ; No predecessors!
+  ret i32 0
+}
+
+define i32 @process__fn_i32_ret_i32_i32(ptr %0, i32 %1) {
+entry:
+  %fn = alloca ptr, align 8
+  store ptr %0, ptr %fn, align 8
+  %data = alloca i32, align 4
+  store i32 %1, ptr %data, align 4
   call void @wpp_print_value_basic(ptr @strlit_4, i32 6)
+  %print_newline = call i32 (ptr, ...) @printf(ptr @newline.4)
+  %load_fnptr_fn = load ptr, ptr %fn, align 8
+  %load_data = load i32, ptr %data, align 4
+  %call_indirect_fn = call i32 %load_fnptr_fn(i32 %load_data)
+  %addtmp = add i32 %call_indirect_fn, 100
+  %ret_tmp = alloca i32, align 4
+  store i32 %addtmp, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %addtmp
+
+after_return:                                     ; No predecessors!
   ret i32 0
 }
 
-define i32 @process__obj_Response(ptr %0) {
+define i32 @process__fn_i32_i32_ret_i32_i32_i32(ptr %0, i32 %1, i32 %2) {
 entry:
-  %res = alloca ptr, align 8
-  store ptr %0, ptr %res, align 8
+  %fn = alloca ptr, align 8
+  store ptr %0, ptr %fn, align 8
+  %a = alloca i32, align 4
+  store i32 %1, ptr %a, align 4
+  %b = alloca i32, align 4
+  store i32 %2, ptr %b, align 4
   call void @wpp_print_value_basic(ptr @strlit_5, i32 6)
+  %print_newline = call i32 (ptr, ...) @printf(ptr @newline.5)
+  %load_fnptr_fn = load ptr, ptr %fn, align 8
+  %load_a = load i32, ptr %a, align 4
+  %load_b = load i32, ptr %b, align 4
+  %call_indirect_fn = call i32 %load_fnptr_fn(i32 %load_a, i32 %load_b)
+  %multmp = mul i32 %call_indirect_fn, 2
+  %ret_tmp = alloca i32, align 4
+  store i32 %multmp, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %multmp
+
+after_return:                                     ; No predecessors!
   ret i32 0
 }
 
-define i32 @handleCode__http_200(i32 %0) {
+define i32 @multiply__i32_i32(i32 %0, i32 %1) {
 entry:
-  %status = alloca i32, align 4
-  store i32 %0, ptr %status, align 4
+  %x = alloca i32, align 4
+  store i32 %0, ptr %x, align 4
+  %y = alloca i32, align 4
+  store i32 %1, ptr %y, align 4
+  %load_x = load i32, ptr %x, align 4
+  %load_y = load i32, ptr %y, align 4
+  %multmp = mul i32 %load_x, %load_y
+  %ret_tmp = alloca i32, align 4
+  store i32 %multmp, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %multmp
+
+after_return:                                     ; No predecessors!
+  ret i32 0
+}
+
+define i32 @compose__fn_i32_ret_i32_fn_i32_ret_i32_i32(ptr %0, ptr %1, i32 %2) {
+entry:
+  %f = alloca ptr, align 8
+  store ptr %0, ptr %f, align 8
+  %g = alloca ptr, align 8
+  store ptr %1, ptr %g, align 8
+  %x = alloca i32, align 4
+  store i32 %2, ptr %x, align 4
   call void @wpp_print_value_basic(ptr @strlit_6, i32 6)
-  ret i32 0
-}
+  %print_newline = call i32 (ptr, ...) @printf(ptr @newline.6)
+  %load_fnptr_f = load ptr, ptr %f, align 8
+  %load_fnptr_g = load ptr, ptr %g, align 8
+  %load_x = load i32, ptr %x, align 4
+  %call_indirect_g = call i32 %load_fnptr_g(i32 %load_x)
+  %call_indirect_f = call i32 %load_fnptr_f(i32 %call_indirect_g)
+  %ret_tmp = alloca i32, align 4
+  store i32 %call_indirect_f, ptr %ret_tmp, align 4
+  call void @wpp_return(ptr %ret_tmp, i32 1)
+  ret i32 %call_indirect_f
 
-define i32 @handleCode__http_404(i32 %0) {
-entry:
-  %status = alloca i32, align 4
-  store i32 %0, ptr %status, align 4
-  call void @wpp_print_value_basic(ptr @strlit_7, i32 6)
-  ret i32 0
-}
-
-define i32 @handleCode__http_500(i32 %0) {
-entry:
-  %status = alloca i32, align 4
-  store i32 %0, ptr %status, align 4
-  call void @wpp_print_value_basic(ptr @strlit_8, i32 6)
-  ret i32 0
-}
-
-define i32 @handleRange__http_2xx(i32 %0) {
-entry:
-  %code = alloca i32, align 4
-  store i32 %0, ptr %code, align 4
-  call void @wpp_print_value_basic(ptr @strlit_9, i32 6)
-  ret i32 0
-}
-
-define i32 @handleRange__http_4xx(i32 %0) {
-entry:
-  %code = alloca i32, align 4
-  store i32 %0, ptr %code, align 4
-  call void @wpp_print_value_basic(ptr @strlit_10, i32 6)
-  ret i32 0
-}
-
-define i32 @handleRange__http_5xx(i32 %0) {
-entry:
-  %code = alloca i32, align 4
-  store i32 %0, ptr %code, align 4
-  call void @wpp_print_value_basic(ptr @strlit_11, i32 6)
+after_return:                                     ; No predecessors!
   ret i32 0
 }
 
 define i32 @main() {
 entry:
+  call void @wpp_print_value_basic(ptr @strlit_7, i32 6)
+  %print_newline = call i32 (ptr, ...) @printf(ptr @newline.7)
+  %r1 = alloca i32, align 4
+  %call_apply = call i32 @apply__fn_i32_ret_i32_i32(ptr @double__i32, i32 5)
+  store i32 %call_apply, ptr %r1, align 4
+  %load_r1 = load i32, ptr %r1, align 4
+  %tmp_int = alloca i32, align 4
+  store i32 %load_r1, ptr %tmp_int, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int, i32 1)
+  %print_newline1 = call i32 (ptr, ...) @printf(ptr @newline.8)
+  %r2 = alloca i32, align 4
+  %call_apply2 = call i32 @apply__fn_i32_i32_ret_i32_i32_i32(ptr @add__i32_i32, i32 3, i32 4)
+  store i32 %call_apply2, ptr %r2, align 4
+  %load_r2 = load i32, ptr %r2, align 4
+  %tmp_int3 = alloca i32, align 4
+  store i32 %load_r2, ptr %tmp_int3, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int3, i32 1)
+  %print_newline4 = call i32 (ptr, ...) @printf(ptr @newline.9)
+  call void @wpp_print_value_basic(ptr @strlit_8, i32 6)
+  %print_newline5 = call i32 (ptr, ...) @printf(ptr @newline.10)
+  call void @wpp_print_value_basic(ptr @strlit_9, i32 6)
+  %print_newline6 = call i32 (ptr, ...) @printf(ptr @newline.11)
+  %r3 = alloca i32, align 4
+  %call_execute = call i32 @execute__fn__ret_i32(ptr @getFortyTwo)
+  store i32 %call_execute, ptr %r3, align 4
+  %load_r3 = load i32, ptr %r3, align 4
+  %tmp_int7 = alloca i32, align 4
+  store i32 %load_r3, ptr %tmp_int7, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int7, i32 1)
+  %print_newline8 = call i32 (ptr, ...) @printf(ptr @newline.12)
+  %r4 = alloca i32, align 4
+  %call_execute9 = call i32 @execute__fn_i32_ret_i32_i32(ptr @triple__i32, i32 7)
+  store i32 %call_execute9, ptr %r4, align 4
+  %load_r4 = load i32, ptr %r4, align 4
+  %tmp_int10 = alloca i32, align 4
+  store i32 %load_r4, ptr %tmp_int10, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int10, i32 1)
+  %print_newline11 = call i32 (ptr, ...) @printf(ptr @newline.13)
+  call void @wpp_print_value_basic(ptr @strlit_10, i32 6)
+  %print_newline12 = call i32 (ptr, ...) @printf(ptr @newline.14)
+  call void @wpp_print_value_basic(ptr @strlit_11, i32 6)
+  %print_newline13 = call i32 (ptr, ...) @printf(ptr @newline.15)
+  %r5 = alloca i32, align 4
+  %call_process = call i32 @process__fn_i32_ret_i32_i32(ptr @double__i32, i32 10)
+  store i32 %call_process, ptr %r5, align 4
+  %load_r5 = load i32, ptr %r5, align 4
+  %tmp_int14 = alloca i32, align 4
+  store i32 %load_r5, ptr %tmp_int14, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int14, i32 1)
+  %print_newline15 = call i32 (ptr, ...) @printf(ptr @newline.16)
+  %r6 = alloca i32, align 4
+  %call_process16 = call i32 @process__fn_i32_i32_ret_i32_i32_i32(ptr @multiply__i32_i32, i32 5, i32 6)
+  store i32 %call_process16, ptr %r6, align 4
+  %load_r6 = load i32, ptr %r6, align 4
+  %tmp_int17 = alloca i32, align 4
+  store i32 %load_r6, ptr %tmp_int17, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int17, i32 1)
+  %print_newline18 = call i32 (ptr, ...) @printf(ptr @newline.17)
   call void @wpp_print_value_basic(ptr @strlit_12, i32 6)
+  %print_newline19 = call i32 (ptr, ...) @printf(ptr @newline.18)
   call void @wpp_print_value_basic(ptr @strlit_13, i32 6)
+  %print_newline20 = call i32 (ptr, ...) @printf(ptr @newline.19)
+  %r7 = alloca i32, align 4
+  %call_compose = call i32 @compose__fn_i32_ret_i32_fn_i32_ret_i32_i32(ptr @double__i32, ptr @triple__i32, i32 5)
+  store i32 %call_compose, ptr %r7, align 4
+  %load_r7 = load i32, ptr %r7, align 4
+  %tmp_int21 = alloca i32, align 4
+  store i32 %load_r7, ptr %tmp_int21, align 4
+  call void @wpp_print_value_basic(ptr %tmp_int21, i32 1)
+  %print_newline22 = call i32 (ptr, ...) @printf(ptr @newline.20)
   call void @wpp_print_value_basic(ptr @strlit_14, i32 6)
-  %Dog_ptr = alloca %Dog, align 8
-  %dog = alloca ptr, align 8
-  store ptr %Dog_ptr, ptr %dog, align 8
-  %Cat_ptr = alloca %Cat, align 8
-  %cat = alloca ptr, align 8
-  store ptr %Cat_ptr, ptr %cat, align 8
-  %load_dog = load ptr, ptr %dog, align 8
-  %call_greet = call i32 @greet__entity_Dog(ptr %load_dog)
-  %load_cat = load ptr, ptr %cat, align 8
-  %call_greet1 = call i32 @greet__entity_Cat(ptr %load_cat)
+  %print_newline23 = call i32 (ptr, ...) @printf(ptr @newline.21)
   call void @wpp_print_value_basic(ptr @strlit_15, i32 6)
-  call void @wpp_print_value_basic(ptr @strlit_16, i32 6)
-  %request = alloca ptr, align 8
-  %obj_malloc = call ptr @malloc(i64 ptrtoint (ptr getelementptr ({ i32, ptr, ptr }, ptr null, i32 1) to i64))
-  %keys_malloc = call ptr @malloc(i64 mul (i64 ptrtoint (ptr getelementptr (i32, ptr null, i32 1) to i64), i64 2))
-  %vals_malloc = call ptr @malloc(i64 mul (i64 ptrtoint (ptr getelementptr (i32, ptr null, i32 1) to i64), i64 2))
-  %key_slot = getelementptr ptr, ptr %keys_malloc, i32 0
-  store ptr @objkey_0, ptr %key_slot, align 8
-  %val_slot = getelementptr i32, ptr %vals_malloc, i32 0
-  store i32 0, ptr %val_slot, align 4
-  %key_slot2 = getelementptr ptr, ptr %keys_malloc, i32 1
-  store ptr @objkey_1, ptr %key_slot2, align 8
-  %val_slot3 = getelementptr i32, ptr %vals_malloc, i32 1
-  store i32 0, ptr %val_slot3, align 4
-  %f0 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc, i32 0, i32 0
-  store i32 2, ptr %f0, align 4
-  %f1 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc, i32 0, i32 1
-  store ptr %keys_malloc, ptr %f1, align 8
-  %f2 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc, i32 0, i32 2
-  store ptr %vals_malloc, ptr %f2, align 8
-  store ptr %obj_malloc, ptr %request, align 8
-  %response = alloca ptr, align 8
-  %obj_malloc4 = call ptr @malloc(i64 ptrtoint (ptr getelementptr ({ i32, ptr, ptr }, ptr null, i32 1) to i64))
-  %keys_malloc5 = call ptr @malloc(i64 mul (i64 ptrtoint (ptr getelementptr (i32, ptr null, i32 1) to i64), i64 2))
-  %vals_malloc6 = call ptr @malloc(i64 mul (i64 ptrtoint (ptr getelementptr (i32, ptr null, i32 1) to i64), i64 2))
-  %key_slot7 = getelementptr ptr, ptr %keys_malloc5, i32 0
-  store ptr @objkey_0.1, ptr %key_slot7, align 8
-  %val_slot8 = getelementptr i32, ptr %vals_malloc6, i32 0
-  store i32 200, ptr %val_slot8, align 4
-  %key_slot9 = getelementptr ptr, ptr %keys_malloc5, i32 1
-  store ptr @objkey_1.2, ptr %key_slot9, align 8
-  %val_slot10 = getelementptr i32, ptr %vals_malloc6, i32 1
-  store i32 0, ptr %val_slot10, align 4
-  %f011 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc4, i32 0, i32 0
-  store i32 2, ptr %f011, align 4
-  %f112 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc4, i32 0, i32 1
-  store ptr %keys_malloc5, ptr %f112, align 8
-  %f213 = getelementptr inbounds { i32, ptr, ptr }, ptr %obj_malloc4, i32 0, i32 2
-  store ptr %vals_malloc6, ptr %f213, align 8
-  store ptr %obj_malloc4, ptr %response, align 8
-  %load_request = load ptr, ptr %request, align 8
-  %call_process = call i32 @process__obj_Request(ptr %load_request)
-  %load_response = load ptr, ptr %response, align 8
-  %call_process14 = call i32 @process__obj_Response(ptr %load_response)
-  call void @wpp_print_value_basic(ptr @strlit_20, i32 6)
-  call void @wpp_print_value_basic(ptr @strlit_21, i32 6)
-  %call_handleCode = call i32 @handleCode__http_200(i32 200)
-  %call_handleCode15 = call i32 @handleCode__http_404(i32 404)
-  %call_handleCode16 = call i32 @handleCode__http_500(i32 500)
-  call void @wpp_print_value_basic(ptr @strlit_22, i32 6)
-  call void @wpp_print_value_basic(ptr @strlit_23, i32 6)
-  %call_handleRange = call i32 @handleRange__http_2xx(i32 201)
-  %call_handleRange17 = call i32 @handleRange__http_4xx(i32 403)
-  %call_handleRange18 = call i32 @handleRange__http_5xx(i32 503)
-  call void @wpp_print_value_basic(ptr @strlit_24, i32 6)
-  call void @wpp_print_value_basic(ptr @strlit_25, i32 6)
+  %print_newline24 = call i32 (ptr, ...) @printf(ptr @newline.22)
   ret i32 0
 }
-
-declare ptr @malloc(i64)
 
 declare i32 @__submodule_stub()

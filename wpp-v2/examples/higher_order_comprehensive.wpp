@@ -1,0 +1,110 @@
+// W++ Higher-Order Dispatch - Comprehensive Working Test
+// Tests all working aspects of higher-order dispatch
+
+// ===================================
+// Test 1: Dispatch on Parameter Types
+// ===================================
+
+funcy apply(fn: func(i32) -> i32, data: i32) -> i32 {
+    print("Applying func(i32) -> i32")
+    return fn(data)
+}
+
+funcy apply(fn: func(i32, i32) -> i32, a: i32, b: i32) -> i32 {
+    print("Applying func(i32, i32) -> i32")
+    return fn(a, b)
+}
+
+func double(x: i32) -> i32 {
+    return x * 2
+}
+
+func add(x: i32, y: i32) -> i32 {
+    return x + y
+}
+
+// ===================================
+// Test 2: Dispatch on Parameter Count
+// ===================================
+
+funcy execute(fn: func() -> i32) -> i32 {
+    print("Executing func() -> i32 (no params)")
+    return fn()
+}
+
+funcy execute(fn: func(i32) -> i32, val: i32) -> i32 {
+    print("Executing func(i32) -> i32 (1 param)")
+    return fn(val)
+}
+
+func getFortyTwo() -> i32 {
+    return 42
+}
+
+func triple(x: i32) -> i32 {
+    return x * 3
+}
+
+// ===================================
+// Test 3: Complex Multi-Parameter Dispatch
+// ===================================
+
+funcy process(fn: func(i32) -> i32, data: i32) -> i32 {
+    print("Processing single-param function")
+    return fn(data) + 100
+}
+
+funcy process(fn: func(i32, i32) -> i32, a: i32, b: i32) -> i32 {
+    print("Processing two-param function")
+    return fn(a, b) * 2
+}
+
+func multiply(x: i32, y: i32) -> i32 {
+    return x * y
+}
+
+// ===================================
+// Test 4: Function Composition
+// ===================================
+
+funcy compose(f: func(i32) -> i32, g: func(i32) -> i32, x: i32) -> i32 {
+    print("Composing two functions")
+    return f(g(x))
+}
+
+// ===================================
+// Main - Run All Tests
+// ===================================
+
+func main() {
+    print("=== Test 1: Dispatch on Parameter Types ===")
+    let r1 = apply(double, 5)
+    print(r1)  // Should be 10
+
+    let r2 = apply(add, 3, 4)
+    print(r2)  // Should be 7
+
+    print("")
+    print("=== Test 2: Dispatch on Parameter Count ===")
+    let r3 = execute(getFortyTwo)
+    print(r3)  // Should be 42
+
+    let r4 = execute(triple, 7)
+    print(r4)  // Should be 21
+
+    print("")
+    print("=== Test 3: Complex Multi-Parameter Dispatch ===")
+    let r5 = process(double, 10)
+    print(r5)  // Should be 120 (double(10) + 100)
+
+    let r6 = process(multiply, 5, 6)
+    print(r6)  // Should be 60 (multiply(5,6) * 2)
+
+    print("")
+    print("=== Test 4: Function Composition ===")
+    let r7 = compose(double, triple, 5)
+    print(r7)  // Should be 30 (triple(5)=15, double(15)=30)
+
+    print("")
+    print("=== All Tests Complete ===")
+}

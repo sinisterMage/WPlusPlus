@@ -1,0 +1,27 @@
+// Simple test for higher-order dispatch
+
+// Helper functions
+func double(x: i32) -> i32 {
+    return x * 2
+}
+
+func triple(x: i32) -> i32 {
+    return x * 3
+}
+
+// Higher-order function
+funcy apply(fn: func(i32) -> i32, data: i32) -> i32 {
+    print("Applying integer function")
+    return fn(data)
+}
+
+func main() {
+    print("=== Testing Higher-Order Dispatch ===")
+    let result1 = apply(double, 5)
+    print(result1)
+
+    let result2 = apply(triple, 7)
+    print(result2)
+
+    print("=== Test Complete ===")
+}

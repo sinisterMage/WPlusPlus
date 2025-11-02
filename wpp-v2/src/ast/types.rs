@@ -19,6 +19,13 @@ pub enum TypeDescriptor {
     /// HTTP status code range (e.g., 2xx means 200-299)
     HttpStatusRange(u16, u16),
 
+    /// Function type with parameter types and return type
+    /// Example: func(i32, string) -> bool
+    Function {
+        param_types: Vec<TypeDescriptor>,
+        return_type: Box<TypeDescriptor>,
+    },
+
     /// Wildcard pattern - matches anything
     Any,
 }
@@ -34,6 +41,13 @@ impl TypeDescriptor {
             TypeDescriptor::Primitive(p) if p != "ptr" => 80,
             TypeDescriptor::Primitive(_) => 70, // ptr is less specific
             TypeDescriptor::HttpStatusRange(_, _) => 50,
+            // Function type specificity: base 60 + weighted sum of param/return specificity
+            TypeDescriptor::Function { param_types, return_type } => {
+                let param_spec: u32 = param_types.iter().map(|t| t.specificity()).sum();
+                let return_spec = return_type.specificity();
+                // Base specificity 60, scaled contributions from params and return
+                60 + (param_spec / 10) + (return_spec / 10)
+            },
             TypeDescriptor::Any => 0,
         }
     }
@@ -55,6 +69,19 @@ impl TypeDescriptor {
                 code >= min && code <= max
             }
 
+            // Function type matching (contravariant parameters, covariant return)
+            (
+                TypeDescriptor::Function { param_types: p1, return_type: r1 },
+                TypeDescriptor::Function { param_types: p2, return_type: r2 }
+            ) => {
+                // Must have same parameter count
+                p1.len() == p2.len() &&
+                // Parameters are contravariant (other can be more specific)
+                p1.iter().zip(p2.iter()).all(|(a, b)| b.matches(a)) &&
+                // Return type is covariant (we can be more specific)
+                r1.matches(r2)
+            },
+
             // Wildcard matches everything
             (TypeDescriptor::Any, _) => true,
             (_, TypeDescriptor::Any) => true,
@@ -71,6 +98,14 @@ impl TypeDescriptor {
             TypeDescriptor::ObjectType(o) => format!("obj_{}", o),
             TypeDescriptor::HttpStatusLiteral(code) => format!("http_{}", code),
             TypeDescriptor::HttpStatusRange(min, max) => format!("http_{}xx", min / 100),
+            TypeDescriptor::Function { param_types, return_type } => {
+                let params = param_types.iter()
+                    .map(|t| t.to_mangle_string())
+                    .collect::<Vec<_>>()
+                    .join("_");
+                let ret = return_type.to_mangle_string();
+                format!("fn_{}_ret_{}", params, ret)
+            },
             TypeDescriptor::Any => "any".to_string(),
         }
     }

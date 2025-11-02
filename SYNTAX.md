@@ -462,8 +462,64 @@ When multiple implementations match, the most specific one wins:
 1. **HTTP Status Literal** (e.g., `404`) - specificity: 100
 2. **Object Type / Entity** (e.g., `UserObject`) - specificity: 90
 3. **Primitive Type** (e.g., `i32`) - specificity: 80
-4. **HTTP Status Range** (e.g., `2xx`) - specificity: 50
-5. **Any** (no type annotation) - specificity: 0
+4. **Function Type** (e.g., `func(i32) -> i32`) - specificity: 60 + parameter/return specificity
+5. **HTTP Status Range** (e.g., `2xx`) - specificity: 50
+6. **Any** (no type annotation) - specificity: 0
+
+### Higher-Order Dispatch
+
+W++ supports **higher-order dispatch** — functions can dispatch on the signatures of function-typed parameters using the `func(...)` type annotation syntax:
+
+```wpp
+// Dispatch on function parameter types
+funcy apply(fn: func(i32) -> i32, data: i32) -> i32 {
+    print("Applying integer function")
+    return fn(data)
+}
+
+funcy apply(fn: func(string) -> string, data: string) -> string {
+    print("Applying string function")
+    return fn(data)
+}
+
+// Helper functions
+func double(x: i32) -> i32 {
+    return x * 2
+}
+
+func uppercase(s: string) -> string {
+    return s  // placeholder
+}
+
+// Calls dispatch to first overload based on function signature
+let result1 = apply(double, 5)  // prints "Applying integer function", returns 10
+
+// Calls dispatch to second overload
+let result2 = apply(uppercase, "hello")  // prints "Applying string function"
+```
+
+#### Function Type Syntax
+
+Function types use the syntax: `func(ParamType1, ParamType2, ...) -> ReturnType`
+
+- **Parameters**: Comma-separated list of parameter types
+- **Return Type**: Optional, specified with `-> Type` (defaults to `i32` if omitted)
+- **Empty Parameters**: Use `func() -> RetType` for functions with no parameters
+
+Examples:
+```wpp
+func(i32) -> i32              // Single parameter, returns i32
+func(i32, string) -> bool     // Two parameters, returns bool
+func() -> i32                 // No parameters, returns i32
+func(i32, i32)                // Two parameters, returns i32 (default)
+```
+
+#### Function Type Specificity
+
+Function types have a base specificity of 60, plus additional specificity based on their parameter and return types. This means:
+- A function type is more specific than HTTP status ranges
+- A function type is less specific than primitive types when used alone
+- The total specificity increases with more specific parameter and return types
 
 ---
 

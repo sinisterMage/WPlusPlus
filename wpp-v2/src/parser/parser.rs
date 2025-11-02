@@ -674,76 +674,43 @@ let name = match self.advance().clone() {
                 other => panic!("Expected parameter name, got {:?}", other),
             };
 
-            // optional type annotation or pattern like a: f32, req: Request, status: 200, code: 2xx
+            // optional type annotation or pattern like a: f32, req: Request, status: 200, code: 2xx, fn: func(i32) -> string
             let mut param_type = "i32".to_string(); // default type
             let mut pattern: Option<TypePattern> = None;
 
             if self.check(TokenKind::Symbol(":".into())) {
                 self.advance(); // consume ':'
 
-                // Check for literal pattern (HTTP status code or range like 2xx)
-                if let TokenKind::Number { raw, .. } = self.peek().clone() {
-                    self.advance();
+                // Use the new parse_type_annotation method to handle all type annotations including function types
+                let type_descriptor = self.parse_type_annotation();
 
-                    // Check if followed by "xx" for range patterns (2xx, 4xx, etc.)
-                    if let TokenKind::Identifier(xx) = self.peek().clone() {
-                        if xx == "xx" {
-                            self.advance(); // consume "xx"
+                // Set param_type string for backward compatibility
+                param_type = type_descriptor.to_mangle_string();
+
+                // Determine if this creates a pattern (for dispatch)
+                match &type_descriptor {
+                    TypeDescriptor::Primitive(_) => {
+                        // Primitives don't create patterns (unless they're non-i32)
+                        if param_type != "i32" {
                             has_patterns = true;
-                            if let Ok(range_start) = raw.parse::<u16>() {
-                                let min = range_start * 100;
-                                let max = min + 99;
-                                pattern = Some(TypePattern::Type(TypeDescriptor::HttpStatusRange(min, max)));
-                                param_type = format!("http_{}xx", range_start);
-                            } else {
-                                panic!("Failed to parse range start: {}", raw);
-                            }
-                        } else {
-                            // Just a literal number
-                            has_patterns = true;
-                            if let Ok(num) = raw.parse::<i32>() {
-                                pattern = Some(TypePattern::Value(Expr::Literal(num)));
-                                param_type = format!("http_{}", num);
-                            } else {
-                                panic!("Failed to parse number: {}", raw);
-                            }
+                            pattern = Some(TypePattern::Type(type_descriptor));
                         }
-                    } else {
-                        // Just a literal number
+                    },
+                    TypeDescriptor::Function { .. } |
+                    TypeDescriptor::Entity(_) |
+                    TypeDescriptor::ObjectType(_) |
+                    TypeDescriptor::HttpStatusLiteral(_) |
+                    TypeDescriptor::HttpStatusRange(_, _) => {
+                        // All these create dispatch patterns
                         has_patterns = true;
-                        if let Ok(num) = raw.parse::<i32>() {
-                            pattern = Some(TypePattern::Value(Expr::Literal(num)));
-                            param_type = format!("http_{}", num);
-                        } else {
-                            panic!("Failed to parse number: {}", raw);
-                        }
+                        pattern = Some(TypePattern::Type(type_descriptor));
+                    },
+                    TypeDescriptor::Any => {
+                        // Wildcard, no pattern
                     }
-                } else if let TokenKind::Identifier(ty_or_pattern) = self.advance().clone() {
-                    println!("🧩 Parsed typed parameter: {}: {}", param_name, ty_or_pattern);
-
-                    // Check for HTTP range pattern (2xx, 4xx, etc.)
-                    if ty_or_pattern.ends_with("xx") && ty_or_pattern.len() == 3 {
-                        if let Ok(range_start) = ty_or_pattern[..1].parse::<u16>() {
-                            has_patterns = true;
-                            let min = range_start * 100;
-                            let max = min + 99;
-                            pattern = Some(TypePattern::Type(TypeDescriptor::HttpStatusRange(min, max)));
-                            param_type = format!("http_{}xx", range_start);
-                        }
-                    } else {
-                        // Regular type annotation (could be primitive, entity, or object type)
-                        param_type = ty_or_pattern.clone();
-
-                        // Detect if it's a custom type (entity or object)
-                        if !["i32", "i64", "i8", "u64", "f32", "f64", "bool", "ptr", "string"].contains(&ty_or_pattern.as_str()) {
-                            has_patterns = true;
-                            // Could be Entity or ObjectType - will be resolved in codegen
-                            pattern = Some(TypePattern::Type(TypeDescriptor::ObjectType(ty_or_pattern)));
-                        }
-                    }
-                } else {
-                    panic!("Expected type name or pattern after ':' in parameter");
                 }
+
+                println!("🧩 Parsed typed parameter: {}: {:?}", param_name, param_type);
             }
 
             // Store parameter pattern
@@ -766,6 +733,15 @@ let name = match self.advance().clone() {
     }
 
     self.expect(TokenKind::Symbol(")".into()), "Expected ')' after parameters");
+
+    // === 📝 Optional return type annotation: -> RetType
+    // Skip this for now, just consume it if present
+    if self.check(TokenKind::Symbol("-".into())) {
+        self.advance(); // consume '-'
+        self.expect(TokenKind::Symbol(">".into()), "Expected '>' after '-' in function return type");
+        // Parse and discard the return type for now (could be used for type checking later)
+        let _return_type = self.parse_type_annotation();
+    }
 
     // === 🏹 support arrow syntax: "=> expr"
     if self.check(TokenKind::Symbol("=".into())) {
@@ -1195,6 +1171,90 @@ if let TokenKind::Keyword(k) = self.peek() {
         }
     }
 }
+
+    /// Parse a type annotation (used for parameter types, including function types)
+    /// Supports syntax like: i32, string, Dog, func(i32) -> string, func(i32, string) -> bool
+    fn parse_type_annotation(&mut self) -> TypeDescriptor {
+        match self.peek().clone() {
+            // Function type: func(Type1, Type2) -> RetType
+            TokenKind::Keyword(k) if k == "func" || k == "funcy" => {
+                self.advance(); // consume 'func' or 'funcy'
+                self.expect(TokenKind::Symbol("(".into()), "Expected '(' after func in type annotation");
+
+                let mut param_types = Vec::new();
+                if !self.check(TokenKind::Symbol(")".into())) {
+                    loop {
+                        param_types.push(self.parse_type_annotation());
+                        if self.check(TokenKind::Symbol(",".into())) {
+                            self.advance();
+                            continue;
+                        } else {
+                            break;
+                        }
+                    }
+                }
+                self.expect(TokenKind::Symbol(")".into()), "Expected ')' after function parameter types");
+
+                // Optional return type annotation: -> RetType
+                let return_type = if self.check(TokenKind::Symbol("-".into())) {
+                    self.advance(); // consume '-'
+                    self.expect(TokenKind::Symbol(">".into()), "Expected '>' after '-' in return type");
+                    Box::new(self.parse_type_annotation())
+                } else {
+                    // Default return type is i32
+                    Box::new(TypeDescriptor::Primitive("i32".to_string()))
+                };
+
+                TypeDescriptor::Function { param_types, return_type }
+            },
+
+            // HTTP status range: 2xx, 4xx, etc.
+            TokenKind::Identifier(ref id) if id.ends_with("xx") && id.len() == 3 => {
+                let id = id.clone();
+                self.advance();
+                if let Ok(range_start) = id[..1].parse::<u16>() {
+                    let min = range_start * 100;
+                    let max = min + 99;
+                    TypeDescriptor::HttpStatusRange(min, max)
+                } else {
+                    panic!("Invalid HTTP range pattern: {}", id);
+                }
+            },
+
+            // Regular type name (primitive, entity, or object type)
+            TokenKind::Identifier(ref name) => {
+                let name = name.clone();
+                self.advance();
+
+                // Check if it's a primitive type
+                if ["i32", "i64", "i8", "i16", "u8", "u16", "u32", "u64", "f32", "f64", "bool", "ptr", "string", "str"].contains(&name.as_str()) {
+                    TypeDescriptor::Primitive(name)
+                } else {
+                    // Assume it's an object type or entity (will be resolved in codegen)
+                    TypeDescriptor::ObjectType(name)
+                }
+            },
+
+            // HTTP status literal (numeric)
+            TokenKind::Number { ref raw, .. } => {
+                let raw = raw.clone();
+                self.advance();
+                if let Ok(code) = raw.parse::<u16>() {
+                    if code >= 100 && code < 600 {
+                        TypeDescriptor::HttpStatusLiteral(code)
+                    } else {
+                        TypeDescriptor::Primitive("i32".to_string())
+                    }
+                } else {
+                    panic!("Invalid numeric type annotation: {}", raw);
+                }
+            },
+
+            other => {
+                panic!("Expected type annotation, got {:?}", other);
+            }
+        }
+    }
 
 
 

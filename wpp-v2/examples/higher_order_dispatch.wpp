@@ -1,0 +1,121 @@
+// W++ Higher-Order Dispatch Example
+// Demonstrates dispatching on function signatures
+
+// ===================================
+// Example 1: Dispatch on Parameter Types
+// ===================================
+
+// Function that takes an integer function
+funcy apply(fn: func(i32) -> i32, data: i32) -> i32 {
+    print("Applying integer function")
+    return fn(data)
+}
+
+// Function that takes a string function (different dispatch)
+funcy apply(fn: func(string) -> string, data: string) -> string {
+    print("Applying string function")
+    return fn(data)
+}
+
+// Helper functions to pass as arguments
+func double(x: i32) -> i32 {
+    return x * 2
+}
+
+func triple(x: i32) -> i32 {
+    return x * 3
+}
+
+func uppercase(s: string) -> string {
+    // Placeholder - would need actual string manipulation
+    return s
+}
+
+// ===================================
+// Example 2: Dispatch on Return Types
+// ===================================
+
+// Process functions returning integers
+funcy process(fn: func() -> i32) -> i32 {
+    print("Processing int-returning function")
+    let result = fn()
+    return result + 100
+}
+
+// Process functions returning booleans
+funcy process(fn: func() -> bool) -> bool {
+    print("Processing bool-returning function")
+    return fn()
+}
+
+func getNumber() -> i32 {
+    return 42
+}
+
+func getFlag() -> bool {
+    return 1
+}
+
+// ===================================
+// Example 3: Complex Function Types
+// ===================================
+
+// Handler for functions with multiple parameters
+funcy transform(fn: func(i32, i32) -> i32, a: i32, b: i32) -> i32 {
+    print("Transform with 2-param function")
+    return fn(a, b)
+}
+
+func add(x: i32, y: i32) -> i32 {
+    return x + y
+}
+
+func multiply(x: i32, y: i32) -> i32 {
+    return x * y
+}
+
+// ===================================
+// Example 4: Function Composition
+// ===================================
+
+funcy compose(f: func(i32) -> i32, g: func(i32) -> i32, x: i32) -> i32 {
+    print("Composing two integer functions")
+    return f(g(x))
+}
+
+// ===================================
+// Main Function - Run All Tests
+// ===================================
+
+func main() {
+    // Test 1: Parameter Type Dispatch
+    print("=== Testing Parameter Type Dispatch ===")
+    let result1 = apply(double, 5)
+    print(result1)  // Should print "Applying integer function" then 10
+
+    let result2 = apply(triple, 7)
+    print(result2)  // Should print "Applying integer function" then 21
+
+    // Test 2: Return Type Dispatch
+    print("=== Testing Return Type Dispatch ===")
+    let num = process(getNumber)
+    print(num)  // Should print "Processing int-returning function" then 142
+
+    let flag = process(getFlag)
+    print(flag)  // Should print "Processing bool-returning function" then 1
+
+    // Test 3: Multi-Parameter Functions
+    print("=== Testing Multi-Parameter Functions ===")
+    let sum = transform(add, 3, 4)
+    print(sum)  // Should print 7
+
+    let product = transform(multiply, 3, 4)
+    print(product)  // Should print 12
+
+    // Test 4: Function Composition
+    print("=== Testing Function Composition ===")
+    let composed = compose(double, triple, 5)
+    print(composed)  // Should print 30 (triple(5) = 15, double(15) = 30)
+
+    print("=== All Higher-Order Dispatch Tests Complete ===")
+}

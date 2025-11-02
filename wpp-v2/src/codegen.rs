@@ -306,6 +306,75 @@ pub fn init_mutex_support(&self) {
         declare_ffi!("io_remove_dir_all", i32_ty.fn_type(&[i8_ptr.into()], false));
         declare_ffi!("io_list_dir", i8_ptr.fn_type(&[i8_ptr.into()], false));
         declare_ffi!("io_free", void_ty.fn_type(&[i8_ptr.into()], false));
+
+        // CORS library functions
+        declare_ffi!("cors_strlen", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("cors_int_to_string", i8_ptr.fn_type(&[i32_ty.into()], false));
+        declare_ffi!("cors_contains", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cors_strcmp", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cors_strcasecmp", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cors_is_origin_allowed", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cors_is_method_allowed", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cors_are_headers_allowed", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cors_is_preflight", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("cors_gc_collect", i32_ty.fn_type(&[], false));
+        declare_ffi!("cors_gc_shutdown", void_ty.fn_type(&[], false));
+
+        // MySQL database driver functions
+        declare_ffi!("mysql_connect", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mysql_close", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("mysql_query", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mysql_execute", i64_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mysql_prepare", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mysql_bind_execute", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mysql_begin_transaction", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("mysql_commit", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("mysql_rollback", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("mysql_get_last_error", i8_ptr.fn_type(&[], false));
+        declare_ffi!("mysql_gc_collect", i32_ty.fn_type(&[], false));
+        declare_ffi!("mysql_gc_shutdown", void_ty.fn_type(&[], false));
+
+        // PostgreSQL database driver functions
+        declare_ffi!("pg_connect", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("pg_close", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("pg_query", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("pg_execute", i64_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("pg_begin_transaction", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("pg_commit", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("pg_rollback", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("pg_get_last_error", i8_ptr.fn_type(&[], false));
+        declare_ffi!("pg_gc_collect", i32_ty.fn_type(&[], false));
+        declare_ffi!("pg_gc_shutdown", void_ty.fn_type(&[], false));
+
+        // MongoDB database driver functions
+        declare_ffi!("mongo_connect", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("mongo_close", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("mongo_find", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mongo_insert_one", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mongo_update_one", i64_ty.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mongo_delete_one", i64_ty.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("mongo_get_last_error", i8_ptr.fn_type(&[], false));
+        declare_ffi!("mongo_gc_collect", i32_ty.fn_type(&[], false));
+        declare_ffi!("mongo_gc_shutdown", void_ty.fn_type(&[], false));
+
+        // Firebase database driver functions
+        declare_ffi!("firebase_init", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("firebase_close", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("firebase_set", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("firebase_get", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("firebase_delete", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("firebase_get_last_error", i8_ptr.fn_type(&[], false));
+        declare_ffi!("firebase_gc_collect", i32_ty.fn_type(&[], false));
+        declare_ffi!("firebase_gc_shutdown", void_ty.fn_type(&[], false));
+
+        // Apache Cassandra database driver functions
+        declare_ffi!("cassandra_connect", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cassandra_close", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("cassandra_query", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cassandra_execute", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("cassandra_get_last_error", i8_ptr.fn_type(&[], false));
+        declare_ffi!("cassandra_gc_collect", i32_ty.fn_type(&[], false));
+        declare_ffi!("cassandra_gc_shutdown", void_ty.fn_type(&[], false));
     }
 
 
@@ -2886,6 +2955,31 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
         || name == "io_read_bytes"
         || name == "io_read_lines"
         || name == "io_list_dir"
+        // CORS library pointer-returning functions
+        || name == "cors_int_to_string"
+        // MySQL database driver pointer-returning functions
+        || name == "mysql_connect"
+        || name == "mysql_query"
+        || name == "mysql_prepare"
+        || name == "mysql_bind_execute"
+        || name == "mysql_get_last_error"
+        // PostgreSQL database driver pointer-returning functions
+        || name == "pg_connect"
+        || name == "pg_query"
+        || name == "pg_get_last_error"
+        // MongoDB database driver pointer-returning functions
+        || name == "mongo_connect"
+        || name == "mongo_find"
+        || name == "mongo_insert_one"
+        || name == "mongo_get_last_error"
+        // Firebase database driver pointer-returning functions
+        || name == "firebase_init"
+        || name == "firebase_get"
+        || name == "firebase_get_last_error"
+        // Cassandra database driver pointer-returning functions
+        || name == "cassandra_connect"
+        || name == "cassandra_query"
+        || name == "cassandra_get_last_error"
     {
         // These builtins/FFI functions return pointers
         self.context

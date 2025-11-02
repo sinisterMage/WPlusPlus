@@ -35,6 +35,75 @@ const KNOWN_FFI_FUNCTIONS: &[(&str, &str)] = &[
     ("io_remove_dir_all", "ptr->i32"),
     ("io_list_dir", "ptr->ptr"),
     ("io_free", "ptr->void"),
+
+    // CORS library functions
+    ("cors_strlen", "ptr->i32"),
+    ("cors_int_to_string", "i32->ptr"),
+    ("cors_contains", "ptr_ptr->i32"),
+    ("cors_strcmp", "ptr_ptr->i32"),
+    ("cors_strcasecmp", "ptr_ptr->i32"),
+    ("cors_is_origin_allowed", "ptr_ptr->i32"),
+    ("cors_is_method_allowed", "ptr_ptr->i32"),
+    ("cors_are_headers_allowed", "ptr_ptr->i32"),
+    ("cors_is_preflight", "ptr->i32"),
+    ("cors_gc_collect", "->i32"),
+    ("cors_gc_shutdown", "->void"),
+
+    // MySQL database driver functions
+    ("mysql_connect", "ptr_ptr_ptr_ptr->ptr"),
+    ("mysql_close", "ptr->i32"),
+    ("mysql_query", "ptr_ptr->ptr"),
+    ("mysql_execute", "ptr_ptr->i64"),
+    ("mysql_prepare", "ptr_ptr->ptr"),
+    ("mysql_bind_execute", "ptr_ptr->ptr"),
+    ("mysql_begin_transaction", "ptr->i32"),
+    ("mysql_commit", "ptr->i32"),
+    ("mysql_rollback", "ptr->i32"),
+    ("mysql_get_last_error", "->ptr"),
+    ("mysql_gc_collect", "->i32"),
+    ("mysql_gc_shutdown", "->void"),
+
+    // PostgreSQL database driver functions
+    ("pg_connect", "ptr->ptr"),
+    ("pg_close", "ptr->i32"),
+    ("pg_query", "ptr_ptr->ptr"),
+    ("pg_execute", "ptr_ptr->i64"),
+    ("pg_begin_transaction", "ptr->i32"),
+    ("pg_commit", "ptr->i32"),
+    ("pg_rollback", "ptr->i32"),
+    ("pg_get_last_error", "->ptr"),
+    ("pg_gc_collect", "->i32"),
+    ("pg_gc_shutdown", "->void"),
+
+    // MongoDB database driver functions
+    ("mongo_connect", "ptr->ptr"),
+    ("mongo_close", "ptr->i32"),
+    ("mongo_find", "ptr_ptr_ptr_ptr->ptr"),
+    ("mongo_insert_one", "ptr_ptr_ptr_ptr->ptr"),
+    ("mongo_update_one", "ptr_ptr_ptr_ptr_ptr->i64"),
+    ("mongo_delete_one", "ptr_ptr_ptr_ptr->i64"),
+    ("mongo_get_last_error", "->ptr"),
+    ("mongo_gc_collect", "->i32"),
+    ("mongo_gc_shutdown", "->void"),
+
+    // Firebase database driver functions
+    ("firebase_init", "ptr_ptr->ptr"),
+    ("firebase_close", "ptr->i32"),
+    ("firebase_set", "ptr_ptr_ptr->i32"),
+    ("firebase_get", "ptr_ptr->ptr"),
+    ("firebase_delete", "ptr_ptr->i32"),
+    ("firebase_get_last_error", "->ptr"),
+    ("firebase_gc_collect", "->i32"),
+    ("firebase_gc_shutdown", "->void"),
+
+    // Apache Cassandra database driver functions
+    ("cassandra_connect", "ptr_ptr->ptr"),
+    ("cassandra_close", "ptr->i32"),
+    ("cassandra_query", "ptr_ptr->ptr"),
+    ("cassandra_execute", "ptr_ptr->i32"),
+    ("cassandra_get_last_error", "->ptr"),
+    ("cassandra_gc_collect", "->i32"),
+    ("cassandra_gc_shutdown", "->void"),
 ];
 
 pub fn link_rust_modules<'ctx>(

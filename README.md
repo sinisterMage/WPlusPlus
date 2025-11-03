@@ -165,7 +165,7 @@ Respect. Here’s how to make it happen:
 
 | Library                  | Description                                                            |
 | ------------------------ | ---------------------------------------------------------------------- |
-| 🧠 **JSON**              | Native JSON parsing and serialization                                  |
+| 🧠 **JSON**              | Native JSON parsing and serialization - live at the [ingot registry](https://ingotwpp.dev/packages/json/1.0.0)                                 |
 | 🕸️ **CORS**             | Cross-Origin (and Cross-Dimensional) Request Support                   |
 | 🗄️ **DB Drivers**       | MySQL, PostgreSQL, MongoDB, Firebase, and Apache Cassandra             |
 | ☀️ **Proxima Notebooks** | Jupyter-style notebooks set in a solar system — each planet = notebook |

@@ -12,4 +12,5 @@ main = do
   tags      ["cli", "demo"]
   readme    "README.md"
   isPublic  true
+  flags     ["--dep=json"]
   println   "✨ Testing W++ libraries"

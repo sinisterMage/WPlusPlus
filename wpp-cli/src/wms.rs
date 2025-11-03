@@ -75,7 +75,8 @@ impl WmsResolver {
 
     let records = Arc::new(Mutex::new(Vec::new()));
 
-    deps.par_iter().for_each(|dep| {
+    // Use regular iterator instead of parallel to avoid Rayon/Tokio deadlock
+    deps.iter().for_each(|dep| {
         let api = self.api.clone();
         let dep_name = dep.clone();
         let records = Arc::clone(&records);

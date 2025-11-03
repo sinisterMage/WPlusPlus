@@ -1,0 +1,7 @@
+// Minimal test without JSON calls
+func main() {
+    print("Test 1: Simple print")
+    let x = 42
+    print("Test 2: Variable:", x)
+    print("Test 3: Done!")
+}

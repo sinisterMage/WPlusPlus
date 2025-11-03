@@ -133,6 +133,7 @@ __attribute__((visibility("default")))
 void wpp_print_value_basic(const void *ptr, int32_t type_id) {
     if (!ptr) {
         printf("(null) ");
+        fflush(stdout);
         return;
     }
 
@@ -173,6 +174,7 @@ void wpp_print_value_basic(const void *ptr, int32_t type_id) {
             printf("(unknown type_id=%d, ptr=%p) ", type_id, ptr);
             break;
     }
+    fflush(stdout);
 }
 
 // =====================================================

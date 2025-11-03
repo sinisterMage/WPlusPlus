@@ -28,13 +28,35 @@ impl ExportResolver {
     pub fn collect_exports(&mut self, wms: &ModuleSystem) {
         let cache = wms.get_cache();
 
+        println!("🔧 [resolver] collect_exports() called with {} modules in cache", cache.len());
+
         for (name, module) in cache.iter() {
+            println!("🔍 [resolver] Scanning module '{}' with {} nodes", name, module.ast.len());
+            let mut export_count = 0;
+            let mut node_types: Vec<String> = Vec::new();
             for node in &module.ast {
+                // Collect node type for debugging
+                let node_type = match node {
+                    Node::Export { .. } => "Export",
+                    Node::ImportList { .. } => "ImportList",
+                    Node::ImportAll { .. } => "ImportAll",
+                    Node::Expr(_) => "Expr",
+                    Node::Let { .. } => "Let",
+                    Node::Entity(_) => "Entity",
+                    Node::TypeAlias(_) => "TypeAlias",
+                };
+                node_types.push(node_type.to_string());
+
                 if let Node::Export { name: export_name, item } = node {
                     // Store the exported function/const node
                     self.global_table.insert(export_name.clone(), *item.clone());
                     println!("📦 [resolver] Registered export '{}::{}'", name, export_name);
+                    export_count += 1;
                 }
+            }
+            if export_count == 0 {
+                println!("⚠️  [resolver] Module '{}' has NO export nodes", name);
+                println!("   Node types present: {:?}", node_types);
             }
         }
     }

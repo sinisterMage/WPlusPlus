@@ -1,40 +1,95 @@
-// W++ JSON Library - Direct FFI wrapper
-// NOTE: These functions will be auto-declared by the compiler
+// W++ JSON Library
+// High-performance JSON parsing and manipulation using Rust FFI
+// Version: 1.0.0
 
 import "rust:json"
 
-// The compiler will auto-declare these FFI functions:
-// json_validate, json_parse, json_stringify, json_pretty,
-// json_get, json_get_string, json_get_int, json_merge
+// ========================================
+// Core JSON Functions
+// ========================================
 
-export func validate(json_str) {
-    return json_validate(json_str)
-}
-
-export func parse(json_str) {
+// Parse a JSON string into a W++ object
+// json_str: The JSON string to parse
+// Returns: Parsed JSON as string (W++ will handle object conversion)
+export func parse(json_str: string) -> string {
     return json_parse(json_str)
 }
 
-export func stringify(obj) {
+// Convert a W++ object to a minified JSON string
+// obj: The object to stringify
+// Returns: Minified JSON string
+export func stringify(obj: string) -> string {
     return json_stringify(obj)
 }
 
-export func pretty(obj, indent) {
+// Pretty-print JSON with custom indentation
+// obj: The object to format
+// indent: Number of spaces for indentation
+// Returns: Formatted JSON string
+export func pretty(obj: string, indent: i32) -> string {
     return json_pretty(obj, indent)
 }
 
-export func get(obj, path) {
+// Validate if a string is valid JSON
+// json_str: The string to validate
+// Returns: 1 if valid, 0 if invalid
+export func validate(json_str: string) -> i32 {
+    return json_validate(json_str)
+}
+
+// Check if a string is valid JSON (boolean version)
+// json_str: The string to validate
+// Returns: true if valid, false if invalid
+export func isValid(json_str: string) -> bool {
+    return json_validate(json_str) == 1
+}
+
+// ========================================
+// JSON Query Functions
+// ========================================
+
+// Get a value from JSON by key path (e.g., "user.name")
+// obj: The JSON object
+// path: Dot-separated path to the value
+// Returns: The value as JSON string, or empty if not found
+export func get(obj: string, path: string) -> string {
     return json_get(obj, path)
 }
 
-export func getString(obj, key) {
+// Get a string value from JSON (unwraps quotes)
+// obj: The JSON object
+// key: The key to retrieve
+// Returns: The string value, or empty if not found
+export func getString(obj: string, key: string) -> string {
     return json_get_string(obj, key)
 }
 
-export func getInt(obj, key) {
+// Get an integer value from JSON
+// obj: The JSON object
+// key: The key to retrieve
+// Returns: The integer value, or 0 if not found
+export func getInt(obj: string, key: string) -> i32 {
     return json_get_int(obj, key)
 }
 
-export func merge(json1, json2) {
+// ========================================
+// JSON Manipulation Functions
+// ========================================
+
+// Merge two JSON objects
+// json1: First JSON object
+// json2: Second JSON object (values override first)
+// Returns: Merged JSON object
+export func merge(json1: string, json2: string) -> string {
     return json_merge(json1, json2)
+}
+
+// ========================================
+// Memory Management
+// ========================================
+
+// Free a JSON string allocated by the library
+// ptr: The pointer to free
+export func free(ptr: string) {
+    json_free(ptr)
 }

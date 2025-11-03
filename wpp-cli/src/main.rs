@@ -13,6 +13,7 @@ use std::time::Duration;
 use colored::*;
 use wpp_v2::{run_file, build_ir};
 use wpp_v2::lexer::Lexer;
+use wpp_v2::parser::Parser as WppParser;
 use wpp_v2::codegen::Codegen;
 use inkwell::context::Context;
 mod config;
@@ -24,6 +25,35 @@ use sha2::{Sha256, Digest};
 mod wms;
 use wms::WmsResolver;
 
+/// Helper function to detect file metadata for Rust interop libraries
+/// Returns: (file_type, platform, architecture)
+fn detect_file_metadata(path: &Path) -> (Option<String>, Option<String>, Option<String>) {
+    let ext = path.extension().and_then(|s| s.to_str());
+
+    let file_type = match ext {
+        Some("wpp") => Some("source".to_string()),
+        Some("dylib") | Some("so") | Some("dll") => Some("library".to_string()),
+        Some("rs") => Some("rust-source".to_string()),
+        Some("toml") => Some("config".to_string()),
+        _ => None,
+    };
+
+    let platform = match ext {
+        Some("dylib") => Some("darwin".to_string()),
+        Some("so") => Some("linux".to_string()),
+        Some("dll") => Some("windows".to_string()),
+        _ => None, // Source files are platform-independent
+    };
+
+    // Capture architecture for binary files
+    let architecture = if matches!(ext, Some("dylib" | "so" | "dll")) {
+        Some(std::env::consts::ARCH.to_string()) // "x86_64", "aarch64", etc.
+    } else {
+        None
+    };
+
+    (file_type, platform, architecture)
+}
 
 /// 🦥 Ingot CLI — Chaos meets LLVM
 #[derive(Parser)]
@@ -201,12 +231,35 @@ fn main() {
             let mut total_bytes_downloaded = 0u64;
 
             for f in pkg.files {
-                let dest_path = install_dir.join(&f.filename);
+                // === Platform Compatibility Check ===
+                // Skip binaries that don't match current platform
+                if f.fileType.as_deref() == Some("library") {
+                    if let Some(file_platform) = &f.platform {
+                        let current_platform = std::env::consts::OS;
+                        if file_platform != current_platform {
+                            println!("⏭️  Skipping {} (platform: {}, current: {})",
+                                f.filename.dimmed(), file_platform, current_platform);
+                            continue;
+                        }
+                    }
+                }
+
+                // === Determine Installation Path ===
+                // Libraries go to rust_modules/, other files to project root
+                let dest_path = if f.fileType.as_deref() == Some("library") {
+                    let rust_modules_dir = install_dir.join("rust_modules");
+                    fs::create_dir_all(&rust_modules_dir).unwrap();
+                    rust_modules_dir.join(&f.filename)
+                } else {
+                    install_dir.join(&f.filename)
+                };
+
                 let cache_path = cache_dir.join(&f.filename);
 
                 // === Step 1: Check cache first
                 if cache_path.exists() {
-                    println!("💾 Using cached {}", f.filename);
+                    println!("💾 Using cached {} {}", f.filename,
+                        if f.fileType.as_deref() == Some("library") { "[library]".yellow() } else { "".normal() });
                     fs::copy(&cache_path, &dest_path).unwrap();
                     continue;
                 }
@@ -240,10 +293,9 @@ pb.set_style(
     .progress_chars("#>-"),
 );
 
-// Prepare paths
-let dest_path = install_dir.join(&f.filename);
-let cache_path = Path::new(".wpp_cache").join(&f.filename);
-fs::create_dir_all(".wpp_cache").unwrap();
+// Use the dest_path and cache_path already determined above
+// (dest_path already points to rust_modules/ for libraries)
+fs::create_dir_all(dest_path.parent().unwrap()).unwrap();
 
 // Create output file and wrap with progress bar
 let mut dest_file = File::create(&dest_path).unwrap();
@@ -318,25 +370,42 @@ update_simula_lock(&pkg.name, &pkg.version, &checksum).unwrap();
         println!("📜 License: {}", lic);
     }
 
-    // 🔎 Collect all .wpp files recursively
+    // 🔎 Collect all project files recursively (.wpp, .dylib, .so, .dll, .rs, .toml)
     println!("🗂️  Scanning project files...");
     let mut files = Vec::new();
     for entry in WalkDir::new(".")
         .into_iter()
         .filter_map(Result::ok)
-        .filter(|e| e.file_type().is_file() && e.path().extension().map(|x| x == "wpp").unwrap_or(false))
+        .filter(|e| {
+            if !e.file_type().is_file() {
+                return false;
+            }
+            // Include .wpp source files and Rust interop files
+            let ext = e.path().extension().and_then(|s| s.to_str());
+            matches!(ext, Some("wpp" | "dylib" | "so" | "dll" | "rs" | "toml"))
+        })
     {
-        files.push(entry.path().display().to_string());
+        let path = entry.path();
+        let (file_type, platform, architecture) = detect_file_metadata(path);
+
+        files.push(FileWithMetadata {
+            path: path.display().to_string(),
+            file_type,
+            platform,
+            architecture,
+        });
     }
 
     if files.is_empty() {
-        eprintln!("❌ No .wpp files found in project.");
+        eprintln!("❌ No project files found (.wpp, .dylib, .so, .dll, .rs, .toml).");
         return;
     }
 
-    println!("📄 Found {} files for upload.", files.len());
+    println!("📄 Found {} files for upload:", files.len());
     for f in &files {
-        println!("  - {}", f.bright_cyan());
+        let type_info = f.file_type.as_ref().map(|t| format!(" [{}]", t)).unwrap_or_default();
+        let platform_info = f.platform.as_ref().map(|p| format!(" ({}, {})", p, f.architecture.as_ref().unwrap_or(&"unknown".to_string()))).unwrap_or_default();
+        println!("  - {}{}{}", f.path.bright_cyan(), type_info.yellow(), platform_info.dimmed());
     }
 
     println!("🚀 Uploading package...");
@@ -406,6 +475,23 @@ match WppConfig::load(&config_path) {
 
         for flag in &cfg.flags {
             println!("🧠 Applied flag from config: {flag}");
+        }
+
+        // 🧩 Resolve dependencies if any are declared
+        let deps: Vec<String> = cfg.flags.iter()
+            .filter(|f| f.starts_with("--dep="))
+            .map(|f| f.trim_start_matches("--dep=").to_string())
+            .collect();
+
+        if !deps.is_empty() {
+            println!("📦 Resolving {} dependencies...", deps.len());
+            let token = std::env::var("WPP_TOKEN").ok();
+            let api = Arc::new(IngotAPI::new("https://ingotwpp.dev", token));
+            let wms_resolver = WmsResolver::new(api);
+            if let Err(e) = wms_resolver.resolve_all(&current_dir) {
+                eprintln!("⚠️  Warning: Dependency resolution failed: {e}");
+                eprintln!("    Continuing anyway - dependencies may not be available.");
+            }
         }
 
         let entry_path = cfg.entrypoint.unwrap_or_else(|| "src/main.wpp".to_string());
@@ -648,6 +734,7 @@ main = do
     println!("   {}", format!("cd {} && ingot run src/main.wpp", project_name).bright_yellow());
 }
 fn run_with_codegen(_source: &str, optimize: bool) {
+    println!("🎯 [CLI] Entered run_with_codegen function");
     // 🧠 Step 1: Create LLVM context once
     let context = Context::create();
     let project_root = std::env::current_dir().unwrap();
@@ -658,23 +745,42 @@ fn run_with_codegen(_source: &str, optimize: bool) {
     wms.clear_cache();
 
     // 🧩 Step 3: Load and compile all modules (WMS compiles 'main' internally)
+    println!("🎯 [CLI] About to load 'main' module via WMS");
     wms.load_module("main").expect("Failed to load main module");
+    println!("🎯 [CLI] Finished loading 'main' module");
 
     // 🧩 Step 4: Collect exports across cached modules
     let mut resolver = ExportResolver::new();
+    println!("🔍 [CLI] About to collect exports from WMS with {} cached modules", wms.get_cache().len());
     #[cfg(debug_assertions)]
     println!("📦 [debug] WMS cache keys: {:?}", wms.get_cache().keys());
     resolver.collect_exports(&wms);
+    println!("🔍 [CLI] Finished collecting exports, resolver has {} symbols", resolver.global_table.len());
 
-    // ⚙️ Step 5: Initialize the top-level codegen shell
-    let mut codegen = Codegen::new(&context, "wpp_module", src_dir.to_str().unwrap());
+    // ⚙️ Step 5: Load main module from source and parse
+    let main_source_path = project_root.join("src/main.wpp");
+    let main_source = std::fs::read_to_string(&main_source_path)
+        .expect("Failed to read main source");
+
+    let mut lexer = Lexer::new(&main_source);
+    let tokens = lexer.tokenize();
+    let mut parser = WppParser::new(tokens);
+    let main_ast = parser.parse_program();
+
+    // Initialize the top-level codegen shell
+    let mut codegen = Codegen::new(&context, "main", src_dir.to_str().unwrap());
     codegen.wms = Some(Arc::new(Mutex::new(wms)));
     codegen.resolver = Some(Arc::new(Mutex::new(resolver)));
 
-    // ✅ Skip re-compilation of main: WMS already did it
-    println!("🧩 Using precompiled main module from WMS cache — skipping redundant compile.");
+    // 🔗 Step 5.5: Link dependency modules BEFORE compiling main
+    println!("🔗 Linking dependency modules into main context...");
+    codegen.link_dependency_modules();
 
-    // 🧠 Step 6: Run via JIT
+    // 🧩 Step 6: Compile main module with exports available
+    println!("🧩 Compiling main module with resolved exports...");
+    codegen.compile_main(&main_ast);
+
+    // 🧠 Step 7: Run via JIT
     match run_file(&mut codegen, optimize) {
         Ok(_) => println!("✅ Execution finished successfully."),
         Err(e) => eprintln!("❌ Error during execution: {e}"),

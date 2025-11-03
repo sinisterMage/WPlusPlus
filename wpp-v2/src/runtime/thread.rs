@@ -158,6 +158,7 @@ macro_rules! thread_trace {
 // ===========================================================
 static GC_LOCK: AtomicBool = AtomicBool::new(false);
 static DAEMON_SHUTDOWN: AtomicBool = AtomicBool::new(false); // FIX 12
+static THREADS_EVER_SPAWNED: AtomicU64 = AtomicU64::new(0); // Track if any threads created
 thread_local! {
     static THREAD_ANCESTRY: std::cell::RefCell<Vec<u64>> = std::cell::RefCell::new(Vec::new());
 }
@@ -377,6 +378,9 @@ impl ThreadHandle {
 
         let func: extern "C" fn() = unsafe { mem::transmute(func_ptr) };
         let fin_clone = finished.clone();
+
+        // Track that at least one thread has been spawned
+        THREADS_EVER_SPAWNED.fetch_add(1, Ordering::Relaxed);
 
         println!("🚀 [thread] spawning GC-managed thread #{id}");
 
@@ -775,7 +779,13 @@ if let Some(join_handle) = guard.take() {
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_thread_join_all() {
     println!("🧵 [runtime] Entered wpp_thread_join_all()");
-    
+
+    // === Fast path: No threads were ever spawned ===
+    if THREADS_EVER_SPAWNED.load(Ordering::Relaxed) == 0 {
+        println!("🧵 [thread] no threads ever spawned, skipping join");
+        return;
+    }
+
     // === Step 1: Snapshot the threads safely ===
     let gc = ThreadGC::global();
     let mut threads_lock = gc.threads.lock().unwrap();

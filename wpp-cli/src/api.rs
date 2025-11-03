@@ -62,6 +62,15 @@ pub struct PublishMetadata {
     pub is_public: Option<bool>,
 }
 
+/// File information with metadata for publishing
+#[derive(Debug, Clone)]
+pub struct FileWithMetadata {
+    pub path: String,
+    pub file_type: Option<String>,
+    pub platform: Option<String>,
+    pub architecture: Option<String>,
+}
+
 pub struct IngotAPI {
     client: Client,
     base_url: String,
@@ -130,16 +139,36 @@ impl IngotAPI {
 
 
     /// 🚀 Publish a new package
-    pub async fn publish_package(&self, metadata: &PublishMetadata, files: Vec<String>) -> Result<()> {
+    pub async fn publish_package(&self, metadata: &PublishMetadata, files: Vec<FileWithMetadata>) -> Result<()> {
         let url = format!("{}/api/cli/publish", self.base_url);
         let mut form = reqwest::multipart::Form::new()
             .text("metadata", serde_json::to_string(metadata)?);
 
-        for file in files {
-            let filename = file.clone();
-            let bytes = fs::read(&file)?;
-            let part = reqwest::multipart::Part::bytes(bytes).file_name(filename);
+        for file_info in files {
+            let filename = file_info.path.clone();
+            let bytes = fs::read(&file_info.path)?;
+            let mut part = reqwest::multipart::Part::bytes(bytes).file_name(filename);
+
+            // Add file metadata as headers
+            if let Some(file_type) = &file_info.file_type {
+                part = part.mime_str(&format!("application/x-wpp-{}", file_type))?;
+            }
+
+            // Note: The API backend should extract platform/arch from multipart metadata
+            // For now, we'll pass it through the filename or rely on server-side detection
             form = form.part("files[]", part);
+
+            // Optionally include metadata as separate form field (if API supports it)
+            if file_info.file_type.is_some() || file_info.platform.is_some() {
+                let file_meta = serde_json::json!({
+                    "filename": std::path::Path::new(&file_info.path).file_name()
+                        .and_then(|n| n.to_str()).unwrap_or(""),
+                    "fileType": file_info.file_type,
+                    "platform": file_info.platform,
+                    "architecture": file_info.architecture,
+                });
+                form = form.text(format!("file_metadata[{}]", file_info.path), file_meta.to_string());
+            }
         }
 
         let mut req = self.client.post(&url).multipart(form);

@@ -1,0 +1,9 @@
+// Test Rust JSON import
+import "rust:json"
+
+func main() {
+    print("Testing JSON import...")
+    let valid = json_validate("{\"test\":123}")
+    print("JSON validation result:", valid)
+    print("Test complete!")
+}

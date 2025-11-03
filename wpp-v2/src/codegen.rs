@@ -165,8 +165,8 @@ impl<'ctx> Codegen<'ctx> {
         reverse_func_index: HashMap::new(),
         entities: HashMap::new(),
         type_aliases: HashMap::new(), // ✅ NEW: Empty type alias registry
-        wms: Some(Arc::new(Mutex::new(ModuleSystem::new(base_dir)))),
-        resolver: Some(Arc::new(Mutex::new(ExportResolver::new()))),
+        wms: None, // Only set by main CLI, not by submodule compilation
+        resolver: None, // Only set by main CLI, not by submodule compilation
     };
 
     // ✅ Register runtime externs immediately after initialization
@@ -1929,9 +1929,51 @@ else {
 
 
             else {
-                // === FFI FALLBACK: Check if function exists in module (Rust FFI) ===
-                if let Some(func) = self.module.get_function(name) {
-                    println!("🦀 Found FFI function '{}' in module", name);
+                // === FFI FALLBACK: Check if function exists in module (Rust FFI or linked W++ module) ===
+                println!("🔍 [debug] Looking for function '{}' in module", name);
+
+                // Try unmangled name first
+                let mut func_opt = self.module.get_function(name);
+
+                // If not found, try mangled names with argument types
+                if func_opt.is_none() {
+                    // Infer argument types to construct mangled name
+                    let arg_type_strs: Vec<String> = args.iter().map(|arg| {
+                        match arg {
+                            Expr::StringLiteral(_) => "string".to_string(),
+                            Expr::TypedLiteral { ty, .. } => {
+                                match ty.as_str() {
+                                    "string" | "ptr" => "string".to_string(),
+                                    "float" | "f64" => "f32".to_string(),
+                                    other => other.to_string(),
+                                }
+                            }
+                            Expr::Variable(v) => {
+                                if let Some(var_info) = self.vars.get(v) {
+                                    if var_info.ty.is_pointer_type() {
+                                        "string".to_string()
+                                    } else if var_info.ty.is_float_type() {
+                                        "f32".to_string()
+                                    } else {
+                                        "i32".to_string()
+                                    }
+                                } else {
+                                    "i32".to_string()
+                                }
+                            }
+                            _ => "i32".to_string(),
+                        }
+                    }).collect();
+
+                    if !arg_type_strs.is_empty() {
+                        let mangled_name = format!("{}__{}", name, arg_type_strs.join("_"));
+                        println!("🔍 [debug] Trying mangled name '{}'", mangled_name);
+                        func_opt = self.module.get_function(&mangled_name);
+                    }
+                }
+
+                if let Some(func) = func_opt {
+                    println!("✅ Found function '{}' in module", func.get_name().to_str().unwrap());
 
                     // Compile arguments
                     let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
@@ -3300,6 +3342,56 @@ if let Expr::NewInstance { entity, args } = value {
             .collect()
     }
 
+/// Link dependency modules from WMS into the main module BEFORE compilation.
+/// This makes imported functions available during main module compilation.
+pub fn link_dependency_modules(&mut self) {
+    use inkwell::memory_buffer::MemoryBuffer;
+
+    if let Some(ref wms_arc) = self.wms {
+        let wms = wms_arc.lock().unwrap();
+        let cache_guard = wms.get_cache();
+
+        for (name, dep) in cache_guard.iter() {
+            // Skip linking the main module itself
+            if name == "main" || name == "src/main" || name.ends_with("/main") {
+                println!("⚙️ Skipping self-link of main module ({name})");
+                continue;
+            }
+
+            if let Some(ref ir_text) = dep.llvm_ir {
+                println!("🔗 [link] Importing compiled submodule: {}", name);
+                let mem_buf = MemoryBuffer::create_from_memory_range_copy(ir_text.as_bytes(), name);
+
+                match self.context.create_module_from_ir(mem_buf) {
+                    Ok(submod) => {
+                        if submod.get_first_function().is_none() {
+                            println!("⚠️ Skipping empty submodule '{}'", name);
+                            continue;
+                        }
+                        if let Err(e) = self.module.link_in_module(submod) {
+                            eprintln!("❌ Failed to link submodule {name}: {e:?}");
+                        } else {
+                            println!("✅ Successfully linked submodule: {}", name);
+                            // Debug: show functions in the module after linking
+                            print!("🔍 [debug] Functions now in module: ");
+                            let mut func_names = Vec::new();
+                            let mut func_opt = self.module.get_first_function();
+                            while let Some(func) = func_opt {
+                                func_names.push(func.get_name().to_str().unwrap().to_string());
+                                func_opt = func.get_next_function();
+                            }
+                            println!("{}", func_names.join(", "));
+                        }
+                    }
+                    Err(e) => eprintln!("❌ Failed to parse IR for submodule {name}: {e:?}"),
+                }
+            } else {
+                eprintln!("⚠️ Submodule '{}' has no LLVM IR; did it compile successfully?", name);
+            }
+        }
+    }
+}
+
 /// Create main(), compile nodes, and return i32.
 pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     // === Pre-pass: Compile entities and type aliases first (BEFORE module check) ===
@@ -3331,7 +3423,20 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
 
         // Just compile function bodies; no entrypoint creation
         for node in nodes {
-            if let Node::Expr(Expr::Funcy { name, params, body, is_async, params_patterns, .. }) = node {
+            // Handle both direct function expressions and exported functions
+            let funcy_expr = match node {
+                Node::Expr(e @ Expr::Funcy { .. }) => Some(e),
+                Node::Export { item, .. } => {
+                    if let Node::Expr(e @ Expr::Funcy { .. }) = &**item {
+                        Some(e)
+                    } else {
+                        None
+                    }
+                }
+                _ => None,
+            };
+
+            if let Some(Expr::Funcy { name, params, body, is_async, params_patterns, .. }) = funcy_expr {
                 if *is_async {
                     self.compile_async_funcy(name, params, body);
                 } else {
@@ -3383,8 +3488,10 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
     println!("🔗 [wms] Collecting exports from cached modules...");
     resolver.collect_exports(&wms);
 
-    println!("🔗 [wms] Applying imports into current module...");
-    resolver.apply_imports(&mut self.module, &wms);
+    // NOTE: We do NOT call apply_imports() here because LLVM IR linking already
+    // resolves all symbols from linked W++ modules. Creating duplicate declarations
+    // with incorrect signatures causes segfaults.
+    println!("🔗 [wms] Skipping apply_imports() - LLVM IR linker handles symbol resolution");
 }
 
   // === Predeclare functions ===
@@ -3462,7 +3569,12 @@ fn infer_return_type<'ctx>(
             "string" | "ptr" => codegen.context.i8_type().ptr_type(AddressSpace::default()).into(),
             _ => codegen.i32_type.into(),
         },
-        Expr::BinaryOp { left, right, .. } => {
+        Expr::BinaryOp { left, right, op } => {
+            // Comparison and logical operators return bool
+            if ["==", "!=", "<", ">", "<=", ">=", "and", "or"].contains(&op.as_str()) {
+                return codegen.context.bool_type().into();
+            }
+
             let l = infer_return_type(codegen, left, locals);
             let r = infer_return_type(codegen, right, locals);
             if l.is_float_type() || r.is_float_type() {
@@ -3488,9 +3600,11 @@ fn infer_return_type<'ctx>(
 let mut inferred_ret_ty = self.i32_type.as_basic_type_enum(); // default
 let local_params: std::collections::HashSet<String> = params.iter().cloned().collect();
 
+println!("🔍 [type-infer] Inferring return type for '{}' with {} body statements", name, body.len());
 for stmt in body {
     if let Node::Expr(Expr::Return(Some(inner))) = stmt {
         inferred_ret_ty = infer_return_type(self, inner, &local_params);
+        println!("🔍 [type-infer] Function '{}' returns type: {:?}", name, inferred_ret_ty);
     }
 }
 
@@ -4482,10 +4596,63 @@ let final_param_types = if let Some(overrides) = param_override {
     format!("{}__{}", name, param_type_names.join("_"))
 };
 
+    // === Step 4.5: Infer return type from function body ===
+    fn infer_return_type<'ctx>(
+        codegen: &Codegen<'ctx>,
+        expr: &Expr,
+        locals: &std::collections::HashSet<String>,
+    ) -> BasicTypeEnum<'ctx> {
+        match expr {
+            Expr::TypedLiteral { ty, .. } => match ty.as_str() {
+                "f32" | "f64" => codegen.context.f32_type().into(),
+                "bool" => codegen.context.bool_type().into(),
+                "string" | "ptr" => codegen.context.i8_type().ptr_type(AddressSpace::default()).into(),
+                _ => codegen.i32_type.into(),
+            },
+            Expr::BinaryOp { left, right, op } => {
+                // Comparison and logical operators return bool
+                if ["==", "!=", "<", ">", "<=", ">=", "and", "or"].contains(&op.as_str()) {
+                    return codegen.context.bool_type().into();
+                }
+
+                let l = infer_return_type(codegen, left, locals);
+                let r = infer_return_type(codegen, right, locals);
+                if l.is_float_type() || r.is_float_type() {
+                    codegen.context.f32_type().into()
+                } else if l.is_int_type() && r.is_int_type() {
+                    codegen.i32_type.into()
+                } else {
+                    l
+                }
+            }
+            Expr::Variable(name) => {
+                if locals.contains(name) {
+                    codegen.i32_type.into() // assume int for local vars
+                } else {
+                    codegen.i32_type.into()
+                }
+            }
+            _ => codegen.i32_type.into(),
+        }
+    }
+
+    let mut inferred_ret_ty: Option<BasicTypeEnum<'ctx>> = None;
+    let local_params: std::collections::HashSet<String> = params.iter().cloned().collect();
+
+    for stmt in body {
+        if let Node::Expr(Expr::Return(Some(inner))) = stmt {
+            inferred_ret_ty = Some(infer_return_type(self, inner, &local_params));
+            println!("🔍 [type-infer] Function '{}' inferred return type: {:?}", name, inferred_ret_ty);
+            break;
+        }
+    }
 
     // === Step 5: Create or fetch LLVM function ===
     // === 🧮 Step 5: Create correct LLVM function type ===
-let fn_type = if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
+let fn_type = if let Some(ret_ty) = inferred_ret_ty {
+    // Use inferred return type
+    ret_ty.fn_type(&final_param_types, false)
+} else if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
     // 🧠 String overload returns a pointer
     self.context
         .i8_type()

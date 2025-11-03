@@ -7,6 +7,7 @@ pub mod module_system;
 pub mod export_resolver;
 
 use std::ffi::CString;
+use std::io::Write;
 
 use inkwell::context::Context;
 use inkwell::execution_engine::ExecutionEngine;
@@ -397,15 +398,12 @@ println!("🪶 [debug3] JIT engine created successfully");
     println!("🪶 [debug4] Runtime symbols bound successfully");
 
     // === Link cross-module imports (from WMS) ===
-    if let (Some(wms_arc), Some(resolver_arc)) = (&codegen.wms, &codegen.resolver) {
-        println!("🧩 Linking runtime imports across modules...");
-
-        let wms = wms_arc.lock().unwrap();
-        let mut resolver = resolver_arc.lock().unwrap();
-        resolver.link_imports_runtime(&engine, module, &wms);
+    // NOTE: Runtime linking is not needed because LLVM IR linking already resolved all symbols
+    // The JIT engine will automatically find functions from linked modules
+    if let (Some(_wms_arc), Some(_resolver_arc)) = (&codegen.wms, &codegen.resolver) {
+        println!("🧩 Skipping runtime import linking (LLVM IR already linked all symbols)");
         #[cfg(debug_assertions)]
-        println!("🪶 [debug5] Finished linking runtime imports across modules");
-
+        println!("🪶 [debug5] Cross-module symbols resolved by LLVM linker");
     }
     #[cfg(debug_assertions)]
     println!("🪶 [debug6] Searching for entrypoint (bootstrap_main / main / main_async)");
@@ -462,13 +460,29 @@ println!("{}", module.print_to_string().to_string());
     // }
     #[cfg(debug_assertions)]
     println!("🧠 [jit] About to execute entrypoint `{entry_name}`");
+
+    eprintln!("🔍 [debug] BEFORE unsafe block");
+    std::io::stderr().flush().unwrap();
+
     // === Run the entrypoint ===
-    
+
     unsafe {
+        eprintln!("🔍 [debug] INSIDE unsafe block, about to call get_function_address");
+        std::io::stderr().flush().unwrap();
+
         let addr = engine
             .get_function_address(entry_name)
             .map_err(|_| format!("❌ No entrypoint function found: {entry_name}"))?;
+
+        eprintln!("🔍 [debug] Function address: 0x{:x}", addr);
+        eprintln!("🔍 [debug] About to transmute and call function...");
+        std::io::stderr().flush().unwrap();
+
         let func: extern "C" fn() -> i32 = std::mem::transmute(addr);
+
+        eprintln!("🔍 [debug] Transmute successful, calling function NOW...");
+        std::io::stderr().flush().unwrap();
+
         let result = func();
         println!("✅ [jit] Returned cleanly from `{entry_name}` with result = {result}");
         println!("🏁 Finished running {entry_name}, result = {result}");

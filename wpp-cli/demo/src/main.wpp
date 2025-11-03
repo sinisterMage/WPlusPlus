@@ -1,57 +1,9 @@
-// W++ Thread System Test
-// Tests thread spawning with auto-join on drop
-
-func worker1() {
-    print("  [Thread 1] Running...")
-    return 0
-}
-
-func worker2() {
-    print("  [Thread 2] Running...")
-    return 0
-}
-
-func worker3() {
-    print("  [Thread 3] Running...")
-    return 0
-}
+// Simple test for JSON import
+import { isValid } from "json"
 
 func main() {
-    print("=== W++ Thread System Test ===")
-    print("")
-
-    // Test 1: Single thread (auto-joins when handle drops)
-    print("--- Test 1: Single Thread ---")
-    let t1 = useThread(worker1)
-    print("Thread spawned, waiting for completion...")
-    // t1 will auto-join when it goes out of scope at end of main
-    print("")
-
-    // Test 2: Sequential threads
-    print("--- Test 2: Sequential Threads ---")
-    let t2 = useThread(worker1)
-    let t3 = useThread(worker2)
-    let t4 = useThread(worker3)
-    print("3 threads spawned sequentially")
-    print("")
-
-    // Test 3: Stress test - spawn many threads
-    print("--- Test 3: Stress Test (10 threads) ---")
-    let ta = useThread(worker1)
-    let tb = useThread(worker1)
-    let tc = useThread(worker2)
-    let td = useThread(worker2)
-    let te = useThread(worker3)
-    let tf = useThread(worker3)
-    let tg = useThread(worker1)
-    let th = useThread(worker2)
-    let ti = useThread(worker3)
-    let tj = useThread(worker1)
-    print("10 threads spawned!")
-    print("")
-
-    print("=== Test Complete! ===")
-    print("All threads will auto-join on program exit")
-    print("No manual join needed - testing memory leak fixes...")
-    return 0
+    print("Testing JSON isValid import")
+    let result = isValid("{\"test\": 123}")
+    print("Result:", result)
+    print("Done!")
 }

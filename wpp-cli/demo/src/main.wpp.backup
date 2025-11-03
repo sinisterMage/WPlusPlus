@@ -1,0 +1,103 @@
+// W++ JSON Library Demo
+// Demonstrates all JSON functionality
+
+import { parse, stringify, pretty, validate, isValid, get, getString, getInt, merge } from "json"
+
+func main() {
+    print("=== W++ JSON Library Demo ===")
+    print("")
+
+    // ========================================
+    // 1. JSON Parsing and Validation
+    // ========================================
+    print("--- JSON Parsing & Validation ---")
+
+    let valid_json = "{\"name\":\"Alice\",\"age\":30,\"city\":\"NYC\"}"
+    let invalid_json = "{name: Alice}"  // Missing quotes
+
+    print("Valid JSON:", valid_json)
+    print("Is valid?", isValid(valid_json))
+
+    print("Invalid JSON:", invalid_json)
+    print("Is valid?", isValid(invalid_json))
+    print("")
+
+    // ========================================
+    // 2. JSON Stringify and Pretty Print
+    // ========================================
+    print("--- JSON Stringify & Pretty Print ---")
+
+    let user_json = "{\"name\":\"Bob\",\"age\":25,\"hobbies\":[\"coding\",\"gaming\"]}"
+
+    print("Minified:")
+    print(stringify(user_json))
+    print("")
+
+    print("Pretty (2 spaces):")
+    print(pretty(user_json, 2))
+    print("")
+
+    print("Pretty (4 spaces):")
+    print(pretty(user_json, 4))
+    print("")
+
+    // ========================================
+    // 3. JSON Query Operations
+    // ========================================
+    print("--- JSON Query Operations ---")
+
+    let person = "{\"user\":{\"name\":\"Charlie\",\"email\":\"charlie@example.com\"},\"score\":100}"
+
+    print("Full JSON:", person)
+    print("")
+
+    print("Get nested value (user.name):")
+    print(get(person, "user.name"))
+    print("")
+
+    print("Get string value (direct):")
+    let simple = "{\"title\":\"Hello World\",\"count\":42}"
+    print("Title:", getString(simple, "title"))
+    print("Count:", getInt(simple, "count"))
+    print("")
+
+    // ========================================
+    // 4. JSON Merge
+    // ========================================
+    print("--- JSON Merge ---")
+
+    let obj1 = "{\"a\":1,\"b\":2}"
+    let obj2 = "{\"b\":3,\"c\":4}"
+
+    print("Object 1:", obj1)
+    print("Object 2:", obj2)
+    print("Merged:", pretty(merge(obj1, obj2), 2))
+    print("")
+
+    // ========================================
+    // 5. Complex Nested JSON
+    // ========================================
+    print("--- Complex Nested JSON ---")
+
+    let complex = "{\"users\":[{\"id\":1,\"name\":\"Alice\"},{\"id\":2,\"name\":\"Bob\"}],\"metadata\":{\"version\":\"1.0\",\"count\":2}}"
+
+    print("Complex JSON (pretty):")
+    print(pretty(complex, 2))
+    print("")
+
+    print("Get metadata.version:")
+    print(get(complex, "metadata.version"))
+    print("")
+
+    // ========================================
+    // 6. Error Handling
+    // ========================================
+    print("--- Error Handling ---")
+
+    let malformed = "{broken json"
+    print("Malformed JSON:", malformed)
+    print("Validation result:", validate(malformed))
+    print("")
+
+    print("=== Demo Complete ===")
+}

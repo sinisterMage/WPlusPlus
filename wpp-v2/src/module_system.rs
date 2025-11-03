@@ -127,13 +127,19 @@ let source = std::fs::read_to_string(&resolved_path)
         });
     }
 
-    // === 6️⃣ Compile this module to LLVM IR ===
-    let context = Context::create();
-    let mut codegen = Codegen::new(&context, name, "./src");
+    // === 6️⃣ Compile this module to LLVM IR (skip main module body compilation) ===
+    let ir_str = if name == "main" {
+        // For main module, we only parse and cache the AST
+        // The actual compilation will happen in the CLI with the real codegen
+        println!("⚙️ [wms] Skipping main module compilation (will be done by CLI)");
+        None
+    } else {
+        // For dependencies, compile to IR as usual
+        let context = Context::create();
+        let mut codegen = Codegen::new(&context, name, "./src");
+        codegen.compile_main(&ast);
 
-    codegen.compile_main(&ast);
-
-    if name != "main" {
+        // Neutralize duplicate globals for submodules
         for gname in ["_wpp_exc_flag", "_wpp_exc_i32", "_wpp_exc_str"] {
             if let Some(global) = codegen.module.get_global(gname) {
                 // Force external linkage and remove its initializer
@@ -150,9 +156,9 @@ let source = std::fs::read_to_string(&resolved_path)
                 );
             }
         }
-    }
 
-    let ir_str = Some(codegen.module.print_to_string().to_string());
+        Some(codegen.module.print_to_string().to_string())
+    };
 
     // === 7️⃣ Cache compiled result ===
     let data = ModuleData {

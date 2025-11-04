@@ -28,8 +28,13 @@ fn main() {
     let path = &args[1];
     let emit_ir = args.iter().any(|a| a == "--emit-ir");
 
-    let source = fs::read_to_string(path)
-        .unwrap_or_else(|_| panic!("Failed to read source file: {}", path));
+    let source = match fs::read_to_string(path) {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("❌ Failed to read source file {}: {}", path, e);
+            return;
+        }
+    };
 
     // === Lexing ===
     let mut lexer = Lexer::new(&source);
@@ -58,7 +63,7 @@ let mut codegen = Codegen::new(&context, "wpp_module", "./src");
 let main_fn = codegen.compile_main(&ast);
 if let Err(msg) = codegen.module.verify() {
     eprintln!("❌ LLVM Verification failed:\n{}", msg.to_string());
-    panic!("LLVM IR verification failed!");
+    return;
 }
 // 🧠 DEBUG: Dump the LLVM IR to console and file
 println!("\n🔬 === LLVM IR Dump ===");

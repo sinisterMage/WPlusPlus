@@ -73,6 +73,9 @@ enum Commands {
     /// Enable LLVM optimization passes
     #[arg(short, long)]
     opt: bool,
+    /// Enable verbose debug output
+    #[arg(long)]
+    debug: bool,
     
 },
 
@@ -123,10 +126,15 @@ enum Commands {
 }
 
 fn main() {
+    // Replace default panic hook with quiet one; our code prints friendly errors
+    if std::env::var("WPP_DEBUG").ok().as_deref() != Some("1") {
+        std::panic::set_hook(Box::new(|_| {}));
+    }
     let cli = Cli::parse();
 
     match cli.command {
-        Commands::Run { file, opt } => {
+        Commands::Run { file, opt, debug } => {
+    if debug { std::env::set_var("WPP_DEBUG", "1"); }
     if let Some(f) = file {
         run_file_command(&f, opt);
     } else {
@@ -529,13 +537,17 @@ match WppConfig::load(&config_path) {
 
     match fs::read_to_string(file_path) {
         Ok(source) => {
-            // Use the directory of the file as the base for codegen (for any relative needs)
             let base_dir_buf = file_path.parent().map(|p| p.to_path_buf());
             let base_dir = base_dir_buf
                 .as_ref()
                 .and_then(|p| p.to_str())
                 .unwrap_or(".");
-            run_single_source(&source, base_dir, optimize);
+
+            // Catch parser/codegen panics and present friendly errors
+            let result = std::panic::catch_unwind(|| run_single_source(&source, base_dir, optimize));
+            if let Err(panic) = result {
+                print_pretty_panic(panic);
+            }
         }
         Err(e) => eprintln!("❌ Could not read file: {e}"),
     }
@@ -742,7 +754,9 @@ main = do
     println!("   {}", format!("cd {} && ingot run src/main.wpp", project_name).bright_yellow());
 }
 fn run_with_codegen(_source: &str, optimize: bool) {
-    println!("🎯 [CLI] Entered run_with_codegen function");
+    if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+        println!("🎯 [CLI] Entered run_with_codegen function");
+    }
     // 🧠 Step 1: Create LLVM context once
     let context = Context::create();
     let project_root = std::env::current_dir().unwrap();
@@ -753,17 +767,28 @@ fn run_with_codegen(_source: &str, optimize: bool) {
     wms.clear_cache();
 
     // 🧩 Step 3: Load and compile all modules (WMS compiles 'main' internally)
-    println!("🎯 [CLI] About to load 'main' module via WMS");
-    wms.load_module("main").expect("Failed to load main module");
-    println!("🎯 [CLI] Finished loading 'main' module");
+    if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+        println!("🎯 [CLI] About to load 'main' module via WMS");
+    }
+    if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| wms.load_module("main"))) {
+        print_pretty_panic(e);
+        return;
+    }
+    if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+        println!("🎯 [CLI] Finished loading 'main' module");
+    }
 
     // 🧩 Step 4: Collect exports across cached modules
     let mut resolver = ExportResolver::new();
-    println!("🔍 [CLI] About to collect exports from WMS with {} cached modules", wms.get_cache().len());
+    if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+        println!("🔍 [CLI] About to collect exports from WMS with {} cached modules", wms.get_cache().len());
+    }
     #[cfg(debug_assertions)]
     println!("📦 [debug] WMS cache keys: {:?}", wms.get_cache().keys());
     resolver.collect_exports(&wms);
-    println!("🔍 [CLI] Finished collecting exports, resolver has {} symbols", resolver.global_table.len());
+    if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+        println!("🔍 [CLI] Finished collecting exports, resolver has {} symbols", resolver.global_table.len());
+    }
 
     // ⚙️ Step 5: Load main module from source and parse
     let main_source_path = project_root.join("src/main.wpp");
@@ -781,12 +806,19 @@ fn run_with_codegen(_source: &str, optimize: bool) {
     codegen.resolver = Some(Arc::new(Mutex::new(resolver)));
 
     // 🔗 Step 5.5: Link dependency modules BEFORE compiling main
-    println!("🔗 Linking dependency modules into main context...");
+    if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+        println!("🔗 Linking dependency modules into main context...");
+    }
     codegen.link_dependency_modules();
 
     // 🧩 Step 6: Compile main module with exports available
-    println!("🧩 Compiling main module with resolved exports...");
-    codegen.compile_main(&main_ast);
+    if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+        println!("🧩 Compiling main module with resolved exports...");
+    }
+    if let Err(e) = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| codegen.compile_main(&main_ast))) {
+        print_pretty_panic(e);
+        return;
+    }
 
     // 🧠 Step 7: Run via JIT
     match run_file(&mut codegen, optimize) {
@@ -815,6 +847,16 @@ fn run_single_source(source: &str, base_dir: &str, optimize: bool) {
     match wpp_v2::run_file(&mut codegen, optimize) {
         Ok(_) => println!("✅ Execution finished successfully."),
         Err(e) => eprintln!("❌ Error during execution: {e}"),
+    }
+}
+
+fn print_pretty_panic(panic: Box<dyn std::any::Any + Send>) {
+    if let Some(msg) = panic.downcast_ref::<&str>() {
+        eprintln!("❌ {}", msg);
+    } else if let Some(msg) = panic.downcast_ref::<String>() {
+        eprintln!("❌ {}", msg);
+    } else {
+        eprintln!("❌ An internal error occurred (panic). Run with RUST_BACKTRACE=1 for details.");
     }
 }
 

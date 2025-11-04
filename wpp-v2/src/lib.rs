@@ -26,6 +26,16 @@ use crate::parser::Parser;
 use crate::runtime::thread::{wpp_mutex_lock, wpp_mutex_new, wpp_mutex_unlock, wpp_thread_join, wpp_thread_join_all, wpp_thread_poll, wpp_thread_spawn_gc, wpp_thread_state_get, wpp_thread_state_new, wpp_thread_state_set};
 use runtime::*;
 
+// Simple debug macro gated by WPP_DEBUG env var
+#[macro_export]
+macro_rules! wpp_debug {
+    ($($arg:tt)*) => {{
+        if std::env::var("WPP_DEBUG").map(|v| v == "1" || v.eq_ignore_ascii_case("true")).unwrap_or(false) {
+            println!($($arg)*);
+        }
+    }};
+}
+
 /// Link to static runtime (optional)
 #[link(name = "wpp_runtime", kind = "static")]
 unsafe extern "C" {
@@ -36,12 +46,12 @@ unsafe extern "C" {
     pub fn wpp_int_to_string(value: i32) -> *const std::os::raw::c_char;
 }
 unsafe fn remove_global(global: &GlobalValue) {
-    let raw: LLVMValueRef = global.as_value_ref(); // ✅ correct LLVM type
-    LLVMDeleteGlobal(raw); // ✅ correct pointer type
+    let raw: LLVMValueRef = global.as_value_ref();
+    unsafe { LLVMDeleteGlobal(raw) };
 }
 unsafe fn add_symbol(name: &str, addr: usize) {
     let cname = CString::new(name).unwrap();
-    LLVMAddSymbol(cname.as_ptr(), addr as *mut _);
+    unsafe { LLVMAddSymbol(cname.as_ptr(), addr as *mut _) };
 }
 /// Ensure all external runtime functions are declared before JIT creation
 fn declare_runtime_externals<'ctx>(context: &'ctx Context, module: &Module<'ctx>) {
@@ -340,11 +350,9 @@ pub fn run_file(codegen: &mut Codegen, optimize: bool) -> Result<(), String> {
             }
         }
     }
-    #[cfg(debug_assertions)]
-    println!("🪶 [debug1] Finished merging and linking modules — about to declare externals");
+    wpp_debug!("🪶 [debug1] Finished merging and linking modules — about to declare externals");
     declare_runtime_externals(context, module);
-    #[cfg(debug_assertions)]
-    println!("🪶 [debug2] Declared externals successfully — creating JIT engine next");
+    wpp_debug!("🪶 [debug2] Declared externals successfully — creating JIT engine next");
     register_all_runtime_symbols();
 
 
@@ -365,8 +373,7 @@ pub fn run_file(codegen: &mut Codegen, optimize: bool) -> Result<(), String> {
     }
 }
 
-    #[cfg(debug_assertions)]
-println!("🪶 [debug3] JIT engine created successfully");
+    wpp_debug!("🪶 [debug3] JIT engine created successfully");
     // TEMPORARILY COMMENTED OUT FOR DEBUGGING
     // for func in module.get_functions() {
     // if let Ok(name) = func.get_name().to_str() {
@@ -380,33 +387,30 @@ println!("🪶 [debug3] JIT engine created successfully");
     // }
     // }
 
-    println!("🪶 [debug3.1] About to set engine globally");
+    wpp_debug!("🪶 [debug3.1] About to set engine globally");
     std::io::Write::flush(&mut std::io::stdout()).ok();
     unsafe {
-        println!("🪶 [debug3.1a] Inside unsafe block");
+        wpp_debug!("🪶 [debug3.1a] Inside unsafe block");
         std::io::Write::flush(&mut std::io::stdout()).ok();
         crate::runtime::set_engine(std::mem::transmute::<_, ExecutionEngine<'static>>(engine.clone()));
-        println!("🪶 [debug3.1b] set_engine returned");
+        wpp_debug!("🪶 [debug3.1b] set_engine returned");
         std::io::Write::flush(&mut std::io::stdout()).ok();
     }
-    println!("🪶 [debug3.2] Engine set, now registering runtime symbols");
+    wpp_debug!("🪶 [debug3.2] Engine set, now registering runtime symbols");
     std::io::Write::flush(&mut std::io::stdout()).ok();
 
     // === Register runtime bindings ===
     register_runtime_symbols(&engine, module);
-    #[cfg(debug_assertions)]
-    println!("🪶 [debug4] Runtime symbols bound successfully");
+    wpp_debug!("🪶 [debug4] Runtime symbols bound successfully");
 
     // === Link cross-module imports (from WMS) ===
     // NOTE: Runtime linking is not needed because LLVM IR linking already resolved all symbols
     // The JIT engine will automatically find functions from linked modules
     if let (Some(_wms_arc), Some(_resolver_arc)) = (&codegen.wms, &codegen.resolver) {
         println!("🧩 Skipping runtime import linking (LLVM IR already linked all symbols)");
-        #[cfg(debug_assertions)]
-        println!("🪶 [debug5] Cross-module symbols resolved by LLVM linker");
+        wpp_debug!("🪶 [debug5] Cross-module symbols resolved by LLVM linker");
     }
-    #[cfg(debug_assertions)]
-    println!("🪶 [debug6] Searching for entrypoint (bootstrap_main / main / main_async)");
+    wpp_debug!("🪶 [debug6] Searching for entrypoint (bootstrap_main / main / main_async)");
     // === Find and run entrypoint ===
     let entry_name = if module.get_function("bootstrap_main").is_some() {
         "bootstrap_main"
@@ -418,8 +422,7 @@ println!("🪶 [debug3] JIT engine created successfully");
         eprintln!("❌ No valid entrypoint found (expected main, main_async, or bootstrap_main)");
         return Err("❌ No entrypoint function found in final linked module".into());
     };
-    #[cfg(debug_assertions)]
-    println!("🪶 [debug7] Entrypoint resolved to {entry_name}");
+    wpp_debug!("🪶 [debug7] Entrypoint resolved to {entry_name}");
     #[cfg(debug_assertions)]
     println!("🔍 [jit] Listing all LLVM functions before execution:");
     // TEMPORARILY COMMENTED - causes segfault
@@ -432,9 +435,9 @@ println!("🪶 [debug3] JIT engine created successfully");
 
     if let Some(wms_arc) = &codegen.wms {
         let wms = wms_arc.lock().unwrap();
-        println!("🧩 WMS available with {} cached modules", wms.get_cache().len());
+        wpp_debug!("🧩 WMS available with {} cached modules", wms.get_cache().len());
     } else {
-        println!("❌ No WMS attached to codegen at runtime!");
+        wpp_debug!("❌ No WMS attached to codegen at runtime!");
     }
 
     // === Debug entrypoint signature ===
@@ -458,37 +461,42 @@ println!("{}", module.print_to_string().to_string());
     //         Err(_) => println!("❌ Missing runtime binding for {name}"),
     //     }
     // }
-    #[cfg(debug_assertions)]
-    println!("🧠 [jit] About to execute entrypoint `{entry_name}`");
-
-    eprintln!("🔍 [debug] BEFORE unsafe block");
-    std::io::stderr().flush().unwrap();
+    wpp_debug!("🧠 [jit] About to execute entrypoint `{entry_name}`");
+    if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+        eprintln!("🔍 [debug] BEFORE unsafe block");
+        std::io::stderr().flush().unwrap();
+    }
 
     // === Run the entrypoint ===
 
     unsafe {
-        eprintln!("🔍 [debug] INSIDE unsafe block, about to call get_function_address");
-        std::io::stderr().flush().unwrap();
+        if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+            eprintln!("🔍 [debug] INSIDE unsafe block, about to call get_function_address");
+            std::io::stderr().flush().unwrap();
+        }
 
         let addr = engine
             .get_function_address(entry_name)
             .map_err(|_| format!("❌ No entrypoint function found: {entry_name}"))?;
 
-        eprintln!("🔍 [debug] Function address: 0x{:x}", addr);
-        eprintln!("🔍 [debug] About to transmute and call function...");
-        std::io::stderr().flush().unwrap();
+        if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+            eprintln!("🔍 [debug] Function address: 0x{:x}", addr);
+            eprintln!("🔍 [debug] About to transmute and call function...");
+            std::io::stderr().flush().unwrap();
+        }
 
         let func: extern "C" fn() -> i32 = std::mem::transmute(addr);
 
-        eprintln!("🔍 [debug] Transmute successful, calling function NOW...");
-        std::io::stderr().flush().unwrap();
+        if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+            eprintln!("🔍 [debug] Transmute successful, calling function NOW...");
+            std::io::stderr().flush().unwrap();
+        }
 
         let result = func();
         println!("✅ [jit] Returned cleanly from `{entry_name}` with result = {result}");
         println!("🏁 Finished running {entry_name}, result = {result}");
     }
-    #[cfg(debug_assertions)]
-    println!("🪶 [debug10] run_file() completed successfully without panic");
+    wpp_debug!("🪶 [debug10] run_file() completed successfully without panic");
     Ok(())
 }
 

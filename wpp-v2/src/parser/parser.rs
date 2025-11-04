@@ -26,6 +26,15 @@ pub fn parse(source: &str) -> Result<Vec<crate::ast::Node>, String> {
     Ok(ast)
 }
 impl Parser {
+    #[inline(never)]
+    fn error_here(&self, msg: &str) -> ! {
+        let tok = self.tokens.get(self.pos);
+        let (line, col, got) = match tok {
+            Some(t) => (t.line, t.col, format!("{:?}", t.kind)),
+            None => (0, 0, "<eof>".to_string()),
+        };
+        panic!("Parse error at line {}, col {}: {}. Got {}", line, col, msg, got);
+    }
     pub fn new(tokens: Vec<Token>) -> Self {
         Self { tokens, pos: 0, functions: HashMap::new(),
  }
@@ -85,7 +94,7 @@ fn expect_symbol(&mut self, sym: &str) {
     if self.check(TokenKind::Symbol(sym.to_string())) {
         self.advance();
     } else {
-        panic!("Expected symbol '{}'", sym);
+        self.error_here(&format!("Expected symbol '{}'", sym));
     }
 }
 
@@ -710,7 +719,9 @@ let name = match self.advance().clone() {
                     }
                 }
 
-                println!("🧩 Parsed typed parameter: {}: {:?}", param_name, param_type);
+                if std::env::var("WPP_DEBUG").ok().as_deref() == Some("1") {
+                    println!("🧩 Parsed typed parameter: {}: {:?}", param_name, param_type);
+                }
             }
 
             // Store parameter pattern
@@ -1251,7 +1262,7 @@ if let TokenKind::Keyword(k) = self.peek() {
             },
 
             other => {
-                panic!("Expected type annotation, got {:?}", other);
+                self.error_here(&format!("Expected type annotation, got {:?}", other))
             }
         }
     }
@@ -1262,7 +1273,7 @@ if let TokenKind::Keyword(k) = self.peek() {
         if self.check(kind.clone()) {
             self.advance();
         } else {
-            panic!("{}", msg);
+            self.error_here(msg);
         }
     }
 }
@@ -1341,8 +1352,4 @@ fn parse_object_literal(&mut self) -> Expr {
 }
 
 }
-
-
-
-
 

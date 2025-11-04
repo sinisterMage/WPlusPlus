@@ -47,35 +47,40 @@ static ENGINE: OnceCell<EnginePtr> = OnceCell::new();
 static TASK_QUEUE: Lazy<Mutex<VecDeque<Arc<Task>>>> = Lazy::new(|| Mutex::new(VecDeque::new()));
 static LAST_RESULT: Lazy<Mutex<Option<i32>>> = Lazy::new(|| Mutex::new(None));
 
+fn debug_enabled() -> bool {
+    std::env::var("WPP_DEBUG").map(|v| v == "1" || v.eq_ignore_ascii_case("true")).unwrap_or(false)
+}
+
 /// === ENGINE ===
 pub fn set_engine(engine: ExecutionEngine<'static>) {
     let boxed = Box::new(engine);
     let ptr = Box::into_raw(boxed);
 
     if ENGINE.set(EnginePtr(ptr)).is_err() {
-        // Engine was already set - this is fine, just use the new one
-        println!("⚠️ [runtime] ENGINE was already initialized, keeping existing engine");
+        if debug_enabled() { println!("⚠️ [runtime] ENGINE was already initialized, keeping existing engine"); }
         // Clean up the new engine we tried to set
         unsafe { drop(Box::from_raw(ptr)); }
     } else {
-        println!("🧠 [runtime] ENGINE stored globally");
+        if debug_enabled() { println!("🧠 [runtime] ENGINE stored globally"); }
     }
 }
 
 pub unsafe fn get_engine<'a>() -> &'a ExecutionEngine<'static> {
-    let EnginePtr(ptr) = ENGINE.get().expect("ENGINE not initialized");
-    &**ptr
+    let EnginePtr(ptr) = *ENGINE.get().expect("ENGINE not initialized");
+    let nn = std::ptr::NonNull::new(ptr).expect("ENGINE pointer was null");
+    let r: &ExecutionEngine<'static> = unsafe { nn.as_ref() };
+    r
 }
 
 /// === SPAWN ===
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_spawn(ptr: *const ()) {
     if ptr.is_null() {
-        println!("⚠️ [runtime] wpp_spawn received null pointer");
+        if debug_enabled() { println!("⚠️ [runtime] wpp_spawn received null pointer"); }
         return;
     }
 
-    println!("🚀 [runtime] Spawning async task {:?}", ptr);
+    if debug_enabled() { println!("🚀 [runtime] Spawning async task {:?}", ptr); }
 
     let task = Task::new(ptr);
     TASK_QUEUE.lock().unwrap().push_back(task);
@@ -90,7 +95,7 @@ pub extern "C" fn wpp_spawn(ptr: *const ()) {
 /// Yield cooperatively without blocking caller
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_yield() {
-    println!("😴 [runtime] Yield requested");
+    if debug_enabled() { println!("😴 [runtime] Yield requested"); }
 
     // Move current task to the back of the queue
     let mut queue = TASK_QUEUE.lock().unwrap();
@@ -110,25 +115,27 @@ pub extern "C" fn wpp_yield() {
 /// === RETURN ===
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_return(value: *const c_void, type_tag: i32) {
-    unsafe {
-        match type_tag {
-            1 => {
-                let ptr = value as *const i32;
-                println!("✅ [runtime] Returned int: {}", *ptr);
+    if debug_enabled() {
+        unsafe {
+            match type_tag {
+                1 => {
+                    let ptr = value as *const i32;
+                    println!("✅ [runtime] Returned int: {}", *ptr);
+                }
+                2 => {
+                    let ptr = value as *const f32;
+                    println!("✅ [runtime] Returned float: {}", *ptr);
+                }
+                3 => {
+                    let ptr = value as *const bool;
+                    println!("✅ [runtime] Returned bool: {}", *ptr);
+                }
+                4 => {
+                    let ptr = value as *const *const i8;
+                    println!("✅ [runtime] Returned string pointer: {:?}", *ptr);
+                }
+                _ => println!("⚠️ [runtime] Unknown return type tag: {type_tag}"),
             }
-            2 => {
-                let ptr = value as *const f32;
-                println!("✅ [runtime] Returned float: {}", *ptr);
-            }
-            3 => {
-                let ptr = value as *const bool;
-                println!("✅ [runtime] Returned bool: {}", *ptr);
-            }
-            4 => {
-                let ptr = value as *const *const i8;
-                println!("✅ [runtime] Returned string pointer: {:?}", *ptr);
-            }
-            _ => println!("⚠️ [runtime] Unknown return type tag: {type_tag}"),
         }
     }
 
@@ -150,7 +157,7 @@ pub extern "C" fn wpp_return(value: *const c_void, type_tag: i32) {
 pub extern "C" fn wpp_get_last_result() -> i32 {
     let res = *LAST_RESULT.lock().unwrap();
     let val = res.unwrap_or(0);
-    println!("📦 [runtime] Fetched last async result = {}", val);
+    if debug_enabled() { println!("📦 [runtime] Fetched last async result = {}", val); }
     val
 }
 
@@ -171,7 +178,7 @@ fn schedule_next() {
     let mut queue = TASK_QUEUE.lock().unwrap();
 
     if queue.is_empty() {
-        println!("✅ [runtime] No more tasks to run");
+        if debug_enabled() { println!("✅ [runtime] No more tasks to run"); }
         return;
     }
 
@@ -179,11 +186,11 @@ fn schedule_next() {
 
     if task.is_finished() {
         let val = task.result.lock().unwrap().unwrap_or(0);
-        println!("🎯 [runtime] Task {:?} finished with {}", task.func, val);
+        if debug_enabled() { println!("🎯 [runtime] Task {:?} finished with {}", task.func, val); }
         return;
     }
 
-    println!("🔁 [runtime] Running task {:?}", task.func);
+    if debug_enabled() { println!("🔁 [runtime] Running task {:?}", task.func); }
 
     unsafe {
         let func: extern "C" fn() = mem::transmute(task.func);
@@ -209,7 +216,7 @@ fn schedule_next() {
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_shutdown() {
     TASK_QUEUE.lock().unwrap().clear();
-    println!("🧹 [runtime] Scheduler cleared all tasks, shutdown complete");
+    if debug_enabled() { println!("🧹 [runtime] Scheduler cleared all tasks, shutdown complete"); }
 }
 pub use crate::runtime::server::{register_endpoint, wpp_start_server};
 
@@ -229,7 +236,7 @@ where
 }
 #[unsafe(no_mangle)]
 pub extern "C" fn wpp_runtime_wait() {
-    println!("🕓 [runtime] Waiting for async background tasks (press Ctrl+C to stop)...");
+    if debug_enabled() { println!("🕓 [runtime] Waiting for async background tasks (press Ctrl+C to stop)..."); }
     loop {
         thread::sleep(Duration::from_secs(1));
     }

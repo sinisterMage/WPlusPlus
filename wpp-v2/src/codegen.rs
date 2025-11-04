@@ -175,7 +175,7 @@ impl<'ctx> Codegen<'ctx> {
     codegen.init_thread_support();
     codegen.init_mutex_support();
 
-    println!("🧠 [init] Codegen ready with multiple dispatch support");
+    crate::wpp_debug!("🧠 [init] Codegen ready with multiple dispatch support");
 
     // ✅ Return ready-to-use Codegen instance
     codegen
@@ -504,15 +504,15 @@ Expr::TypedLiteral { value, ty } => {
         // === Binary operation ===
         Expr::BinaryOp { left, op, right } => {
     if op == "=" {
-    println!("🧩 Detected assignment expression!");
+    crate::wpp_debug!("🧩 Detected assignment expression!");
 
     if let Expr::Variable(var_name) = left.as_ref() {
-        println!("➡️ Assigning to variable: {}", var_name);
+        crate::wpp_debug!("➡️ Assigning to variable: {}", var_name);
         let rhs_val = self.compile_expr(right.as_ref());
 
         // Lookup variable info (either local or global)
         if let Some(var) = self.vars.get(var_name).or_else(|| self.globals.get(var_name)) {
-            println!("🔍 Found variable {} (is_const = {})", var_name, var.is_const);
+            crate::wpp_debug!("🔍 Found variable {} (is_const = {})", var_name, var.is_const);
             if var.is_const {
                 panic!("❌ Cannot assign to constant variable '{}'", var_name);
             }
@@ -1634,7 +1634,7 @@ if let Some(var_info) = self.vars.get(name) {
         })
         .collect();
 
-    println!("💡 Inferred arg types for {}: {:?}", name, arg_types);
+    crate::wpp_debug!("💡 Inferred arg types for {}: {:?}", name, arg_types);
 
 // 🧠 Normalize for compatible overloads (f64 → f32, etc.)
 let normalized_arg_types: Vec<TypeDescriptor> = arg_types
@@ -1645,12 +1645,12 @@ let normalized_arg_types: Vec<TypeDescriptor> = arg_types
     })
     .collect();
 
-println!("💡 Normalized arg types for {}: {:?}", name, normalized_arg_types);
+crate::wpp_debug!("💡 Normalized arg types for {}: {:?}", name, normalized_arg_types);
 
 // 🕵️ Find best match using specificity ranking
 let mut sig_opt = None;
 if let Some(sigs) = self.reverse_func_index.get(name) {
-    println!("🔍 Available signatures for '{}': {:?}", name, sigs.iter().map(|s| &s.param_types).collect::<Vec<_>>());
+    crate::wpp_debug!("🔍 Available signatures for '{}': {:?}", name, sigs.iter().map(|s| &s.param_types).collect::<Vec<_>>());
 
     // Try exact match first (highest priority)
     sig_opt = sigs.iter().find(|sig| sig.param_types == arg_types).cloned();
@@ -1709,7 +1709,7 @@ if let Some(sigs) = self.reverse_func_index.get(name) {
             // Sort by specificity (descending - higher is more specific)
             candidates.sort_by(|a, b| b.1.cmp(&a.1));
             sig_opt = Some(candidates[0].0.clone());
-            println!("🎯 Selected overload by specificity: {:?} (score: {})", sig_opt.as_ref().unwrap().param_types, candidates[0].1);
+            crate::wpp_debug!("🎯 Selected overload by specificity: {:?} (score: {})", sig_opt.as_ref().unwrap().param_types, candidates[0].1);
         }
     }
 }
@@ -1730,7 +1730,7 @@ if let Some(sig) = sig_opt {
         compiled_args.push(v.into());
     }
 
-    println!("💥 Resolved call {}({:?})", sig.name, sig.param_types);
+    crate::wpp_debug!("💥 Resolved call {}({:?})", sig.name, sig.param_types);
 
     // Call the correct overload (mangled name)
     let llvm_name = if sig.param_types.is_empty() {
@@ -1743,7 +1743,7 @@ if let Some(sig) = sig_opt {
     };
 
     let target_fn = self.module.get_function(&llvm_name).unwrap_or(func_val);
-    println!("🧬 Using LLVM function: {}", llvm_name);
+    crate::wpp_debug!("🧬 Using LLVM function: {}", llvm_name);
     // 🧠 Ensure argument types match function signature
 let fn_param_types: Vec<_> = target_fn.get_type().get_param_types();
 
@@ -1841,7 +1841,7 @@ else if name.contains('.') {
     let parts: Vec<&str> = name.split('.').collect();
     if parts.len() == 2 {
         let (lhs, method_name) = (parts[0], parts[1]);
-        println!("🧭 Trying to resolve entity-qualified call: {} -> {}", lhs, method_name);
+        crate::wpp_debug!("🧭 Trying to resolve entity-qualified call: {} -> {}", lhs, method_name);
 
         // === 1️⃣ Case A: Direct static entity call (e.g. Dog.bark)
         let full_name_sig = FunctionSignature {
@@ -1850,7 +1850,7 @@ else if name.contains('.') {
             return_type: TypeDescriptor::Primitive("i32".to_string()), // Default return type
         };
         if let Some(func) = self.functions.get(&full_name_sig) {
-            println!("✅ Direct entity-qualified match for {}", name);
+            crate::wpp_debug!("✅ Direct entity-qualified match for {}", name);
             let call_site = self
                 .builder
                 .build_call(*func, &[], &format!("call_{}", name))
@@ -1865,7 +1865,7 @@ else if name.contains('.') {
 if let Some(var_info) = self.vars.get(lhs) {
     if let Some(entity_type) = &var_info.entity_type {
         let resolved = format!("{}.{}", entity_type, method_name);
-        println!("🔍 Resolved instance call '{}.{}' -> '{}'", lhs, method_name, resolved);
+        crate::wpp_debug!("🔍 Resolved instance call '{}.{}' -> '{}'", lhs, method_name, resolved);
 
         let sig = FunctionSignature {
             name: resolved.clone(),
@@ -1910,7 +1910,7 @@ else {
         // === 3️⃣ Case C: Fallback search by unqualified name
         for (sig, func) in &self.functions {
             if sig.name == method_name {
-                println!("🔗 Fallback matched unqualified {}.{}", lhs, method_name);
+                crate::wpp_debug!("🔗 Fallback matched unqualified {}.{}", lhs, method_name);
                 let call_site = self
                     .builder
                     .build_call(*func, &[], &format!("call_{}", method_name))
@@ -2840,7 +2840,7 @@ Expr::ObjectLiteral { fields, type_name: _ } => {
 
 
 Expr::NewInstance { entity, args } => {
-    println!("🐾 Allocating new instance of entity: {}", entity);
+    crate::wpp_debug!("🐾 Allocating new instance of entity: {}", entity);
 
     // 1️⃣ Retrieve entity definition
     let oopsie = self.entities.get(entity)
@@ -2905,7 +2905,7 @@ Expr::NewInstance { entity, args } => {
     };
 
     if let Some(func_val) = self.functions.get(&ctor_sig).cloned() {
-    println!("🧩 Calling constructor '{}'", ctor_name);
+    crate::wpp_debug!("🧩 Calling constructor '{}'", ctor_name);
 
     let mut compiled_args: Vec<BasicMetadataValueEnum<'ctx>> = Vec::new();
     compiled_args.push(typed_ptr.into()); // 'me' argument
@@ -2920,7 +2920,7 @@ Expr::NewInstance { entity, args } => {
         .build_call(func_val, &compiled_args, &format!("call_ctor_{}", entity))
         .unwrap();
 } else {
-    println!("⚙️ No constructor found for '{}', skipping init", entity);
+    crate::wpp_debug!("⚙️ No constructor found for '{}', skipping init", entity);
 }
 
 
@@ -2962,32 +2962,32 @@ fn resolve_basic_type(&self, ty: &str) -> inkwell::types::BasicTypeEnum<'ctx> {
     }
     Node::TypeAlias(type_def) => {
         // Register type alias for dispatch resolution
-        println!("📝 Registering type alias: {}", type_def.name);
+        crate::wpp_debug!("📝 Registering type alias: {}", type_def.name);
         self.type_aliases.insert(type_def.name.clone(), type_def.clone());
         None
     }
     Node::ImportAll { module } | Node::ImportList { module, .. } => {
         if module.starts_with("rust:") {
-            println!("🦀 Declaring FFI functions for Rust module '{}'", module);
+            crate::wpp_debug!("🦀 Declaring FFI functions for Rust module '{}'", module);
             self.declare_rust_ffi_functions();
         } else {
-            println!("📦 Skipping import '{}': already resolved by WMS", module);
+            crate::wpp_debug!("📦 Skipping import '{}': already resolved by WMS", module);
         }
         None
     }
 
     Node::Export { name, .. } => {
-        println!("📤 Export '{}' handled by ExportResolver", name);
+        crate::wpp_debug!("📤 Export '{}' handled by ExportResolver", name);
         None
     }
 
         Node::Let { name, value, is_const, ty } => {
-    println!("🧱 Compiling top-level node: Let {{ name: {}, ty: {:?} }}", name, ty);
+    crate::wpp_debug!("🧱 Compiling top-level node: Let {{ name: {}, ty: {:?} }}", name, ty);
 
     // === Detect heap-allocated expressions (arrays/objects) ===
     let is_heap_value = matches!(value, Expr::ArrayLiteral(_) | Expr::ObjectLiteral { .. });
     if is_heap_value {
-        println!("💾 Variable `{}` is a heap object — allocating as pointer", name);
+        crate::wpp_debug!("💾 Variable `{}` is a heap object — allocating as pointer", name);
     }
 
     // === Determine variable type ===
@@ -5073,5 +5073,3 @@ impl<'ctx> Codegen<'ctx> {
         }
     }
 }
-
-

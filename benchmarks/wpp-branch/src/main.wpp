@@ -1,0 +1,19 @@
+// Branch-heavy loop: count numbers in [0..N) divisible by 3
+// Uses integer arithmetic only; avoids modulo (not in current grammar)
+
+func main() {
+    let N = 50000000  // 50 million iterations
+    let count = 0
+
+    for (let i = 0; i < N; i = i + 1) {
+        // i % 3 == 0  <=>  i - (i / 3) * 3 == 0 for integer division
+        let q = i / 3
+        let r = i - q * 3
+        if (r == 0) {
+            count = count + 1
+        }
+    }
+
+    print(count)
+}
+

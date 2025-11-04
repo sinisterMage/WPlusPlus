@@ -1,0 +1,18 @@
+// Linear Congruential Generator benchmark
+// Keeps values in i32 to match W++ integer arithmetic semantics
+
+func main() {
+    let N = 50000000  // 50 million iterations
+    let a = 1664525
+    let c = 1013904223
+    let x0 = 0
+    let x = x0
+
+    for (let i = 0; i < N; i = i + 1) {
+        x = a * x + c
+    }
+
+    // Prevent dead-code elimination; print final state
+    print(x)
+}
+

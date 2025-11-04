@@ -525,10 +525,18 @@ match WppConfig::load(&config_path) {
         return;
     }
 
-    println!("🚀 Running {path}...\n");
+    println!("🚀 Running {path} (single-file) ...\n");
 
     match fs::read_to_string(file_path) {
-        Ok(source) => run_with_codegen(&source, optimize),
+        Ok(source) => {
+            // Use the directory of the file as the base for codegen (for any relative needs)
+            let base_dir_buf = file_path.parent().map(|p| p.to_path_buf());
+            let base_dir = base_dir_buf
+                .as_ref()
+                .and_then(|p| p.to_str())
+                .unwrap_or(".");
+            run_single_source(&source, base_dir, optimize);
+        }
         Err(e) => eprintln!("❌ Could not read file: {e}"),
     }
 }
@@ -782,6 +790,29 @@ fn run_with_codegen(_source: &str, optimize: bool) {
 
     // 🧠 Step 7: Run via JIT
     match run_file(&mut codegen, optimize) {
+        Ok(_) => println!("✅ Execution finished successfully."),
+        Err(e) => eprintln!("❌ Error during execution: {e}"),
+    }
+}
+
+/// 🚀 Run a single W++ source buffer directly (no project/WMS)
+fn run_single_source(source: &str, base_dir: &str, optimize: bool) {
+    println!("🎯 [CLI] Single-file mode: compiling buffer (base_dir = {})", base_dir);
+
+    // Create LLVM context
+    let context = inkwell::context::Context::create();
+
+    // Lex/parse
+    let mut lexer = wpp_v2::lexer::Lexer::new(source);
+    let tokens = lexer.tokenize();
+    let mut parser = wpp_v2::parser::Parser::new(tokens);
+    let ast = parser.parse_program();
+
+    // Codegen + JIT
+    let mut codegen = wpp_v2::codegen::Codegen::new(&context, "single", base_dir);
+    codegen.compile_main(&ast);
+
+    match wpp_v2::run_file(&mut codegen, optimize) {
         Ok(_) => println!("✅ Execution finished successfully."),
         Err(e) => eprintln!("❌ Error during execution: {e}"),
     }

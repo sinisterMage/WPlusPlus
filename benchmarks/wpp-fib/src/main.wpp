@@ -1,0 +1,16 @@
+// Iterative Fibonacci benchmark (n = 45); stays in i32 range
+
+func main() {
+    let n = 45
+    let a = 0
+    let b = 1
+
+    for (let i = 0; i < n; i = i + 1) {
+        let t = a + b
+        a = b
+        b = t
+    }
+
+    print(a)  // F(45) = 1134903170
+}
+

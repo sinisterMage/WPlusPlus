@@ -1,6 +1,7 @@
 mod lexer;
 mod parser;
 mod ast;
+mod macros; // bring wpp_debug! into this binary crate
 mod codegen;
 pub mod runtime;
 pub mod module_system;

@@ -28,8 +28,8 @@ jobs:
           echo "CC_x86_64_pc_windows_gnu=x86_64-w64-mingw32-clang" >> $GITHUB_ENV
           echo "CXX_x86_64_pc_windows_gnu=x86_64-w64-mingw32-clang++" >> $GITHUB_ENV
           echo "AR_x86_64_pc_windows_gnu=x86_64-w64-mingw32-ar" >> $GITHUB_ENV
-          echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-clang" >> $GITHUB_ENV
-
+          echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=ld.lld" >> $GITHUB_ENV
+          
       - name: Build W++ compiler
         run: cargo build -p wpp-cli --release --target x86_64-pc-windows-gnu
 

@@ -121,8 +121,45 @@ enum Commands {
 
     /// Publish a package to the registry
     Publish,
-        Fetch,
+    Fetch,
 
+    /// Run a Proxima notebook (.wpproxim)
+    Proxima {
+        /// Path to a .wpproxim notebook file
+        file: String,
+
+        /// List cells instead of executing
+        #[arg(long)]
+        list: bool,
+
+        /// Execute a single cell (1-based)
+        #[arg(long)]
+        cell: Option<usize>,
+
+        /// Execute a range: from this cell (inclusive)
+        #[arg(long)]
+        from: Option<usize>,
+
+        /// Execute a range: to this cell (inclusive)
+        #[arg(long)]
+        to: Option<usize>,
+
+        /// Step through cells interactively
+        #[arg(long)]
+        step: bool,
+
+        /// Auto-confirm when stepping (no prompt)
+        #[arg(long)]
+        yes: bool,
+
+        /// Enable LLVM optimization passes
+        #[arg(short, long)]
+        opt: bool,
+
+        /// Enable verbose debug output
+        #[arg(long)]
+        debug: bool,
+    },
 }
 
 fn main() {
@@ -431,14 +468,22 @@ update_simula_lock(&pkg.name, &pkg.version, &checksum).unwrap();
     }
 }
 
-Commands::Fetch => {
-    let token = std::env::var("WPP_TOKEN").ok();
-    let api = Arc::new(IngotAPI::new("https://ingotwpp.dev", token));
-    let wms = WmsResolver::new(api);
-    if let Err(e) = wms.resolve_all(Path::new(".")) {
-        eprintln!("❌ Dependency resolution failed: {e}");
-    }
-}
+        Commands::Fetch => {
+            let token = std::env::var("WPP_TOKEN").ok();
+            let api = Arc::new(IngotAPI::new("https://ingotwpp.dev", token));
+            let wms = WmsResolver::new(api);
+            if let Err(e) = wms.resolve_all(Path::new(".")) {
+                eprintln!("❌ Dependency resolution failed: {e}");
+            }
+        }
+
+        Commands::Proxima { file, list, cell, from, to, step, yes, opt, debug } => {
+            if debug { std::env::set_var("WPP_DEBUG", "1"); }
+            match run_proxima_notebook(&file, ProximaRunOpts { list, cell, from, to, step, yes, opt }) {
+                Ok(_) => {}
+                Err(e) => eprintln!("❌ Proxima error: {e}"),
+            }
+        }
 
     }
 }
@@ -858,6 +903,138 @@ fn print_pretty_panic(panic: Box<dyn std::any::Any + Send>) {
     } else {
         eprintln!("❌ An internal error occurred (panic). Run with RUST_BACKTRACE=1 for details.");
     }
+}
+
+// ===== Proxima Notebook Support =====
+#[derive(Debug, Clone)]
+struct ProximaCell { title: String, code: String }
+
+fn parse_proxima_file(path: &str) -> Result<Vec<ProximaCell>, String> {
+    let content = std::fs::read_to_string(path)
+        .map_err(|e| format!("failed to read notebook: {e}"))?;
+    let mut cells: Vec<ProximaCell> = Vec::new();
+    let mut current_title = String::from("Cell 1");
+    let mut current_code = String::new();
+    let mut cell_index = 1;
+
+    for line in content.lines() {
+        if let Some(rest) = line.strip_prefix("%%") {
+            // flush previous
+            if !current_code.trim().is_empty() {
+                cells.push(ProximaCell { title: current_title.trim().to_string(), code: current_code.clone() });
+                current_code.clear();
+            }
+            cell_index += 1;
+            let title = rest.trim();
+            current_title = if title.is_empty() { format!("Cell {}", cell_index) } else { title.to_string() };
+        } else {
+            current_code.push_str(line);
+            current_code.push('\n');
+        }
+    }
+    if !current_code.trim().is_empty() {
+        cells.push(ProximaCell { title: current_title.trim().to_string(), code: current_code });
+    }
+
+    if cells.is_empty() {
+        return Err("notebook contains no cells".into());
+    }
+    Ok(cells)
+}
+
+struct ProximaRunOpts {
+    list: bool,
+    cell: Option<usize>,
+    from: Option<usize>,
+    to: Option<usize>,
+    step: bool,
+    yes: bool,
+    opt: bool,
+}
+
+fn run_proxima_notebook(path: &str, opts: ProximaRunOpts) -> Result<(), String> {
+    let cells = parse_proxima_file(path)?;
+    if opts.list {
+        println!("📒 Proxima notebook: {}", path);
+        for (i, c) in cells.iter().enumerate() {
+            println!("  {}. {}", i + 1, if c.title.is_empty() { "(untitled)" } else { &c.title });
+        }
+        return Ok(());
+    }
+
+    let (count, mut start, mut end) = (cells.len(), 1usize, cells.len());
+    if let Some(c) = opts.cell { start = c.max(1); end = c.max(1); }
+    if let Some(f) = opts.from { start = f.max(1); }
+    if let Some(t) = opts.to { end = t.min(count); }
+
+    if opts.step {
+        for idx in 1..=count {
+            execute_cells_range(path, &cells, 1, idx, opts.opt)?;
+            if idx < count && !opts.yes {
+                use std::io::{self, Write};
+                print!("Continue to cell {}? [Y/n] ", idx + 1);
+                io::stdout().flush().ok();
+                let mut buf = String::new();
+                io::stdin().read_line(&mut buf).ok();
+                let a = buf.trim().to_ascii_lowercase();
+                if a == "n" || a == "no" { break; }
+            }
+        }
+        return Ok(());
+    }
+
+    execute_cells_range(path, &cells, 1, end.max(start), opts.opt)
+}
+
+fn execute_cells_range(path: &str, cells: &[ProximaCell], from: usize, to: usize, optimize: bool) -> Result<(), String> {
+    // Build concatenated source for cells [1..=to]; headers per cell
+    let mut source = String::new();
+    let to = to.min(cells.len()).max(1);
+    for i in 1..=to {
+        let c = &cells[i - 1];
+        let header = format!("\nprint(\"===== Proxima: {}. {} =====\")\n", i, c.title);
+        source.push_str(&header);
+        source.push_str(&c.code);
+        source.push_str("\n");
+    }
+
+    // base_dir = containing folder of notebook
+    let project_root = std::path::Path::new(path).parent().map(|p| p.to_path_buf()).unwrap_or(std::env::current_dir().unwrap());
+    let base_dir_str = project_root.to_str().unwrap_or(".");
+
+    // Initialize WMS to support imports and Rust modules (e.g., rust:io, rust:proxima)
+    let mut wms = ModuleSystem::new(&project_root);
+    wms.clear_cache();
+
+    // Preload imports (best-effort)
+    let import_re = regex::Regex::new(r#"(?m)^\s*import\s+(?:\{[^}]*\}\s+from\s+)?\"([^\"]+)\""#).unwrap();
+    let mut preload: Vec<String> = Vec::new();
+    for cap in import_re.captures_iter(&source) {
+        if let Some(m) = cap.get(1) { preload.push(m.as_str().to_string()); }
+    }
+    preload.sort(); preload.dedup();
+    for m in preload { let _ = wms.load_module(&m); }
+
+    let mut resolver = ExportResolver::new();
+    resolver.collect_exports(&wms);
+
+    let context = Context::create();
+    let mut lexer = Lexer::new(&source);
+    let tokens = lexer.tokenize();
+    let mut parser = WppParser::new(tokens);
+    let main_ast = parser.parse_program();
+
+    let mut codegen = Codegen::new(&context, "main", base_dir_str);
+    codegen.wms = Some(Arc::new(Mutex::new(wms)));
+    codegen.resolver = Some(Arc::new(Mutex::new(resolver)));
+    codegen.link_dependency_modules();
+
+    let run = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        codegen.compile_main(&main_ast);
+        let _ = wpp_v2::run_file(&mut codegen, optimize);
+    }));
+    if let Err(p) = run { print_pretty_panic(p); }
+    Ok(())
 }
 
 

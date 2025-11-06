@@ -36,6 +36,14 @@ const KNOWN_FFI_FUNCTIONS: &[(&str, &str)] = &[
     ("io_list_dir", "ptr->ptr"),
     ("io_free", "ptr->void"),
 
+    // Proxima notebook library
+    ("proxima_parse", "ptr->i32"),
+    ("proxima_cell_count", "->i32"),
+    ("proxima_cell_title", "i32->ptr"),
+    ("proxima_cell_code", "i32->ptr"),
+    ("proxima_list", "->ptr"),
+    ("proxima_free", "ptr->void"),
+
     // CORS library functions
     ("cors_strlen", "ptr->i32"),
     ("cors_int_to_string", "i32->ptr"),

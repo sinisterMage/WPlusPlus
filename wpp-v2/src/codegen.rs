@@ -303,6 +303,13 @@ pub fn init_mutex_support(&self) {
         declare_ffi!("io_read_lines", i8_ptr.fn_type(&[i8_ptr.into()], false));
         declare_ffi!("io_append_file", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
         declare_ffi!("io_write_bytes", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        // Proxima notebook functions
+        declare_ffi!("proxima_parse", i32_ty.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("proxima_cell_count", i32_ty.fn_type(&[], false));
+        declare_ffi!("proxima_cell_title", i8_ptr.fn_type(&[i32_ty.into()], false));
+        declare_ffi!("proxima_cell_code", i8_ptr.fn_type(&[i32_ty.into()], false));
+        declare_ffi!("proxima_list", i8_ptr.fn_type(&[], false));
+        declare_ffi!("proxima_free", void_ty.fn_type(&[i8_ptr.into()], false));
         declare_ffi!("io_exists", i32_ty.fn_type(&[i8_ptr.into()], false));
         declare_ffi!("io_delete_file", i32_ty.fn_type(&[i8_ptr.into()], false));
         declare_ffi!("io_copy_file", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));

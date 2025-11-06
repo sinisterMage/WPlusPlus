@@ -22,7 +22,7 @@ jobs:
 
       - name: Download llvm-mingw toolchain
         run: |
-          wget https://github.com/mstorsjo/llvm-mingw/releases/latest/download/llvm-mingw-20240610-msvcrt-x86_64.zip -O llvm-mingw.zip
+          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-msvcrt-x86_64.zip -O llvm-mingw.zip
           unzip llvm-mingw.zip -d llvm-mingw
           echo "$(pwd)/llvm-mingw/bin" >> $GITHUB_PATH
           export PATH="$(pwd)/llvm-mingw/bin:$PATH"

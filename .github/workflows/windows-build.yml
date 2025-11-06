@@ -26,7 +26,7 @@ jobs:
           unzip llvm-mingw.zip -d llvm-mingw
           echo "$(pwd)/llvm-mingw/bin" >> $GITHUB_PATH
           export PATH="$(pwd)/llvm-mingw/bin:$PATH"
-          ls llvm-mingw/bin
+          ls llvm-mingw/llvm-mingw-20220906-msvcrt-x86_64/bin
 
       - name: Configure environment for cross-compilation
         run: |

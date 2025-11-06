@@ -22,14 +22,17 @@ jobs:
           wget https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-msvcrt-x86_64.zip -O llvm-mingw.zip
           unzip llvm-mingw.zip -d llvm-mingw
           echo "$(pwd)/llvm-mingw/bin" >> $GITHUB_PATH
+          
+      - name: Install MinGW binutils
+        run: sudo apt-get update && sudo apt-get install -y binutils-mingw-w64
 
       - name: Configure environment for cross-compilation
         run: |
           echo "CC_x86_64_pc_windows_gnu=x86_64-w64-mingw32-clang" >> $GITHUB_ENV
           echo "CXX_x86_64_pc_windows_gnu=x86_64-w64-mingw32-clang++" >> $GITHUB_ENV
           echo "AR_x86_64_pc_windows_gnu=x86_64-w64-mingw32-ar" >> $GITHUB_ENV
-          echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=ld.lld" >> $GITHUB_ENV
-          
+          echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-clang" >> $GITHUB_ENV
+
       - name: Build W++ compiler
         run: cargo build -p wpp-cli --release --target x86_64-pc-windows-gnu
 

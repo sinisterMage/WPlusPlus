@@ -1,132 +1,48 @@
-name: Build W++ LLVM CLI (Self-Hosted, Full LLVM)
+name: Build W++ for Windows (llvm-mingw)
 
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # manual trigger only
 
 jobs:
-  build-selfhosted:
-    name: Build Full LLVM + W++
-    runs-on: [self-hosted, windows, x64]
+  build-windows:
+    name: Build W++ (Windows via llvm-mingw)
+    runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout source
         uses: actions/checkout@v4
 
-      - name: Disable CMake WSL auto-detection
-        shell: powershell
-        run: |
-          setx CMAKE_GENERATOR_PLATFORM x64
-          setx CMAKE_SH "CMAKE_SH-NOTFOUND"
-
-      - name: Verify Rust installation
-        shell: powershell
-        run: |
-          Write-Host "Checking existing Rust installation..."
-          rustc --version
-          cargo --version
-
-      - name: Restore LLVM build cache
-        uses: actions/cache@v4
+      - name: Install Rust and Windows target
+        uses: dtolnay/rust-toolchain@stable
         with:
-          path: |
-            C:\llvm-src
-            C:\llvm-build
-            C:\LLVM
-          key: llvm15-full-${{ runner.os }}-${{ hashFiles('**/Cargo.lock') }}
+          targets: x86_64-pc-windows-gnu
 
-      - name: Locate and init MSVC
-        shell: powershell
+      - name: Install MinGW binutils (for dlltool etc.)
+        run: sudo apt-get update && sudo apt-get install -y binutils-mingw-w64
+
+      - name: Download llvm-mingw toolchain
         run: |
-          Write-Host "Locating Visual Studio Build Tools..."
-          $vsPath = & "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe" `
-            -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
-          if (-not $vsPath) {
-            Write-Error "Visual Studio Build Tools not found!"
-            exit 1
-          }
-          Write-Host "Found Visual Studio at $vsPath"
-          $vcvars = Join-Path $vsPath "VC\Auxiliary\Build\vcvars64.bat"
-          cmd /c "`"$vcvars`" && set" | ForEach-Object {
-            if ($_ -match '^(.*?)=(.*)$') {
-              [Environment]::SetEnvironmentVariable($matches[1], $matches[2])
-            }
-          }
-          & cl.exe /? | Out-Null
-          Write-Host "MSVC toolchain ready"
-          
-      - name: Build LLVM 15 from source
-        shell: powershell
+          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-msvcrt-x86_64.zip -O llvm-mingw.zip
+          unzip llvm-mingw.zip -d llvm-mingw
+          echo "$(pwd)/llvm-mingw/bin" >> $GITHUB_PATH
+          export PATH="$(pwd)/llvm-mingw/bin:$PATH"
+          ls llvm-mingw/llvm-mingw-20220906-msvcrt-x86_64/bin
+
+      - name: Configure environment for cross-compilation
         run: |
-          $ErrorActionPreference = "Stop"
-          $srcDir = "C:\llvm-src"
-          $buildDir = "C:\llvm-build"
-          $installDir = "C:\LLVM"
+          # Verify clang exists
+          which x86_64-w64-mingw32-clang || echo "clang not found in PATH!"
+          echo "CC_x86_64_pc_windows_gnu=x86_64-w64-mingw32-clang" >> $GITHUB_ENV
+          echo "CXX_x86_64_pc_windows_gnu=x86_64-w64-mingw32-clang++" >> $GITHUB_ENV
+          echo "AR_x86_64_pc_windows_gnu=x86_64-w64-mingw32-ar" >> $GITHUB_ENV
+          echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-clang" >> $GITHUB_ENV
+          echo "RUSTFLAGS=-C linker=lld" >> $GITHUB_ENV
 
-          # Ensure CMake is visible for this step
-          $env:PATH = "${env:ProgramFiles}\CMake\bin;$env:PATH"
-          Write-Host "Using cmake at:"
-          & cmake --version
+      - name: Build W++ compiler
+        run: cargo build -p wpp-cli --release --target x86_64-pc-windows-gnu --verbose
 
-          if (!(Test-Path "$installDir\bin\llvm-config.exe")) {
-            if (!(Test-Path $srcDir)) {
-              Write-Host "Cloning LLVM 15.0.7..."
-              git clone https://github.com/llvm/llvm-project.git $srcDir --branch llvmorg-15.0.7 --depth 1
-            }
-            Write-Host "Configuring LLVM..."
-            & cmake -S "$srcDir\llvm" -B $buildDir `
-              -G "Ninja" `
-              -DCMAKE_BUILD_TYPE=Release `
-              -DCMAKE_INSTALL_PREFIX=$installDir `
-              -DCMAKE_C_COMPILER=cl.exe `
-              -DCMAKE_CXX_COMPILER=cl.exe `
-              -DLLVM_ENABLE_PROJECTS="clang;clang-tools-extra;lld;lldb;mlir;polly;openmp" `
-              -DLLVM_TARGETS_TO_BUILD="all" `
-              -DLLVM_BUILD_TOOLS=ON `
-              -DLLVM_INCLUDE_EXAMPLES=ON `
-              -DLLVM_INCLUDE_TESTS=OFF `
-              -DLLVM_ENABLE_RTTI=ON `
-              -DLLVM_ENABLE_EH=ON `
-              -DLLVM_ENABLE_ASSERTIONS=ON `
-              -DLLVM_ENABLE_TERMINFO=ON `
-              -DLLVM_ENABLE_ZLIB=ON `
-              -DPYTHON_EXECUTABLE="C:\Python311\python.exe" `
-              2>&1 | Tee-Object -FilePath cmake_configure.log
-
-            if (!(Test-Path "$buildDir\build.ninja")) {
-              Write-Host "LLVM configure failed."
-              Get-Content cmake_configure.log -TotalCount 40
-              exit 1
-            }
-
-            Write-Host "Building and installing LLVM..."
-            & cmake --build $buildDir --target install --config Release
-          } else {
-            Write-Host "Using cached LLVM build."
-          }
-
-      - name: Configure environment
-        shell: powershell
-        run: |
-          echo "LLVM_SYS_150_PREFIX=C:\LLVM" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo "LLVM_CONFIG_PATH=C:\LLVM\bin\llvm-config.exe" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf8 -Append
-          echo "C:\LLVM\bin" | Out-File -FilePath $Env:GITHUB_PATH -Encoding utf8 -Append
-          Write-Host "LLVM environment ready"
-
-      - name: Build W++
-        shell: powershell
-        run: cargo build --release -p wpp-cli --target x86_64-pc-windows-msvc
-
-      - name: Package binary
-        shell: powershell
-        run: |
-          mkdir dist
-          Copy-Item target\x86_64-pc-windows-msvc\release\wpp-cli.exe dist\
-          Compress-Archive -Path dist\wpp-cli.exe -DestinationPath dist\wpp-cli-x86_64-pc-windows-msvc.zip
-          Get-FileHash dist\wpp-cli-x86_64-pc-windows-msvc.zip -Algorithm SHA256 | ForEach-Object {
-            $_.Hash + "  wpp-cli-x86_64-pc-windows-msvc.zip" } > dist\wpp-cli-x86_64-pc-windows-msvc.sha256
-
-      - name: Upload artifact
+      - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: wpp-cli-x86_64-pc-windows-msvc
-          path: dist/*
+          name: wpp-windows
+          path: target/x86_64-pc-windows-gnu/release/wpp-cli.exe

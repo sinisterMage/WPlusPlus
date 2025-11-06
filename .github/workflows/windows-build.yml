@@ -17,24 +17,29 @@ jobs:
         with:
           targets: x86_64-pc-windows-gnu
 
+      - name: Install MinGW binutils (for dlltool etc.)
+        run: sudo apt-get update && sudo apt-get install -y binutils-mingw-w64
+
       - name: Download llvm-mingw toolchain
         run: |
-          wget https://github.com/mstorsjo/llvm-mingw/releases/download/20220906/llvm-mingw-20220906-msvcrt-x86_64.zip -O llvm-mingw.zip
+          wget https://github.com/mstorsjo/llvm-mingw/releases/latest/download/llvm-mingw-20240610-msvcrt-x86_64.zip -O llvm-mingw.zip
           unzip llvm-mingw.zip -d llvm-mingw
           echo "$(pwd)/llvm-mingw/bin" >> $GITHUB_PATH
-          
-      - name: Install MinGW binutils
-        run: sudo apt-get update && sudo apt-get install -y binutils-mingw-w64
+          export PATH="$(pwd)/llvm-mingw/bin:$PATH"
+          ls llvm-mingw/bin
 
       - name: Configure environment for cross-compilation
         run: |
+          # Verify clang exists
+          which x86_64-w64-mingw32-clang || echo "clang not found in PATH!"
           echo "CC_x86_64_pc_windows_gnu=x86_64-w64-mingw32-clang" >> $GITHUB_ENV
           echo "CXX_x86_64_pc_windows_gnu=x86_64-w64-mingw32-clang++" >> $GITHUB_ENV
           echo "AR_x86_64_pc_windows_gnu=x86_64-w64-mingw32-ar" >> $GITHUB_ENV
           echo "CARGO_TARGET_X86_64_PC_WINDOWS_GNU_LINKER=x86_64-w64-mingw32-clang" >> $GITHUB_ENV
+          echo "RUSTFLAGS=-C linker=lld" >> $GITHUB_ENV
 
       - name: Build W++ compiler
-        run: cargo build -p wpp-cli --release --target x86_64-pc-windows-gnu
+        run: cargo build -p wpp-cli --release --target x86_64-pc-windows-gnu --verbose
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4

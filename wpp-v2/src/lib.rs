@@ -64,7 +64,34 @@ fn declare_runtime_externals<'ctx>(context: &'ctx Context, module: &Module<'ctx>
         ("wpp_str_concat", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false)),
         ("wpp_readline", i8_ptr.fn_type(&[], false)),
         ("wpp_int_to_string", i8_ptr.fn_type(&[i32_type.into()], false)),
+        ("wpp_str_substr", i8_ptr.fn_type(&[i8_ptr.into(), i32_type.into(), i32_type.into()], false)),
+        ("wpp_str_index_of", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into()], false)),
+        ("wpp_str_replace", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("wpp_str_to_upper", i8_ptr.fn_type(&[i8_ptr.into()], false)),
+        ("wpp_str_to_lower", i8_ptr.fn_type(&[i8_ptr.into()], false)),
+        ("wpp_str_trim", i8_ptr.fn_type(&[i8_ptr.into()], false)),
 
+        // --- Validation subsystem ---
+        ("validation_errors_create", i8_ptr.fn_type(&[], false)),
+        ("validation_errors_add", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validation_errors_has", i32_type.fn_type(&[i8_ptr.into()], false)),
+        ("validation_errors_count", i32_type.fn_type(&[i8_ptr.into()], false)),
+        ("validation_errors_get", i8_ptr.fn_type(&[i8_ptr.into()], false)),
+        ("validation_errors_clear", i32_type.fn_type(&[i8_ptr.into()], false)),
+        ("validation_errors_destroy", i32_type.fn_type(&[i8_ptr.into()], false)),
+        ("validate_presence", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validate_length", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i32_type.into(), i32_type.into(), i8_ptr.into()], false)),
+        ("validate_email", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validate_url", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validate_format", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validate_numericality", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validate_number_range", i32_type.fn_type(&[i32_type.into(), i8_ptr.into(), i32_type.into(), i32_type.into(), i8_ptr.into()], false)),
+        ("validate_inclusion", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validate_exclusion", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validate_confirmation", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validate_acceptance", i32_type.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false)),
+        ("validation_is_blank", i32_type.fn_type(&[i8_ptr.into()], false)),
+        ("validation_strlen", i32_type.fn_type(&[i8_ptr.into()], false)),
 
         // --- HTTP subsystem ---
         ("wpp_http_get", i32_type.fn_type(&[i8_ptr.into()], false)),
@@ -119,6 +146,34 @@ fn register_all_runtime_symbols() {
         add_symbol("wpp_str_concat", wpp_str_concat as usize);
         add_symbol("wpp_readline", wpp_readline as usize);
         add_symbol("wpp_int_to_string", wpp_int_to_string as usize);
+        add_symbol("wpp_str_substr", wpp_str_substr as usize);
+        add_symbol("wpp_str_index_of", wpp_str_index_of as usize);
+        add_symbol("wpp_str_replace", wpp_str_replace as usize);
+        add_symbol("wpp_str_to_upper", wpp_str_to_upper as usize);
+        add_symbol("wpp_str_to_lower", wpp_str_to_lower as usize);
+        add_symbol("wpp_str_trim", wpp_str_trim as usize);
+
+        // --- Validation subsystem ---
+        add_symbol("validation_errors_create", validation_errors_create as usize);
+        add_symbol("validation_errors_add", validation_errors_add as usize);
+        add_symbol("validation_errors_has", validation_errors_has as usize);
+        add_symbol("validation_errors_count", validation_errors_count as usize);
+        add_symbol("validation_errors_get", validation_errors_get as usize);
+        add_symbol("validation_errors_clear", validation_errors_clear as usize);
+        add_symbol("validation_errors_destroy", validation_errors_destroy as usize);
+        add_symbol("validate_presence", validate_presence as usize);
+        add_symbol("validate_length", validate_length as usize);
+        add_symbol("validate_email", validate_email as usize);
+        add_symbol("validate_url", validate_url as usize);
+        add_symbol("validate_format", validate_format as usize);
+        add_symbol("validate_numericality", validate_numericality as usize);
+        add_symbol("validate_number_range", validate_number_range as usize);
+        add_symbol("validate_inclusion", validate_inclusion as usize);
+        add_symbol("validate_exclusion", validate_exclusion as usize);
+        add_symbol("validate_confirmation", validate_confirmation as usize);
+        add_symbol("validate_acceptance", validate_acceptance as usize);
+        add_symbol("validation_is_blank", validation_is_blank as usize);
+        add_symbol("validation_strlen", validation_strlen as usize);
 
         // --- HTTP subsystem ---
         add_symbol("wpp_http_get", wpp_http_get as usize);
@@ -182,6 +237,34 @@ fn register_runtime_symbols<'ctx>(engine: &ExecutionEngine<'ctx>, module: &Modul
         // === String subsystem ===
         map_fn("wpp_str_concat", wpp_str_concat as usize);
         map_fn("wpp_int_to_string", wpp_int_to_string as usize);
+        map_fn("wpp_str_substr", wpp_str_substr as usize);
+        map_fn("wpp_str_index_of", wpp_str_index_of as usize);
+        map_fn("wpp_str_replace", wpp_str_replace as usize);
+        map_fn("wpp_str_to_upper", wpp_str_to_upper as usize);
+        map_fn("wpp_str_to_lower", wpp_str_to_lower as usize);
+        map_fn("wpp_str_trim", wpp_str_trim as usize);
+
+        // === Validation subsystem ===
+        map_fn("validation_errors_create", validation_errors_create as usize);
+        map_fn("validation_errors_add", validation_errors_add as usize);
+        map_fn("validation_errors_has", validation_errors_has as usize);
+        map_fn("validation_errors_count", validation_errors_count as usize);
+        map_fn("validation_errors_get", validation_errors_get as usize);
+        map_fn("validation_errors_clear", validation_errors_clear as usize);
+        map_fn("validation_errors_destroy", validation_errors_destroy as usize);
+        map_fn("validate_presence", validate_presence as usize);
+        map_fn("validate_length", validate_length as usize);
+        map_fn("validate_email", validate_email as usize);
+        map_fn("validate_url", validate_url as usize);
+        map_fn("validate_format", validate_format as usize);
+        map_fn("validate_numericality", validate_numericality as usize);
+        map_fn("validate_number_range", validate_number_range as usize);
+        map_fn("validate_inclusion", validate_inclusion as usize);
+        map_fn("validate_exclusion", validate_exclusion as usize);
+        map_fn("validate_confirmation", validate_confirmation as usize);
+        map_fn("validate_acceptance", validate_acceptance as usize);
+        map_fn("validation_is_blank", validation_is_blank as usize);
+        map_fn("validation_strlen", validation_strlen as usize);
 
         // === HTTP subsystem ===
         map_fn("wpp_http_get", wpp_http_get as usize);

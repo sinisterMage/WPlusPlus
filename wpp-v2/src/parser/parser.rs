@@ -455,10 +455,12 @@ pub fn parse_entity(&mut self) -> Option<Node> {
 
 
     fn parse_if(&mut self) -> Node {
-        // parse condition (must start with "(")
-        self.expect(TokenKind::Symbol("(".into()), "Expected '(' after 'if'");
+        // parse condition (parentheses are optional)
+        let has_parens = self.matches(&[TokenKind::Symbol("(".into())]);
         let condition = self.parse_expr();
-        self.expect(TokenKind::Symbol(")".into()), "Expected ')' after condition");
+        if has_parens {
+            self.expect(TokenKind::Symbol(")".into()), "Expected ')' after condition");
+        }
 
         // parse body block
         let then_block = self.parse_block();
@@ -746,13 +748,13 @@ let name = match self.advance().clone() {
     self.expect(TokenKind::Symbol(")".into()), "Expected ')' after parameters");
 
     // === 📝 Optional return type annotation: -> RetType
-    // Skip this for now, just consume it if present
-    if self.check(TokenKind::Symbol("-".into())) {
+    let return_type = if self.check(TokenKind::Symbol("-".into())) {
         self.advance(); // consume '-'
         self.expect(TokenKind::Symbol(">".into()), "Expected '>' after '-' in function return type");
-        // Parse and discard the return type for now (could be used for type checking later)
-        let _return_type = self.parse_type_annotation();
-    }
+        Some(self.parse_type_annotation())
+    } else {
+        None
+    };
 
     // === 🏹 support arrow syntax: "=> expr"
     if self.check(TokenKind::Symbol("=".into())) {
@@ -770,6 +772,7 @@ let name = match self.advance().clone() {
                 params_patterns: if has_patterns { Some(params_patterns) } else { None },
                 body,
                 is_async,
+                return_type,
             };
         } else {
             panic!("Expected '>' after '=' for arrow function");
@@ -796,6 +799,7 @@ let name = match self.advance().clone() {
         params_patterns: if has_patterns { Some(params_patterns) } else { None },
         body,
         is_async,
+        return_type,
     }
 }
 
@@ -1094,6 +1098,7 @@ if let TokenKind::Keyword(k) = self.peek() {
             params_patterns: None, // No patterns for entity methods
             body,
             is_async: false,
+            return_type: None,
         };
     }
 }

@@ -1,0 +1,13 @@
+[package]
+name = "wpp-io-ffi"
+version = "1.0.0"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib"]
+
+[workspace]
+# This is a standalone library, not part of W++ workspace
+
+[dependencies]
+libc = "0.2"

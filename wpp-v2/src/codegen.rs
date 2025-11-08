@@ -392,6 +392,81 @@ pub fn init_mutex_support(&self) {
         declare_ffi!("cassandra_get_last_error", i8_ptr.fn_type(&[], false));
         declare_ffi!("cassandra_gc_collect", i32_ty.fn_type(&[], false));
         declare_ffi!("cassandra_gc_shutdown", void_ty.fn_type(&[], false));
+
+        // Raython MVC framework - Router functions
+        declare_ffi!("raython_router_create", i8_ptr.fn_type(&[], false));
+        declare_ffi!("raython_router_add_route", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_router_match", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_router_list", i8_ptr.fn_type(&[i8_ptr.into()], false));
+
+        // Raython MVC framework - Request functions
+        declare_ffi!("raython_request_create", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_request_set_header", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_request_get_header", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_request_set_body", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+
+        // Raython MVC framework - Response functions
+        declare_ffi!("raython_response_create", i8_ptr.fn_type(&[i32_ty.into()], false));
+        declare_ffi!("raython_response_json", i8_ptr.fn_type(&[i32_ty.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_response_html", i8_ptr.fn_type(&[i32_ty.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_response_text", i8_ptr.fn_type(&[i32_ty.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_response_set_header", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+
+        // Raython MVC framework - Middleware functions
+        declare_ffi!("raython_middleware_create", i8_ptr.fn_type(&[], false));
+        declare_ffi!("raython_middleware_add", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_middleware_cors_headers", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_middleware_is_preflight", i32_ty.fn_type(&[i8_ptr.into()], false));
+
+        // Raython MVC framework - ORM/Query builder functions
+        declare_ffi!("raython_query_create", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("raython_query_where", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_query_limit", i8_ptr.fn_type(&[i8_ptr.into(), i32_ty.into()], false));
+        declare_ffi!("raython_query_order", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_query_build_select", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("raython_query_build_insert", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_query_build_update", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_query_build_delete", i8_ptr.fn_type(&[i8_ptr.into()], false));
+
+        // Raython MVC framework - HTTP Server functions
+        declare_ffi!("raython_server_create", i8_ptr.fn_type(&[i8_ptr.into(), i32_ty.into()], false));
+        declare_ffi!("raython_server_register", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_server_list_routes", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("raython_server_start", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("raython_server_stop", i8_ptr.fn_type(&[i8_ptr.into()], false));
+
+        // Raython MVC framework - Template Engine functions
+        declare_ffi!("raython_template_create", i8_ptr.fn_type(&[], false));
+        declare_ffi!("raython_template_register", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_template_render", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_template_render_string", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_template_list", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("raython_template_has", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_template_remove", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+
+        // Raython MVC framework - Session & Cookie functions
+        declare_ffi!("raython_session_store_create", i8_ptr.fn_type(&[], false));
+        declare_ffi!("raython_session_create", i8_ptr.fn_type(&[i8_ptr.into(), i32_ty.into()], false));
+        declare_ffi!("raython_session_set", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_session_get", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_session_destroy", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_cookie_parse", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("raython_cookie_create", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into(), i32_ty.into()], false));
+        declare_ffi!("raython_cookie_session", i8_ptr.fn_type(&[i8_ptr.into(), i32_ty.into()], false));
+        declare_ffi!("raython_cookie_get_session_id", i8_ptr.fn_type(&[i8_ptr.into()], false));
+
+        // Raython MVC framework - Authentication functions
+        declare_ffi!("raython_auth_hash_password", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("raython_auth_verify_password", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_jwt_create", i8_ptr.fn_type(&[i8_ptr.into(), i32_ty.into(), i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_jwt_verify", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_jwt_get_subject", i8_ptr.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_jwt_is_expired", i32_ty.fn_type(&[i8_ptr.into(), i8_ptr.into()], false));
+        declare_ffi!("raython_bearer_extract", i8_ptr.fn_type(&[i8_ptr.into()], false));
+        declare_ffi!("raython_bearer_create", i8_ptr.fn_type(&[i8_ptr.into()], false));
+
+        // Raython MVC framework - Memory management
+        declare_ffi!("raython_free_string", void_ty.fn_type(&[i8_ptr.into()], false));
     }
 
 
@@ -651,11 +726,9 @@ let result: BasicValueEnum<'ctx> = match (&left_raw, &right_raw) {
         .expect("Failed to call wpp_str_concat");
 
     // ✅ Extract pointer result (the concatenated string)
-    let result = call.try_as_basic_value()
+    call.try_as_basic_value()
         .left()
-        .expect("wpp_str_concat should return a pointer");
-
-    result
+        .expect("wpp_str_concat should return a pointer")
 }
     // --- Integer + Integer ---
     // --- Integer + Integer ---
@@ -1474,6 +1547,584 @@ else if name == "int_to_string" || name == "to_string" {
         .expect("wpp_int_to_string must return a pointer");
 }
 
+// === STRING UTILITIES ===
+else if name == "wpp_str_substr" {
+    if args.len() != 3 {
+        panic!("wpp_str_substr() expects exactly 3 arguments (string, start, length)");
+    }
+
+    let str_val = self.compile_expr(&args[0]);
+    let start_val = self.compile_expr(&args[1]);
+    let length_val = self.compile_expr(&args[2]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let substr_fn = self.module.get_function("wpp_str_substr").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[i8ptr.into(), i32_ty.into(), i32_ty.into()], false);
+        self.module.add_function("wpp_str_substr", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(substr_fn, &[str_val.into(), start_val.into(), length_val.into()], "call_substr")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("wpp_str_substr must return a pointer");
+}
+
+else if name == "wpp_str_index_of" {
+    if args.len() != 2 {
+        panic!("wpp_str_index_of() expects exactly 2 arguments (haystack, needle)");
+    }
+
+    let haystack = self.compile_expr(&args[0]);
+    let needle = self.compile_expr(&args[1]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let index_of_fn = self.module.get_function("wpp_str_index_of").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("wpp_str_index_of", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(index_of_fn, &[haystack.into(), needle.into()], "call_index_of")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("wpp_str_index_of must return an integer");
+}
+
+else if name == "wpp_str_replace" {
+    if args.len() != 3 {
+        panic!("wpp_str_replace() expects exactly 3 arguments (string, find, replace)");
+    }
+
+    let str_val = self.compile_expr(&args[0]);
+    let find_val = self.compile_expr(&args[1]);
+    let replace_val = self.compile_expr(&args[2]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let replace_fn = self.module.get_function("wpp_str_replace").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("wpp_str_replace", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(replace_fn, &[str_val.into(), find_val.into(), replace_val.into()], "call_replace")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("wpp_str_replace must return a pointer");
+}
+
+else if name == "wpp_str_to_upper" {
+    if args.len() != 1 {
+        panic!("wpp_str_to_upper() expects exactly 1 argument (string)");
+    }
+
+    let str_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let to_upper_fn = self.module.get_function("wpp_str_to_upper").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_str_to_upper", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(to_upper_fn, &[str_val.into()], "call_to_upper")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("wpp_str_to_upper must return a pointer");
+}
+
+else if name == "wpp_str_to_lower" {
+    if args.len() != 1 {
+        panic!("wpp_str_to_lower() expects exactly 1 argument (string)");
+    }
+
+    let str_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let to_lower_fn = self.module.get_function("wpp_str_to_lower").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_str_to_lower", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(to_lower_fn, &[str_val.into()], "call_to_lower")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("wpp_str_to_lower must return a pointer");
+}
+
+else if name == "wpp_str_trim" {
+    if args.len() != 1 {
+        panic!("wpp_str_trim() expects exactly 1 argument (string)");
+    }
+
+    let str_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let trim_fn = self.module.get_function("wpp_str_trim").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("wpp_str_trim", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(trim_fn, &[str_val.into()], "call_trim")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("wpp_str_trim must return a pointer");
+}
+
+// === VALIDATION FRAMEWORK ===
+else if name == "validation_errors_create" {
+    if !args.is_empty() {
+        panic!("validation_errors_create() expects no arguments");
+    }
+
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let fn_val = self.module.get_function("validation_errors_create").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[], false);
+        self.module.add_function("validation_errors_create", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[], "call_validation_errors_create")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_errors_create must return a pointer");
+}
+
+else if name == "validation_errors_add" {
+    if args.len() != 3 {
+        panic!("validation_errors_add() expects 3 arguments (id, field, message)");
+    }
+
+    let id_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let message_val = self.compile_expr(&args[2]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validation_errors_add").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validation_errors_add", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[id_val.into(), field_val.into(), message_val.into()], "call_validation_errors_add")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_errors_add must return an integer");
+}
+
+else if name == "validation_errors_has" {
+    if args.len() != 1 {
+        panic!("validation_errors_has() expects 1 argument (id)");
+    }
+
+    let id_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validation_errors_has").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("validation_errors_has", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[id_val.into()], "call_validation_errors_has")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_errors_has must return an integer");
+}
+
+else if name == "validation_errors_count" {
+    if args.len() != 1 {
+        panic!("validation_errors_count() expects 1 argument (id)");
+    }
+
+    let id_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validation_errors_count").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("validation_errors_count", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[id_val.into()], "call_validation_errors_count")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_errors_count must return an integer");
+}
+
+else if name == "validation_errors_get" {
+    if args.len() != 1 {
+        panic!("validation_errors_get() expects 1 argument (id)");
+    }
+
+    let id_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+
+    let fn_val = self.module.get_function("validation_errors_get").unwrap_or_else(|| {
+        let fn_ty = i8ptr.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("validation_errors_get", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[id_val.into()], "call_validation_errors_get")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_errors_get must return a pointer");
+}
+
+else if name == "validation_errors_clear" {
+    if args.len() != 1 {
+        panic!("validation_errors_clear() expects 1 argument (id)");
+    }
+
+    let id_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validation_errors_clear").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("validation_errors_clear", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[id_val.into()], "call_validation_errors_clear")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_errors_clear must return an integer");
+}
+
+else if name == "validation_errors_destroy" {
+    if args.len() != 1 {
+        panic!("validation_errors_destroy() expects 1 argument (id)");
+    }
+
+    let id_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validation_errors_destroy").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("validation_errors_destroy", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[id_val.into()], "call_validation_errors_destroy")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_errors_destroy must return an integer");
+}
+
+else if name == "validate_presence" {
+    if args.len() != 3 {
+        panic!("validate_presence() expects 3 arguments (value, field, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let errors_id_val = self.compile_expr(&args[2]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_presence").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_presence", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), errors_id_val.into()], "call_validate_presence")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_presence must return an integer");
+}
+
+else if name == "validate_length" {
+    if args.len() != 5 {
+        panic!("validate_length() expects 5 arguments (value, field, min, max, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let min_val = self.compile_expr(&args[2]);
+    let max_val = self.compile_expr(&args[3]);
+    let errors_id_val = self.compile_expr(&args[4]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_length").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i32_ty.into(), i32_ty.into(), i8ptr.into()], false);
+        self.module.add_function("validate_length", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), min_val.into(), max_val.into(), errors_id_val.into()], "call_validate_length")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_length must return an integer");
+}
+
+else if name == "validate_email" {
+    if args.len() != 3 {
+        panic!("validate_email() expects 3 arguments (value, field, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let errors_id_val = self.compile_expr(&args[2]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_email").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_email", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), errors_id_val.into()], "call_validate_email")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_email must return an integer");
+}
+
+else if name == "validate_url" {
+    if args.len() != 3 {
+        panic!("validate_url() expects 3 arguments (value, field, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let errors_id_val = self.compile_expr(&args[2]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_url").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_url", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), errors_id_val.into()], "call_validate_url")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_url must return an integer");
+}
+
+else if name == "validate_format" {
+    if args.len() != 4 {
+        panic!("validate_format() expects 4 arguments (value, field, pattern, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let pattern_val = self.compile_expr(&args[2]);
+    let errors_id_val = self.compile_expr(&args[3]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_format").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_format", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), pattern_val.into(), errors_id_val.into()], "call_validate_format")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_format must return an integer");
+}
+
+else if name == "validate_numericality" {
+    if args.len() != 3 {
+        panic!("validate_numericality() expects 3 arguments (value, field, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let errors_id_val = self.compile_expr(&args[2]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_numericality").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_numericality", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), errors_id_val.into()], "call_validate_numericality")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_numericality must return an integer");
+}
+
+else if name == "validate_number_range" {
+    if args.len() != 5 {
+        panic!("validate_number_range() expects 5 arguments (value, field, min, max, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let min_val = self.compile_expr(&args[2]);
+    let max_val = self.compile_expr(&args[3]);
+    let errors_id_val = self.compile_expr(&args[4]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_number_range").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i32_ty.into(), i8ptr.into(), i32_ty.into(), i32_ty.into(), i8ptr.into()], false);
+        self.module.add_function("validate_number_range", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), min_val.into(), max_val.into(), errors_id_val.into()], "call_validate_number_range")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_number_range must return an integer");
+}
+
+else if name == "validate_inclusion" {
+    if args.len() != 4 {
+        panic!("validate_inclusion() expects 4 arguments (value, field, allowed, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let allowed_val = self.compile_expr(&args[2]);
+    let errors_id_val = self.compile_expr(&args[3]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_inclusion").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_inclusion", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), allowed_val.into(), errors_id_val.into()], "call_validate_inclusion")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_inclusion must return an integer");
+}
+
+else if name == "validate_exclusion" {
+    if args.len() != 4 {
+        panic!("validate_exclusion() expects 4 arguments (value, field, forbidden, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let forbidden_val = self.compile_expr(&args[2]);
+    let errors_id_val = self.compile_expr(&args[3]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_exclusion").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_exclusion", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), forbidden_val.into(), errors_id_val.into()], "call_validate_exclusion")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_exclusion must return an integer");
+}
+
+else if name == "validate_confirmation" {
+    if args.len() != 4 {
+        panic!("validate_confirmation() expects 4 arguments (value, confirmation, field, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let confirmation_val = self.compile_expr(&args[1]);
+    let field_val = self.compile_expr(&args[2]);
+    let errors_id_val = self.compile_expr(&args[3]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_confirmation").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_confirmation", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), confirmation_val.into(), field_val.into(), errors_id_val.into()], "call_validate_confirmation")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_confirmation must return an integer");
+}
+
+else if name == "validate_acceptance" {
+    if args.len() != 3 {
+        panic!("validate_acceptance() expects 3 arguments (value, field, errors_id)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let field_val = self.compile_expr(&args[1]);
+    let errors_id_val = self.compile_expr(&args[2]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validate_acceptance").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into(), i8ptr.into(), i8ptr.into()], false);
+        self.module.add_function("validate_acceptance", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into(), field_val.into(), errors_id_val.into()], "call_validate_acceptance")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validate_acceptance must return an integer");
+}
+
+else if name == "validation_is_blank" {
+    if args.len() != 1 {
+        panic!("validation_is_blank() expects 1 argument (value)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validation_is_blank").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("validation_is_blank", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into()], "call_validation_is_blank")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_is_blank must return an integer");
+}
+
+else if name == "validation_strlen" {
+    if args.len() != 1 {
+        panic!("validation_strlen() expects 1 argument (value)");
+    }
+
+    let value_val = self.compile_expr(&args[0]);
+    let i8ptr = self.context.i8_type().ptr_type(AddressSpace::default());
+    let i32_ty = self.context.i32_type();
+
+    let fn_val = self.module.get_function("validation_strlen").unwrap_or_else(|| {
+        let fn_ty = i32_ty.fn_type(&[i8ptr.into()], false);
+        self.module.add_function("validation_strlen", fn_ty, None)
+    });
+
+    let call = self.builder
+        .build_call(fn_val, &[value_val.into()], "call_validation_strlen")
+        .unwrap();
+
+    return call.try_as_basic_value().left().expect("validation_strlen must return an integer");
+}
+
 // === INDIRECT FUNCTION CALL (lambda stored in variable) ===
 if let Some(var_info) = self.vars.get(name) {
     // === Load the function pointer ===
@@ -1549,7 +2200,7 @@ if let Some(var_info) = self.vars.get(name) {
         .iter()
         .map(|a| {
             match a {
-                Expr::StringLiteral(_) => TypeDescriptor::Primitive("ptr".to_string()),
+                Expr::StringLiteral(_) => TypeDescriptor::Primitive("string".to_string()),
                 Expr::Literal(num) => {
                     // Check if it looks like an HTTP status code (100-599)
                     if *num >= 100 && *num < 600 {
@@ -1606,7 +2257,8 @@ if let Some(var_info) = self.vars.get(name) {
                         if var_ty.is_int_type() {
                             TypeDescriptor::Primitive("i32".to_string())
                         } else if var_ty.is_pointer_type() {
-                            TypeDescriptor::Primitive("ptr".to_string())
+                            // Treat all pointers as strings for now (i8*)
+                            TypeDescriptor::Primitive("string".to_string())
                         } else if var_ty.is_float_type() {
                             TypeDescriptor::Primitive("f64".to_string())
                         } else {
@@ -1634,7 +2286,7 @@ if let Some(var_info) = self.vars.get(name) {
                     if let Some(obj_type) = type_name {
                         TypeDescriptor::ObjectType(obj_type.clone())
                     } else {
-                        TypeDescriptor::Primitive("ptr".to_string())
+                        TypeDescriptor::Primitive("string".to_string())
                     }
                 }
                 _ => TypeDescriptor::Primitive("i32".to_string()),
@@ -1644,11 +2296,12 @@ if let Some(var_info) = self.vars.get(name) {
 
     wpp_debug!("💡 Inferred arg types for {}: {:?}", name, arg_types);
 
-// 🧠 Normalize for compatible overloads (f64 → f32, etc.)
+// 🧠 Normalize for compatible overloads (f64 → f32, ptr → string, etc.)
 let normalized_arg_types: Vec<TypeDescriptor> = arg_types
     .iter()
     .map(|t| match t {
         TypeDescriptor::Primitive(ty) if ty == "f64" => TypeDescriptor::Primitive("f32".to_string()),
+        TypeDescriptor::Primitive(ty) if ty == "ptr" => TypeDescriptor::Primitive("string".to_string()),
         _ => t.clone(),
     })
     .collect();
@@ -1687,6 +2340,9 @@ if let Some(sigs) = self.reverse_func_index.get(name) {
                         (TypeDescriptor::HttpStatusRange(min, max), TypeDescriptor::HttpStatusLiteral(code)) => {
                             *code >= *min && *code <= *max
                         }
+                        // String and ptr are compatible
+                        (TypeDescriptor::Primitive(s1), TypeDescriptor::Primitive(s2))
+                            if (s1 == "string" || s1 == "ptr") && (s2 == "string" || s2 == "ptr") => true,
                         // Normalized match (try normalized_arg_types)
                         _ => {
                             if let Some(normalized) = normalized_arg_types.get(sig.param_types.iter().position(|t| t == sig_type)?) {
@@ -2413,12 +3069,12 @@ self.i32_type.const_int(0, false).into()
 
 
 
-Expr::Funcy { name, params, body, is_async, params_patterns: _ } => {
+Expr::Funcy { name, params, body, is_async, params_patterns: _, return_type } => {
     // 1️⃣ Compile the function (async or not)
     let func_val = if *is_async {
         self.compile_async_funcy(name, params, body)
     } else {
-        self.compile_funcy(name, params, body, None, None)
+        self.compile_funcy(name, params, body, None, None, return_type.as_ref())
     };
 
     // 2️⃣ Return a pointer to it as a first-class value
@@ -3026,6 +3682,15 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
         || name == "readline"
         || name == "int_to_string"
         || name == "to_string"
+        // W++ string utility functions
+        || name == "wpp_str_substr"
+        || name == "wpp_str_replace"
+        || name == "wpp_str_to_upper"
+        || name == "wpp_str_to_lower"
+        || name == "wpp_str_trim"
+        // Validation framework pointer-returning functions
+        || name == "validation_errors_create"
+        || name == "validation_errors_get"
         // FFI functions that return strings (pointers)
         || name == "json_parse"
         || name == "json_stringify"
@@ -3062,6 +3727,57 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
         || name == "cassandra_connect"
         || name == "cassandra_query"
         || name == "cassandra_get_last_error"
+        // Raython MVC framework pointer-returning functions
+        || name == "raython_router_create"
+        || name == "raython_router_add_route"
+        || name == "raython_router_match"
+        || name == "raython_router_list"
+        || name == "raython_request_create"
+        || name == "raython_request_set_header"
+        || name == "raython_request_get_header"
+        || name == "raython_request_set_body"
+        || name == "raython_response_create"
+        || name == "raython_response_json"
+        || name == "raython_response_html"
+        || name == "raython_response_text"
+        || name == "raython_response_set_header"
+        || name == "raython_middleware_create"
+        || name == "raython_middleware_add"
+        || name == "raython_middleware_cors_headers"
+        || name == "raython_query_create"
+        || name == "raython_query_where"
+        || name == "raython_query_limit"
+        || name == "raython_query_order"
+        || name == "raython_query_build_select"
+        || name == "raython_query_build_insert"
+        || name == "raython_query_build_update"
+        || name == "raython_query_build_delete"
+        || name == "raython_server_create"
+        || name == "raython_server_register"
+        || name == "raython_server_list_routes"
+        || name == "raython_server_start"
+        || name == "raython_server_stop"
+        || name == "raython_template_create"
+        || name == "raython_template_register"
+        || name == "raython_template_render"
+        || name == "raython_template_render_string"
+        || name == "raython_template_list"
+        || name == "raython_template_remove"
+        || name == "raython_session_store_create"
+        || name == "raython_session_create"
+        || name == "raython_session_set"
+        || name == "raython_session_get"
+        || name == "raython_session_destroy"
+        || name == "raython_cookie_parse"
+        || name == "raython_cookie_create"
+        || name == "raython_cookie_session"
+        || name == "raython_cookie_get_session_id"
+        || name == "raython_auth_hash_password"
+        || name == "raython_jwt_create"
+        || name == "raython_jwt_verify"
+        || name == "raython_jwt_get_subject"
+        || name == "raython_bearer_extract"
+        || name == "raython_bearer_create"
     {
         // These builtins/FFI functions return pointers
         self.context
@@ -3078,8 +3794,34 @@ let var_type: BasicTypeEnum<'ctx> = if is_heap_value {
  else if let Some(t) = ty {
     self.resolve_basic_type(t)
 
+// 🧵 Special case: BinaryOp with string concatenation
+} else if let Expr::BinaryOp { left, op, right } = value {
+    // Check if it's string concatenation
+    if op == "+" {
+        // Check if either operand is a string literal or string variable
+        let is_string_concat = matches!(left.as_ref(), Expr::StringLiteral(_))
+            || matches!(right.as_ref(), Expr::StringLiteral(_))
+            || matches!(left.as_ref(), Expr::Variable(_))
+            || matches!(right.as_ref(), Expr::Variable(_));
+
+        if is_string_concat {
+            // String concatenation result is a pointer
+            self.context
+                .i8_type()
+                .ptr_type(inkwell::AddressSpace::default())
+                .as_basic_type_enum()
+        } else {
+            // Numeric addition, default to i32
+            self.context.i32_type().as_basic_type_enum()
+        }
+    } else {
+        // Other binary ops default to i32
+        self.context.i32_type().as_basic_type_enum()
+    }
+}
+
 // 🧠 Type inference from RHS (literal-based)
-} else {
+ else {
     match value {
         Expr::TypedLiteral { value: val, ty: lit_ty } => match lit_ty.as_str() {
             "i1" | "bool" => self.context.bool_type().into(),
@@ -3444,13 +4186,13 @@ pub fn compile_main(&mut self, nodes: &[Node]) -> FunctionValue<'ctx> {
                 _ => None,
             };
 
-            if let Some(Expr::Funcy { name, params, body, is_async, params_patterns, .. }) = funcy_expr {
+            if let Some(Expr::Funcy { name, params, body, is_async, params_patterns, return_type }) = funcy_expr {
                 if *is_async {
                     self.compile_async_funcy(name, params, body);
                 } else {
                     // Extract type descriptors for proper dispatch
                     let type_descriptors = self.extract_param_type_descriptors(params, params_patterns);
-                    self.compile_funcy(name, params, body, Some(&type_descriptors), None);
+                    self.compile_funcy(name, params, body, Some(&type_descriptors), None, return_type.as_ref());
                 }
             }
         }
@@ -3699,7 +4441,7 @@ let fn_ty = inferred_ret_ty.fn_type(&param_types, false);
     // === Compile function bodies ===
     // === Compile function bodies using predeclared signatures ===
 for node in nodes {
-    if let Node::Expr(Expr::Funcy { name, params, body, is_async, .. }) = node {
+    if let Node::Expr(Expr::Funcy { name, params, body, is_async, return_type, .. }) = node {
         // For each overload signature of this function name
         if let Some(sig_list) = self.reverse_func_index.get(name).cloned() {
     // release immutable borrow immediately by cloning the Vec<FunctionSignature>
@@ -3739,7 +4481,7 @@ for node in nodes {
         if *is_async {
             self.compile_async_funcy(name, params, body);
         } else {
-            self.compile_funcy(name, params, body, Some(&sig.param_types), None);
+            self.compile_funcy(name, params, body, Some(&sig.param_types), None, return_type.as_ref());
         }
     }
 }
@@ -3748,7 +4490,7 @@ for node in nodes {
             if *is_async {
                 self.compile_async_funcy(name, params, body);
             } else {
-                self.compile_funcy(name, params, body, None, None);
+                self.compile_funcy(name, params, body, None, None, return_type.as_ref());
             }
         }
     }
@@ -4300,6 +5042,7 @@ pub fn compile_funcy(
     body: &[Node],
     param_override: Option<&[TypeDescriptor]>,
     entity_name: Option<&str>, // 👈 added
+    return_type_override: Option<&TypeDescriptor>, // ✅ NEW: Explicit return type from annotation
  // 👈 optional explicit type list
 ) -> FunctionValue<'ctx> {
     // === Step 1: Detect inferred types from body ===
@@ -4657,7 +5400,22 @@ let final_param_types = if let Some(overrides) = param_override {
 
     // === Step 5: Create or fetch LLVM function ===
     // === 🧮 Step 5: Create correct LLVM function type ===
-let fn_type = if let Some(ret_ty) = inferred_ret_ty {
+let fn_type = if let Some(return_type_desc) = return_type_override {
+    // ✅ NEW: Use explicit return type annotation if provided
+    println!("🎯 [return-type] Function '{}' has explicit return type annotation: {:?}", name, return_type_desc);
+    let ret_ty: BasicTypeEnum<'ctx> = match return_type_desc {
+        TypeDescriptor::Primitive(ty_name) => match ty_name.as_str() {
+            "i32" | "int" => self.i32_type.into(),
+            "f32" | "float" | "f64" => self.context.f32_type().into(),
+            "bool" => self.context.bool_type().into(),
+            "ptr" | "string" => self.context.i8_type().ptr_type(AddressSpace::default()).into(),
+            _ => self.i32_type.into(),
+        },
+        TypeDescriptor::Function { .. } => self.context.i8_type().ptr_type(AddressSpace::default()).into(),
+        _ => self.i32_type.into(),
+    };
+    ret_ty.fn_type(&final_param_types, false)
+} else if let Some(ret_ty) = inferred_ret_ty {
     // Use inferred return type
     ret_ty.fn_type(&final_param_types, false)
 } else if name == "add" && param_type_names.iter().all(|t| t == "ptr") {
@@ -5020,6 +5778,7 @@ let func_val: FunctionValue<'_> = self.compile_funcy(
     body,
     None,
     Some(&entity.name),
+    None,
 );
 
 // Register under both function table and entity-local map

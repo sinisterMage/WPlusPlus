@@ -112,6 +112,81 @@ const KNOWN_FFI_FUNCTIONS: &[(&str, &str)] = &[
     ("cassandra_get_last_error", "->ptr"),
     ("cassandra_gc_collect", "->i32"),
     ("cassandra_gc_shutdown", "->void"),
+
+    // Raython MVC framework - Router functions
+    ("raython_router_create", "->ptr"),
+    ("raython_router_add_route", "ptr_ptr_ptr_ptr->ptr"),
+    ("raython_router_match", "ptr_ptr_ptr->ptr"),
+    ("raython_router_list", "ptr->ptr"),
+
+    // Raython MVC framework - Request functions
+    ("raython_request_create", "ptr_ptr->ptr"),
+    ("raython_request_set_header", "ptr_ptr_ptr->ptr"),
+    ("raython_request_get_header", "ptr_ptr->ptr"),
+    ("raython_request_set_body", "ptr_ptr->ptr"),
+
+    // Raython MVC framework - Response functions
+    ("raython_response_create", "i32->ptr"),
+    ("raython_response_json", "i32_ptr->ptr"),
+    ("raython_response_html", "i32_ptr->ptr"),
+    ("raython_response_text", "i32_ptr->ptr"),
+    ("raython_response_set_header", "ptr_ptr_ptr->ptr"),
+
+    // Raython MVC framework - Middleware functions
+    ("raython_middleware_create", "->ptr"),
+    ("raython_middleware_add", "ptr_ptr_ptr->ptr"),
+    ("raython_middleware_cors_headers", "ptr_ptr_ptr->ptr"),
+    ("raython_middleware_is_preflight", "ptr->i32"),
+
+    // Raython MVC framework - ORM/Query builder functions
+    ("raython_query_create", "ptr->ptr"),
+    ("raython_query_where", "ptr_ptr->ptr"),
+    ("raython_query_limit", "ptr_i32->ptr"),
+    ("raython_query_order", "ptr_ptr_ptr->ptr"),
+    ("raython_query_build_select", "ptr->ptr"),
+    ("raython_query_build_insert", "ptr_ptr->ptr"),
+    ("raython_query_build_update", "ptr_ptr->ptr"),
+    ("raython_query_build_delete", "ptr->ptr"),
+
+    // Raython MVC framework - HTTP Server functions
+    ("raython_server_create", "ptr_i32->ptr"),
+    ("raython_server_register", "ptr_ptr_ptr_ptr->ptr"),
+    ("raython_server_list_routes", "ptr->ptr"),
+    ("raython_server_start", "ptr->ptr"),
+    ("raython_server_stop", "ptr->ptr"),
+
+    // Raython MVC framework - Template Engine functions
+    ("raython_template_create", "->ptr"),
+    ("raython_template_register", "ptr_ptr_ptr->ptr"),
+    ("raython_template_render", "ptr_ptr_ptr->ptr"),
+    ("raython_template_render_string", "ptr_ptr->ptr"),
+    ("raython_template_list", "ptr->ptr"),
+    ("raython_template_has", "ptr_ptr->i32"),
+    ("raython_template_remove", "ptr_ptr->ptr"),
+
+    // Raython MVC framework - Session & Cookie functions
+    ("raython_session_store_create", "->ptr"),
+    ("raython_session_create", "ptr_i32->ptr"),
+    ("raython_session_set", "ptr_ptr_ptr_ptr->ptr"),
+    ("raython_session_get", "ptr_ptr_ptr->ptr"),
+    ("raython_session_destroy", "ptr_ptr->ptr"),
+    ("raython_cookie_parse", "ptr->ptr"),
+    ("raython_cookie_create", "ptr_ptr_i32->ptr"),
+    ("raython_cookie_session", "ptr_i32->ptr"),
+    ("raython_cookie_get_session_id", "ptr->ptr"),
+
+    // Raython MVC framework - Authentication functions
+    ("raython_auth_hash_password", "ptr->ptr"),
+    ("raython_auth_verify_password", "ptr_ptr->i32"),
+    ("raython_jwt_create", "ptr_i32_ptr_ptr->ptr"),
+    ("raython_jwt_verify", "ptr_ptr->ptr"),
+    ("raython_jwt_get_subject", "ptr_ptr->ptr"),
+    ("raython_jwt_is_expired", "ptr_ptr->i32"),
+    ("raython_bearer_extract", "ptr->ptr"),
+    ("raython_bearer_create", "ptr->ptr"),
+
+    // Raython MVC framework - Memory management
+    ("raython_free_string", "ptr->void"),
 ];
 
 pub fn link_rust_modules<'ctx>(

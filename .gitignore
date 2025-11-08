@@ -366,3 +366,5 @@ Cargo.lock
 target
 .vscode
 .DS_STORE
+_build
+deps

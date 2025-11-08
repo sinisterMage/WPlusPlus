@@ -1,9 +1,68 @@
-// Simple test for JSON import
-import { isValid } from "json"
+// Simple I/O Library Test
+import "rust:io"
 
 func main() {
-    print("Testing JSON isValid import")
-    let result = isValid("{\"test\": 123}")
-    print("Result:", result)
-    print("Done!")
-}
+    print("=== W++ I/O Library Test ===")
+    print("")
+
+    // Test 1: Write a file
+    print("--- Test 1: Write File ---")
+    let test_file = "/tmp/wpp_test.txt"
+    let content = "Hello from W++!"
+
+    let write_result = io_write_file(test_file, content)
+    print("Write result:", write_result)
+    print("")
+
+    // Test 2: Read the file back
+    print("--- Test 2: Read File ---")
+    let read_content = io_read_file(test_file)
+    print("Read content:", read_content)
+    print("")
+
+    // Test 3: Check if file exists
+    print("--- Test 3: File Exists ---")
+    let exists = io_exists(test_file)
+    print("File exists?", exists)
+    print("")
+
+    // Test 4: Get file size
+    print("--- Test 4: File Size ---")
+    let size = io_file_size(test_file)
+    print("File size:", size, "bytes")
+    print("")
+
+    // Test 5: Append to file
+    print("--- Test 5: Append to File ---")
+    let append_text = "\nAppended line"
+    let append_result = io_append_file(test_file, append_text)
+    print("Append result:", append_result)
+
+    let new_content = io_read_file(test_file)
+    print("Content after append:", new_content)
+    print("")
+
+    // Test 6: Directory operations
+    print("--- Test 6: Directory Operations ---")
+    let test_dir = "/tmp/wpp_test_dir"
+    let create_result = io_create_dir(test_dir)
+    print("Create dir result:", create_result)
+
+    let dir_exists = io_exists(test_dir)
+    print("Directory exists?", dir_exists)
+
+    let is_dir = io_is_dir(test_dir)
+    print("Is directory?", is_dir)
+    print("")
+
+    // Test 7: Cleanup
+    print("--- Test 7: Cleanup ---")
+    let delete_result = io_delete_file(test_file)
+    print("Delete file result:", delete_result)
+
+    let remove_dir_result = io_remove_dir(test_dir)
+    print("Remove dir result:", remove_dir_result)
+    print("")
+
+    print("=== All I/O Tests Complete! ===")
+    return 0

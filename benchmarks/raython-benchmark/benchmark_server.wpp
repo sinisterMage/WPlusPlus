@@ -1,0 +1,57 @@
+// Raython HTTP Server Benchmark
+// Simple REST API for performance testing against ASP.NET Core and Phoenix
+
+// Root endpoint
+func handleRoot() -> i32 {
+    return 200
+}
+
+// GET /api/posts - List all posts
+func handlePostsIndex() -> i32 {
+    return 200
+}
+
+// GET /api/posts/1
+func handlePostShow1() -> i32 {
+    return 200
+}
+
+// GET /api/posts/2
+func handlePostShow2() -> i32 {
+    return 200
+}
+
+// GET /api/posts/3
+func handlePostShow3() -> i32 {
+    return 200
+}
+
+func main() {
+    print("========================================")
+    print("Raython HTTP Benchmark Server")
+    print("========================================")
+    print("")
+    print("Starting server on http://0.0.0.0:3000")
+    print("")
+    print("Endpoints:")
+    print("  GET  /")
+    print("  GET  /api/posts")
+    print("  GET  /api/posts/:id")
+    print("  POST /api/posts")
+    print("")
+
+    // Register endpoints
+    server.register("/", handleRoot)
+    server.register("/api/posts", handlePostsIndex)
+    server.register("/api/posts/1", handlePostShow1)
+    server.register("/api/posts/2", handlePostShow2)
+    server.register("/api/posts/3", handlePostShow3)
+
+    print("Server starting...")
+    print("")
+
+    // Start server (this will block and wait for connections)
+    server.start(3000)
+
+    return 0
+}

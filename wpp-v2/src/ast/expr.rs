@@ -1,5 +1,5 @@
 use super::node::Node; // 👈 to use Node inside Expr
-use super::types::ParameterPattern;
+use super::types::{ParameterPattern, TypeDescriptor};
 
 #[derive(Debug, Clone)]
 pub enum Expr {
@@ -54,6 +54,7 @@ pub enum Expr {
         params_patterns: Option<Vec<ParameterPattern>>, // ✅ NEW: Enhanced pattern support
         body: Vec<Node>,
         is_async: bool, // ✅ Added this field
+        return_type: Option<TypeDescriptor>, // ✅ NEW: Optional return type annotation
     },
     Return(Option<Box<Expr>>),
     Await(Box<Expr>), // ✅ new expression kind

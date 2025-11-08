@@ -24,6 +24,8 @@ use walkdir::WalkDir;
 use sha2::{Sha256, Digest};
 mod wms;
 use wms::WmsResolver;
+mod generator;
+use generator::*;
 
 /// Helper function to detect file metadata for Rust interop libraries
 /// Returns: (file_type, platform, architecture)
@@ -159,6 +161,47 @@ enum Commands {
         /// Enable verbose debug output
         #[arg(long)]
         debug: bool,
+    },
+
+    /// Generate Raython MVC code (scaffold, model, controller, migration)
+    Generate {
+        #[command(subcommand)]
+        generator: GeneratorCommands,
+    },
+}
+
+#[derive(Subcommand)]
+enum GeneratorCommands {
+    /// Generate a full MVC scaffold (model + controller + test)
+    Scaffold {
+        /// Resource name (e.g., User, Post)
+        name: String,
+
+        /// Fields in format "name:string email:string age:i32"
+        #[arg(default_value = "")]
+        fields: String,
+    },
+
+    /// Generate a model with validations
+    Model {
+        /// Model name (e.g., User, Post)
+        name: String,
+
+        /// Fields in format "name:string email:string age:i32"
+        #[arg(default_value = "")]
+        fields: String,
+    },
+
+    /// Generate a controller with RESTful actions
+    Controller {
+        /// Controller name (e.g., Users, Posts)
+        name: String,
+    },
+
+    /// Generate a migration file
+    Migration {
+        /// Migration name (e.g., CreateUsers, AddEmailToUsers)
+        name: String,
     },
 }
 
@@ -482,6 +525,31 @@ update_simula_lock(&pkg.name, &pkg.version, &checksum).unwrap();
             match run_proxima_notebook(&file, ProximaRunOpts { list, cell, from, to, step, yes, opt }) {
                 Ok(_) => {}
                 Err(e) => eprintln!("❌ Proxima error: {e}"),
+            }
+        }
+
+        Commands::Generate { generator } => {
+            match generator {
+                GeneratorCommands::Scaffold { name, fields } => {
+                    if let Err(e) = generate_scaffold(&name, &fields) {
+                        eprintln!("❌ Failed to generate scaffold: {e}");
+                    }
+                }
+                GeneratorCommands::Model { name, fields } => {
+                    if let Err(e) = generate_model(&name, &fields) {
+                        eprintln!("❌ Failed to generate model: {e}");
+                    }
+                }
+                GeneratorCommands::Controller { name } => {
+                    if let Err(e) = generate_controller(&name) {
+                        eprintln!("❌ Failed to generate controller: {e}");
+                    }
+                }
+                GeneratorCommands::Migration { name } => {
+                    if let Err(e) = generate_migration(&name) {
+                        eprintln!("❌ Failed to generate migration: {e}");
+                    }
+                }
             }
         }
 
@@ -872,9 +940,30 @@ fn run_with_codegen(_source: &str, optimize: bool) {
     }
 }
 
-/// 🚀 Run a single W++ source buffer directly (no project/WMS)
+/// 🚀 Run a single W++ source buffer directly (with module system for imports)
 fn run_single_source(source: &str, base_dir: &str, optimize: bool) {
     println!("🎯 [CLI] Single-file mode: compiling buffer (base_dir = {})", base_dir);
+
+    // Initialize module system for Rust module support
+    let project_root = std::path::Path::new(base_dir);
+    let mut wms = wpp_v2::module_system::ModuleSystem::new(project_root);
+
+    // Preload imports (for Rust modules like rust:raython)
+    let import_re = regex::Regex::new(r#"(?m)^\s*import\s+(?:\{[^}]*\}\s+from\s+)?\"([^\"]+)\""#).unwrap();
+    let mut preload: Vec<String> = Vec::new();
+    for cap in import_re.captures_iter(source) {
+        if let Some(m) = cap.get(1) { preload.push(m.as_str().to_string()); }
+    }
+    preload.sort(); preload.dedup();
+
+    if !preload.is_empty() {
+        println!("📦 [CLI] Preloading {} modules: {:?}", preload.len(), preload);
+    }
+    for m in &preload {
+        if let Err(e) = wms.load_module(m) {
+            eprintln!("⚠️  Failed to preload module '{}': {}", m, e);
+        }
+    }
 
     // Create LLVM context
     let context = inkwell::context::Context::create();
@@ -885,8 +974,9 @@ fn run_single_source(source: &str, base_dir: &str, optimize: bool) {
     let mut parser = wpp_v2::parser::Parser::new(tokens);
     let ast = parser.parse_program();
 
-    // Codegen + JIT
+    // Codegen + JIT with module system
     let mut codegen = wpp_v2::codegen::Codegen::new(&context, "single", base_dir);
+    codegen.wms = Some(std::sync::Arc::new(std::sync::Mutex::new(wms)));
     codegen.compile_main(&ast);
 
     match wpp_v2::run_file(&mut codegen, optimize) {
@@ -1013,7 +1103,12 @@ fn execute_cells_range(path: &str, cells: &[ProximaCell], from: usize, to: usize
         if let Some(m) = cap.get(1) { preload.push(m.as_str().to_string()); }
     }
     preload.sort(); preload.dedup();
-    for m in preload { let _ = wms.load_module(&m); }
+    eprintln!("📦 [CLI] Preloading {} modules: {:?}", preload.len(), preload);
+    for m in preload {
+        if let Err(e) = wms.load_module(&m) {
+            eprintln!("⚠️  Failed to preload module '{}': {}", m, e);
+        }
+    }
 
     let mut resolver = ExportResolver::new();
     resolver.collect_exports(&wms);

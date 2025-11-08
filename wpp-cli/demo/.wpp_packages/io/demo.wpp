@@ -1,0 +1,198 @@
+// W++ File I/O Library Demo
+// Demonstrates comprehensive file system operations
+
+import {
+    readFile,
+    writeFile,
+    appendFile,
+    exists,
+    deleteFile,
+    copyFile,
+    renameFile,
+    fileSize,
+    isFile,
+    isDir,
+    createDir,
+    createDirAll,
+    removeDir,
+    removeDirAll,
+    listDir,
+    readLines
+} from "io"
+
+func main() {
+    print("=== W++ File I/O Library Demo ===")
+    print("")
+
+    // ========================================
+    // 1. File Writing and Reading
+    // ========================================
+    print("--- File Writing & Reading ---")
+
+    let test_file = "/tmp/wpp_test.txt"
+    let content = "Hello from W++!\nThis is a test file."
+
+    print("Writing to:", test_file)
+    if writeFile(test_file, content) == 1 {
+        print("Write successful!")
+    } else {
+        print("Write failed!")
+    }
+    print("")
+
+    print("Reading file:")
+    let read_content = readFile(test_file)
+    print(read_content)
+    print("")
+
+    // ========================================
+    // 2. Appending to Files
+    // ========================================
+    print("--- Appending to Files ---")
+
+    let append_text = "\nAppended line 1\nAppended line 2"
+    print("Appending more content...")
+    if appendFile(test_file, append_text) == 1 {
+        print("Append successful!")
+    }
+    print("")
+
+    print("File after append:")
+    print(readFile(test_file))
+    print("")
+
+    // ========================================
+    // 3. Reading Lines
+    // ========================================
+    print("--- Reading Lines ---")
+
+    print("Reading file line by line:")
+    let lines = readLines(test_file)
+    print(lines)
+    print("")
+
+    // ========================================
+    // 4. File Operations
+    // ========================================
+    print("--- File Operations ---")
+
+    print("File exists?", exists(test_file))
+    print("Is file?", isFile(test_file))
+    print("Is directory?", isDir(test_file))
+    print("")
+
+    print("File size:", fileSize(test_file), "bytes")
+    print("")
+
+    // ========================================
+    // 5. Copy and Rename
+    // ========================================
+    print("--- Copy & Rename ---")
+
+    let copy_path = "/tmp/wpp_test_copy.txt"
+    print("Copying to:", copy_path)
+    if copyFile(test_file, copy_path) {
+        print("Copy successful!")
+    }
+    print("")
+
+    let rename_path = "/tmp/wpp_test_renamed.txt"
+    print("Renaming copy to:", rename_path)
+    if renameFile(copy_path, rename_path) {
+        print("Rename successful!")
+    }
+    print("")
+
+    print("Renamed file exists?", exists(rename_path))
+    print("Original copy exists?", exists(copy_path))
+    print("")
+
+    // ========================================
+    // 6. Directory Operations
+    // ========================================
+    print("--- Directory Operations ---")
+
+    let test_dir = "/tmp/wpp_test_dir"
+    print("Creating directory:", test_dir)
+    if createDir(test_dir) {
+        print("Directory created!")
+    }
+    print("")
+
+    print("Is directory?", isDir(test_dir))
+    print("")
+
+    // Create nested directories
+    let nested_dir = "/tmp/wpp_test_nested/level1/level2"
+    print("Creating nested directories:", nested_dir)
+    if createDirAll(nested_dir) {
+        print("Nested directories created!")
+    }
+    print("")
+
+    // ========================================
+    // 7. List Directory
+    // ========================================
+    print("--- List Directory ---")
+
+    print("Contents of /tmp (filtered):")
+    let tmp_contents = listDir("/tmp")
+    // In a real scenario, would parse and filter the comma-separated list
+    print("First few entries:", tmp_contents)
+    print("")
+
+    // ========================================
+    // 8. Write Files to Test Directory
+    // ========================================
+    print("--- Creating Test Files ---")
+
+    writeFile(test_dir + "/file1.txt", "File 1 content")
+    writeFile(test_dir + "/file2.txt", "File 2 content")
+    writeFile(test_dir + "/file3.txt", "File 3 content")
+
+    print("Files created in test directory")
+    print("Directory contents:")
+    print(listDir(test_dir))
+    print("")
+
+    // ========================================
+    // 9. Cleanup
+    // ========================================
+    print("--- Cleanup ---")
+
+    print("Deleting test file...")
+    if deleteFile(test_file) {
+        print("Test file deleted!")
+    }
+    print("")
+
+    print("Deleting renamed file...")
+    if deleteFile(rename_path) {
+        print("Renamed file deleted!")
+    }
+    print("")
+
+    print("Removing test directory (with contents)...")
+    if removeDirAll(test_dir) {
+        print("Test directory removed!")
+    }
+    print("")
+
+    print("Removing nested directory...")
+    if removeDirAll("/tmp/wpp_test_nested") {
+        print("Nested directory removed!")
+    }
+    print("")
+
+    // ========================================
+    // 10. Verification
+    // ========================================
+    print("--- Verification ---")
+
+    print("Test file exists?", exists(test_file))
+    print("Test directory exists?", exists(test_dir))
+    print("Nested directory exists?", exists("/tmp/wpp_test_nested"))
+    print("")
+
+    print("=== Demo Complete ===")
+}

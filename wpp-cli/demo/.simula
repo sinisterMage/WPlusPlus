@@ -17,3 +17,11 @@ END SYSTEM;
          json.checksum := "sha256:02bd175f329720378ce83dd56a1b6b1f5291a60182d6c54b5e0d1e8d248a267a";
       END;
    END;
+
+   BEGIN MAIN;
+      PACKAGE io;
+         io.name := "io";
+         io.version := "1.0.0";
+         io.checksum := "sha256:6e008874d7d8aa5ad60ef174eab0309be6e912511f388cc4300d4b6614bd2b3b";
+      END;
+   END;

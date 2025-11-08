@@ -221,8 +221,18 @@ pub extern "C" fn wpp_shutdown() {
 pub use crate::runtime::server::{register_endpoint, wpp_start_server};
 
 static TOKIO_RT: Lazy<Runtime> = Lazy::new(|| {
+    let num_cpus = std::thread::available_parallelism()
+        .map(|n| n.get())
+        .unwrap_or(4);
+
     tokio::runtime::Builder::new_multi_thread()
+        .worker_threads(num_cpus) // ✅ Match CPU count (Phase 1 Optimization #2)
+        .thread_name("wpp-http-worker")
+        .thread_stack_size(2 * 1024 * 1024) // 2MB stack
         .enable_all()
+        .max_blocking_threads(512) // Increase from default
+        .event_interval(61) // Tune for latency/throughput balance
+        .global_queue_interval(31) // Check global queue less frequently
         .build()
         .expect("❌ Failed to build Tokio runtime")
 });
@@ -254,6 +264,105 @@ pub extern "C" fn wpp_str_concat(a: *const i8, b: *const i8) -> *mut i8 {
 
         let concat = format!("{}{}", sa, sb);
         let cstring = std::ffi::CString::new(concat).unwrap();
+        cstring.into_raw()
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_str_substr(s: *const i8, start: i32, length: i32) -> *mut i8 {
+    unsafe {
+        if s.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        let string = std::ffi::CStr::from_ptr(s).to_str().unwrap_or("");
+        let start = start.max(0) as usize;
+        let length = length.max(0) as usize;
+
+        let result = if start < string.len() {
+            let end = (start + length).min(string.len());
+            &string[start..end]
+        } else {
+            ""
+        };
+
+        let cstring = std::ffi::CString::new(result).unwrap();
+        cstring.into_raw()
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_str_index_of(haystack: *const i8, needle: *const i8) -> i32 {
+    unsafe {
+        if haystack.is_null() || needle.is_null() {
+            return -1;
+        }
+
+        let hay = std::ffi::CStr::from_ptr(haystack).to_str().unwrap_or("");
+        let need = std::ffi::CStr::from_ptr(needle).to_str().unwrap_or("");
+
+        match hay.find(need) {
+            Some(pos) => pos as i32,
+            None => -1,
+        }
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_str_replace(s: *const i8, find: *const i8, replace: *const i8) -> *mut i8 {
+    unsafe {
+        if s.is_null() || find.is_null() || replace.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        let string = std::ffi::CStr::from_ptr(s).to_str().unwrap_or("");
+        let find_str = std::ffi::CStr::from_ptr(find).to_str().unwrap_or("");
+        let replace_str = std::ffi::CStr::from_ptr(replace).to_str().unwrap_or("");
+
+        let result = string.replace(find_str, replace_str);
+        let cstring = std::ffi::CString::new(result).unwrap();
+        cstring.into_raw()
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_str_to_upper(s: *const i8) -> *mut i8 {
+    unsafe {
+        if s.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        let string = std::ffi::CStr::from_ptr(s).to_str().unwrap_or("");
+        let result = string.to_uppercase();
+        let cstring = std::ffi::CString::new(result).unwrap();
+        cstring.into_raw()
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_str_to_lower(s: *const i8) -> *mut i8 {
+    unsafe {
+        if s.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        let string = std::ffi::CStr::from_ptr(s).to_str().unwrap_or("");
+        let result = string.to_lowercase();
+        let cstring = std::ffi::CString::new(result).unwrap();
+        cstring.into_raw()
+    }
+}
+
+#[unsafe(no_mangle)]
+pub extern "C" fn wpp_str_trim(s: *const i8) -> *mut i8 {
+    unsafe {
+        if s.is_null() {
+            return std::ptr::null_mut();
+        }
+
+        let string = std::ffi::CStr::from_ptr(s).to_str().unwrap_or("");
+        let result = string.trim();
+        let cstring = std::ffi::CString::new(result).unwrap();
         cstring.into_raw()
     }
 }
